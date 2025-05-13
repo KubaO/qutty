@@ -1499,7 +1499,8 @@ Terminal *term_init(Config *mycfg, struct unicode_data *ucsdata,
     term->basic_erase_char.cc_next = 0;
     term->erase_char = term->basic_erase_char;
 
-    term->dispstr = term->dispstr_attr = NULL;
+    term->dispstr_attr = NULL;
+    term->dispstr = NULL;
 
     return term;
 }
@@ -1549,7 +1550,8 @@ void term_free(Terminal *term)
 
     if (term->dispstr) sfree(term->dispstr);
     if (term->dispstr_attr) sfree(term->dispstr_attr);
-    term->dispstr = term->dispstr_attr = NULL;
+    term->dispstr_attr = NULL;
+    term->dispstr = NULL;
 
     sfree(term);
 }
@@ -1585,7 +1587,8 @@ void term_size(Terminal *term, int newrows, int newcols, int newsavelines)
 	term->screen = newtree234(NULL);
 	term->tempsblines = 0;
 	term->rows = 0;
-    term->dispstr = term->dispstr_attr = NULL;
+    term->dispstr_attr = NULL;
+    term->dispstr = NULL;
     }
 
     if (term->dispstr) sfree(term->dispstr);
