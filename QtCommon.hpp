@@ -7,10 +7,10 @@
 #ifndef QTCOMMON_H
 #define QTCOMMON_H
 
-#include <stdlib.h>
+#include <QKeyEvent>
 #include <QTimer>
 #include <QtNetwork/QTcpSocket>
-#include <QKeyEvent>
+// #include <cstdlib>
 extern "C" {
 #include "putty.h"
 }

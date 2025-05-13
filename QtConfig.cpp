@@ -1,6 +1,6 @@
 #define QUTTY_XMLIZE_STRUCTS
 
-#include "QtConfig.h"
+#include "QtConfig.hpp"
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 #include <QDir>
@@ -10,8 +10,8 @@
 #include <QDebug>
 #include <QFileDialog>
 #include <QString>
-#include "serialize/QtMRUSessionList.h"
-#include "serialize/QtWebPluginMap.h"
+#include "serialize/QtMRUSessionList.hpp"
+#include "serialize/QtWebPluginMap.hpp"
 
 extern "C" {
 #include "storage.h"

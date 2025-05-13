@@ -46,7 +46,7 @@ set(PROJECT_SOURCES
     GuiTreeWidget.cpp
     GuiImportExportFile.cpp
     GuiCompactSettingsWindow.cpp
-    guitextfilterwindow.cpp
+    GuiTextFilterWindow.cpp
     QtSessionTreeModel.cpp
     QtCompleterWithAdvancedCompletion.cpp
     puttysrc/pgssapi.c
@@ -95,31 +95,31 @@ set(PROJECT_SOURCES
     serialize/QtMRUSessionList.cpp
     serialize/QtWebPluginMap.cpp
 
-    GuiMainWindow.h
-    GuiTerminalWindow.h
-    GuiSettingsWindow.h
-    GuiPreferencesWindow.h
-    GuiTreeWidget.h
-    guitextfilterwindow.h
-    GuiImportExportFile.h
-    QtCommon.h
-    QtLogDbg.h
-    QtConfig.h
+    GuiMainWindow.hpp
+    GuiTerminalWindow.hpp
+    GuiSettingsWindow.hpp
+    GuiPreferencesWindow.hpp
+    GuiTreeWidget.hpp
+    GuiTextFilterWindow.hpp
+    GuiImportExportFile.hpp
+    QtCommon.hpp
+    QtLogDbg.hpp
+    QtConfig.hpp
     QtConfigTag.h
-    QtTimer.h
-    GuiTabWidget.h
-    GuiMenu.h
-    GuiBase.h
-    GuiSplitter.h
-    GuiDrag.h
-    GuiFindToolBar.h
-    GuiTabBar.h
-    GuiNavigation.h
-    GuiCompactSettingsWindow.h
-    QtSessionTreeModel.h
-    QtSessionTreeItem.h
-    QtComboBoxWithTreeView.h
-    QtCompleterWithAdvancedCompletion.h
+    QtTimer.hpp
+    GuiTabWidget.hpp
+    GuiMenu.hpp
+    GuiBase.hpp
+    GuiSplitter.hpp
+    GuiDrag.hpp
+    GuiFindToolBar.hpp
+    GuiTabBar.hpp
+    GuiNavigation.hpp
+    GuiCompactSettingsWindow.hpp
+    QtSessionTreeModel.hpp
+    QtSessionTreeItem.hpp
+    QtComboBoxWithTreeView.hpp
+    QtCompleterWithAdvancedCompletion.hpp
     puttysrc/ssh.h
     puttysrc/putty.h
     puttysrc/missing.h
@@ -138,11 +138,11 @@ set(PROJECT_SOURCES
     puttysrc/ldisc.h
     puttysrc/storage.h
     tmux/tmux.h
-    tmux/TmuxGateway.h
-    tmux/TmuxWindowPane.h
-    tmux/TmuxLayout.h
-    serialize/QtMRUSessionList.h
-    serialize/QtWebPluginMap.h
+    tmux/TmuxGateway.hpp
+    tmux/TmuxWindowPane.hpp
+    tmux/TmuxLayout.hpp
+    serialize/QtMRUSessionList.hpp
+    serialize/QtWebPluginMap.hpp
 
     GuiSettingsWindow.ui
     GuiPreferencesWindow.ui

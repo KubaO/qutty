@@ -3,8 +3,8 @@
 
 #include <QAbstractItemModel>
 #include <QStyledItemDelegate>
-#include "QtSessionTreeItem.h"
-#include "QtConfig.h"
+#include "QtSessionTreeItem.hpp"
+#include "QtConfig.hpp"
 
 class QtSessionTreeModel : public QAbstractItemModel {
   Q_OBJECT

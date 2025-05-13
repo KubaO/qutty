@@ -5,8 +5,8 @@
 #include <QLineEdit>
 #include <QPlainTextEdit>
 
-#include "GuiMainWindow.h"
-#include "QtCompleterWithAdvancedCompletion.h"
+#include "GuiMainWindow.hpp"
+#include "QtCompleterWithAdvancedCompletion.hpp"
 
 class GuiTextFilterWindow : public QToolBar {
   Q_OBJECT

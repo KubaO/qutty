@@ -1,4 +1,4 @@
-#include "GuiTreeWidget.h"
+#include "GuiTreeWidget.hpp"
 #include <QDebug>
 #include <QDragMoveEvent>
 

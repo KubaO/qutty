@@ -6,12 +6,12 @@
 
 #include <QApplication>
 #include <QGraphicsColorizeEffect>
-#include "GuiNavigation.h"
-#include "GuiBase.h"
-#include "GuiMainWindow.h"
-#include "GuiTerminalWindow.h"
-#include "GuiSplitter.h"
-#include "GuiTabWidget.h"
+#include "GuiNavigation.hpp"
+#include "GuiBase.hpp"
+#include "GuiMainWindow.hpp"
+#include "GuiTerminalWindow.hpp"
+#include "GuiSplitter.hpp"
+#include "GuiTabWidget.hpp"
 
 using std::vector;
 

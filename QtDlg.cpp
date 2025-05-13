@@ -8,10 +8,11 @@ extern "C" {
 #include "putty.h"
 #include "ssh.h"
 }
-#include "GuiMainWindow.h"
-#include "GuiTerminalWindow.h"
 #include <QMessageBox>
-#include <QtConfig.h>
+
+#include "GuiMainWindow.hpp"
+#include "GuiTerminalWindow.hpp"
+#include "QtConfig.hpp"
 
 /*
  * Ask whether the selected algorithm is acceptable (since it was

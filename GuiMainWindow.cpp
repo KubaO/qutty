@@ -4,23 +4,25 @@
  * See COPYING for distribution information.
  */
 
-#include <QDebug>
-#include <QKeyEvent>
-#include <QTabWidget>
-#include <QMessageBox>
-#include <QTabBar>
-#include <QSettings>
-#include <QMenuBar>
-#include <QLabel>
-#include <QGraphicsBlurEffect>
+#include "GuiMainWindow.hpp"
+
 #include <QBitmap>
-#include "GuiMainWindow.h"
-#include "GuiTerminalWindow.h"
-#include "GuiSettingsWindow.h"
-#include "GuiTabWidget.h"
-#include "GuiTabBar.h"
-#include "GuiSplitter.h"
-#include "serialize/QtMRUSessionList.h"
+#include <QDebug>
+#include <QGraphicsBlurEffect>
+#include <QKeyEvent>
+#include <QLabel>
+#include <QMenuBar>
+#include <QMessageBox>
+#include <QSettings>
+#include <QTabBar>
+#include <QTabWidget>
+
+#include "GuiSettingsWindow.hpp"
+#include "GuiSplitter.hpp"
+#include "GuiTabBar.hpp"
+#include "GuiTabWidget.hpp"
+#include "GuiTerminalWindow.hpp"
+#include "serialize/QtMRUSessionList.hpp"
 //#include "windows.h"
 extern "C" {
 #include "putty.h"

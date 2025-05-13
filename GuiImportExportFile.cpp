@@ -1,7 +1,7 @@
 #include <QDialogButtonBox>
-#include "GuiImportExportFile.h"
-#include "GuiSettingsWindow.h"
-#include "GuiMainWindow.h"
+#include "GuiImportExportFile.hpp"
+#include "GuiSettingsWindow.hpp"
+#include "GuiMainWindow.hpp"
 
 using std::map;
 

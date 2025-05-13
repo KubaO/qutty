@@ -7,19 +7,18 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <map>
-#include <tuple>
 #include <QMainWindow>
 #include <QMenu>
-#include <QToolButton>
 #include <QShortcut>
 #include <QSignalMapper>
-#include "QtCommon.h"
-#include "GuiCompactSettingsWindow.h"
-#include "GuiSettingsWindow.h"
-#include "GuiMenu.h"
-#include "GuiDrag.h"
-#include "GuiNavigation.h"
+#include <QToolButton>
+
+#include "GuiCompactSettingsWindow.hpp"
+#include "GuiDrag.hpp"
+#include "GuiMenu.hpp"
+#include "GuiNavigation.hpp"
+#include "GuiSettingsWindow.hpp"
+#include "QtCommon.hpp"
 
 class GuiCompactSettingsWindow;
 class GuiSettingsWindow;

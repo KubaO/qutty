@@ -1,15 +1,17 @@
-#include "tmux/TmuxGateway.h"
-
-#include <tmux/tmux.h>
+#include "tmux/TmuxGateway.hpp"
 
 #include <iostream>
 #include <sstream>
 
-#include "GuiMainWindow.h"
-#include "GuiSplitter.h"
-#include "GuiTabWidget.h"
-#include "GuiTerminalWindow.h"
-#include "tmux/TmuxWindowPane.h"
+#include "GuiMainWindow.hpp"
+#include "GuiSplitter.hpp"
+#include "GuiTabWidget.hpp"
+#include "GuiTerminalWindow.hpp"
+#include "tmux/TmuxWindowPane.hpp"
+#include "tmux/tmux.h"
+extern "C" {
+#include "puttysrc/terminal.h"
+}
 
 using std::istringstream;
 using std::map;

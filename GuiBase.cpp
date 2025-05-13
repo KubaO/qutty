@@ -4,6 +4,6 @@
  * See COPYING for distribution information.
  */
 
-#include "GuiBase.h"
+#include "GuiBase.hpp"
 
 GuiBase::GuiBase() : parentSplit(NULL) {}

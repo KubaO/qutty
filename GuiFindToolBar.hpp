@@ -7,8 +7,8 @@
 #ifndef GUIFINDTOOLBAR_H
 #define GUIFINDTOOLBAR_H
 
-#include <QToolBar>
 #include <QLineEdit>
+#include <QToolBar>
 
 class GuiMainWindow;
 

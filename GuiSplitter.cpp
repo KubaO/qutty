@@ -4,10 +4,10 @@
  * See COPYING for distribution information.
  */
 
-#include "GuiSplitter.h"
-#include "GuiMainWindow.h"
-#include "GuiTerminalWindow.h"
-#include "GuiTabWidget.h"
+#include "GuiSplitter.hpp"
+#include "GuiMainWindow.hpp"
+#include "GuiTerminalWindow.hpp"
+#include "GuiTabWidget.hpp"
 
 using std::vector;
 

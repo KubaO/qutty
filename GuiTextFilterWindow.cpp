@@ -1,9 +1,12 @@
-#include "guitextfilterwindow.h"
+#include "GuiTextFilterWindow.hpp"
 
 #include <QToolButton>
 
-#include "serialize/QtWebPluginMap.h"
-#include "GuiTerminalWindow.h"
+#include "GuiTerminalWindow.hpp"
+#include "serialize/QtWebPluginMap.hpp"
+extern "C" {
+#include "puttysrc/terminal.h"
+}
 
 GuiTextFilterWindow::GuiTextFilterWindow(GuiMainWindow *p, bool isEditable, QString lbl)
     : QToolBar(p), mainWnd(p), label(lbl), is_editable(isEditable) {

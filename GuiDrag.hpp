@@ -9,7 +9,8 @@
 
 #include <QGridLayout>
 #include <QToolButton>
-#include "GuiBase.h"
+
+#include "GuiBase.hpp"
 
 class GuiBase;
 class GuiTabBar;

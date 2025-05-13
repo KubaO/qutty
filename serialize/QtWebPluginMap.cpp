@@ -1,7 +1,8 @@
-#include "QtWebPluginMap.h"
+#include "QtWebPluginMap.hpp"
+
 #include <QDataStream>
-#include <QFile>
 #include <QDir>
+#include <QFile>
 
 static const char *serialize_file_name = "qutty/qt_web_plugin_map.txt";
 

@@ -7,13 +7,14 @@
 #ifndef GUISETTINGSWINDOW_H
 #define GUISETTINGSWINDOW_H
 
-#include <QDialog>
-#include <QTreeWidgetItem>
 #include <QButtonGroup>
+#include <QDialog>
 #include <QFileDialog>
 #include <QListWidgetItem>
-#include "QtConfig.h"
-#include "GuiBase.h"
+#include <QTreeWidgetItem>
+
+#include "GuiBase.hpp"
+#include "putty.h"
 
 namespace Ui {
 class GuiSettingsWindow;

@@ -5,9 +5,9 @@
  */
 
 #include <QKeyEvent>
-#include "QtCommon.h"
-#include "QtTimer.h"
-#include "GuiTerminalWindow.h"
+#include "QtCommon.hpp"
+#include "QtTimer.hpp"
+#include "GuiTerminalWindow.hpp"
 extern "C" {
 #include "putty.h"
 #include "terminal.h"

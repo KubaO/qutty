@@ -12,10 +12,11 @@ extern "C" {
 #undef min
 #undef max
 }
-#include "tmux/TmuxLayout.h"
-#include <string>
-#include <queue>
 #include <map>
+#include <queue>
+#include <string>
+
+#include "tmux/TmuxLayout.hpp"
 
 #define is_hex_char(ch) \
   (((ch) >= '0' && (ch) <= '9') || ((ch) >= 'a' && (ch) <= 'f') || ((ch) >= 'A' && (ch) <= 'F'))

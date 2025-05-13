@@ -3,12 +3,12 @@
 
 #include <QDialog>
 #include <QFile>
-#include <QPushButton>
 #include <QGridLayout>
-#include <QListWidget>
 #include <QIODevice>
-#include <string>
-#include "QtConfig.h"
+#include <QListWidget>
+#include <QPushButton>
+
+#include "QtConfig.hpp"
 
 class GuiMainWindow;
 

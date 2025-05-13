@@ -1,8 +1,10 @@
-#include "QtMRUSessionList.h"
+#include "QtMRUSessionList.hpp"
+
 #include <QDataStream>
-#include <QFile>
 #include <QDir>
-#include "QtConfig.h"
+#include <QFile>
+
+#include "QtConfig.hpp"
 
 static const char *serialize_file_name = "qutty/mru_sesslist.txt";
 

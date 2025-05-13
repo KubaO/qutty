@@ -4,20 +4,24 @@
  * See COPYING for distribution information.
  */
 
-#include "QtLogDbg.h"
-#include <QDebug>
+#include "GuiTerminalWindow.hpp"
+
 #include <QApplication>
-#include <QPainter>
 #include <QClipboard>
-#include <QScrollBar>
+#include <QDebug>
 #include <QMessageBox>
-#include "GuiMainWindow.h"
-#include "GuiTerminalWindow.h"
-#include "GuiSplitter.h"
-#include "GuiMenu.h"
-#include "GuiTabWidget.h"
-#include "GuiFindToolBar.h"
-#include "serialize/QtWebPluginMap.h"
+#include <QPainter>
+#include <QScrollBar>
+
+#include "GuiFindToolBar.hpp"
+#include "GuiMainWindow.hpp"
+#include "GuiMenu.hpp"
+#include "GuiSplitter.hpp"
+#include "GuiTabWidget.hpp"
+#include "serialize/QtWebPluginMap.hpp"
+extern "C" {
+#include "puttysrc/terminal.h"
+}
 
 GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow)
     : QAbstractScrollArea(parent),

@@ -7,12 +7,12 @@
 #include <QPainter>
 #include <QDrag>
 #include <QMimeData>
-#include "GuiDrag.h"
-#include "GuiMainWindow.h"
-#include "GuiTerminalWindow.h"
-#include "GuiSplitter.h"
-#include "GuiTabWidget.h"
-#include "GuiTabBar.h"
+#include "GuiDrag.hpp"
+#include "GuiMainWindow.hpp"
+#include "GuiTerminalWindow.hpp"
+#include "GuiSplitter.hpp"
+#include "GuiTabWidget.hpp"
+#include "GuiTabBar.hpp"
 
 void GuiMainWindow::inittializeDragDropWidget() { dragDropSite.hide(); }
 

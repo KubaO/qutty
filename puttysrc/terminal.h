@@ -9,6 +9,7 @@
 #ifndef PUTTY_TERMINAL_H
 #define PUTTY_TERMINAL_H
 
+#include "misc.h"
 #include "tree234.h"
 
 struct beeptime {

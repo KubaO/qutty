@@ -1,12 +1,14 @@
+#include "GuiCompactSettingsWindow.hpp"
+
 #include <QDialogButtonBox>
-#include <QLabel>
 #include <QHBoxLayout>
-#include "GuiCompactSettingsWindow.h"
-#include "GuiMainWindow.h"
-#include "QtSessionTreeModel.h"
-#include "QtCompleterWithAdvancedCompletion.h"
-#include "serialize/QtMRUSessionList.h"
+#include <QLabel>
 #include <QStringList>
+
+#include "GuiMainWindow.hpp"
+#include "QtCompleterWithAdvancedCompletion.hpp"
+#include "QtSessionTreeModel.hpp"
+#include "serialize/QtMRUSessionList.hpp"
 
 using std::map;
 

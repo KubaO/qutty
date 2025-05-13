@@ -4,15 +4,17 @@
  * See COPYING for distribution information.
  */
 
-#include <QTabBar>
+#include "GuiTabWidget.hpp"
+
 #include <QMenu>
-#include "GuiTabWidget.h"
-#include "GuiMainWindow.h"
-#include "GuiTerminalWindow.h"
-#include "QtConfig.h"
-#include "GuiSettingsWindow.h"
-#include "GuiMenu.h"
-#include "GuiTabBar.h"
+#include <QTabBar>
+
+#include "GuiMainWindow.hpp"
+#include "GuiMenu.hpp"
+#include "GuiSettingsWindow.hpp"
+#include "GuiTabBar.hpp"
+#include "GuiTerminalWindow.hpp"
+#include "QtConfig.hpp"
 
 GuiTabWidget::GuiTabWidget(GuiMainWindow *parent)
     : QTabWidget(parent), mainWindow(parent), guiTabBar(new GuiTabBar(this, parent)) {

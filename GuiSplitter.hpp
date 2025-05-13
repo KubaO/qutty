@@ -7,9 +7,9 @@
 #ifndef GUISPLITTER_H
 #define GUISPLITTER_H
 
-class GuiBase;
+#include "GuiBase.hpp"
+
 class GuiTerminalWindow;
-#include "GuiBase.h"
 
 class GuiSplitter : public QSplitter, public GuiBase {
   Q_OBJECT

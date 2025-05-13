@@ -1,4 +1,4 @@
-#include "QtCompleterWithAdvancedCompletion.h"
+#include "QtCompleterWithAdvancedCompletion.hpp"
 #include <QEvent>
 #include <QKeyEvent>
 #include <QDebug>

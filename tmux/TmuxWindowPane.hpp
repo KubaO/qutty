@@ -1,7 +1,7 @@
 #ifndef TMUXWINDOWPANE_H
 #define TMUXWINDOWPANE_H
+#include "tmux/TmuxGateway.hpp"
 #include "tmux/tmux.h"
-#include "tmux/TmuxGateway.h"
 
 // -- begin section copied from tmux.h --
 /* Grid attributes. */

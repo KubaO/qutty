@@ -1,6 +1,7 @@
 #ifndef QTSESSIONTREEITEM_H
 #define QTSESSIONTREEITEM_H
 
+#include <QList>
 #include <QString>
 
 class QtSessionTreeItem {

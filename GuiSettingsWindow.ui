@@ -5290,7 +5290,7 @@
   <customwidget>
    <class>GuiTreeWidget</class>
    <extends>QTreeWidget</extends>
-   <header>GuiTreeWidget.h</header>
+   <header>GuiTreeWidget.hpp</header>
   </customwidget>
  </customwidgets>
  <tabstops>

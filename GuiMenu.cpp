@@ -4,23 +4,24 @@
  * See COPYING for distribution information.
  */
 
-#include <QProxyStyle>
-#include <QMouseEvent>
-#include <QString>
 #include <QAction>
-#include <QMenuBar>
 #include <QFile>
 #include <QInputDialog>
-#include "GuiMainWindow.h"
-#include "GuiTerminalWindow.h"
-#include "GuiSplitter.h"
-#include "GuiTabWidget.h"
-#include "GuiPreferencesWindow.h"
-#include "GuiImportExportFile.h"
-#include "QtConfig.h"
-#include "GuiTabBar.h"
-#include "serialize/QtWebPluginMap.h"
-#include "guitextfilterwindow.h"
+#include <QMenuBar>
+#include <QMouseEvent>
+#include <QProxyStyle>
+#include <QString>
+
+#include "GuiImportExportFile.hpp"
+#include "GuiMainWindow.hpp"
+#include "GuiPreferencesWindow.hpp"
+#include "GuiSplitter.hpp"
+#include "GuiTabBar.hpp"
+#include "GuiTabWidget.hpp"
+#include "GuiTerminalWindow.hpp"
+#include "QtConfig.hpp"
+#include "GuiTextFilterWindow.hpp"
+#include "serialize/QtWebPluginMap.hpp"
 
 using std::make_tuple;
 

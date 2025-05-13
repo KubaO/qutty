@@ -1,5 +1,5 @@
-#include "QtSessionTreeModel.h"
-#include "QtConfig.h"
+#include "QtSessionTreeModel.hpp"
+#include "QtConfig.hpp"
 
 using std::map;
 

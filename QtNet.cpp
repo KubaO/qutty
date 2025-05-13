@@ -4,12 +4,12 @@
  * See COPYING for distribution information.
  */
 
-#include "QtCommon.h"
-#include "GuiTerminalWindow.h"
+#include "GuiTerminalWindow.hpp"
+#include "QtCommon.hpp"
 extern "C" {
-#include "ssh.h"
-#include "putty.h"
 #include "network.h"
+#include "putty.h"
+#include "ssh.h"
 }
 #include <QHostAddress>
 #include <QHostInfo>

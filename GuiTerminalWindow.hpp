@@ -7,20 +7,20 @@
 #ifndef TERMINALWINDOW_H
 #define TERMINALWINDOW_H
 
+#include <QAbstractScrollArea>
+#include <QElapsedTimer>
 #include <QFont>
 #include <QFontInfo>
 #include <QFontMetrics>
 #include <QtNetwork/QTcpSocket>
-#include <QAbstractScrollArea>
-#include <QElapsedTimer>
-#include "QtCommon.h"
+
+#include "GuiBase.hpp"
+#include "GuiDrag.hpp"
+#include "QtCommon.hpp"
+#include "tmux/TmuxGateway.hpp"
+#include "tmux/TmuxWindowPane.hpp"
 #include "tmux/tmux.h"
-#include "tmux/TmuxGateway.h"
-#include "tmux/TmuxWindowPane.h"
-#include "GuiDrag.h"
-#include "GuiBase.h"
 extern "C" {
-#include "terminal.h"
 #include "putty.h"
 }
 

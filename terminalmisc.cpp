@@ -4,9 +4,10 @@
  * See COPYING for distribution information.
  */
 
-#include "QtCommon.h"
-#include "GuiTerminalWindow.h"
 #include <QTextCodec>
+
+#include "GuiTerminalWindow.hpp"
+#include "QtCommon.hpp"
 
 /* Dummy routine, only required in plink. */
 void ldisc_update(void * /*frontend*/, int /*echo*/, int /*edit*/) {}

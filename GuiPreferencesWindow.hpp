@@ -3,7 +3,8 @@
 
 #include <QDialog>
 #include <QTreeWidget>
-#include "GuiMenu.h"
+
+#include "GuiMenu.hpp"
 
 class GuiMainWindow;
 

@@ -3,9 +3,8 @@ extern "C" {
 }
 #include <QDebug>
 
-#include "GuiTerminalWindow.h"
-#include "tmux/TmuxGateway.h"
-#include "tmux/TmuxWindowPane.h"
+#include "GuiTerminalWindow.hpp"
+#include "tmux/TmuxGateway.hpp"
 #include "tmux/tmux.h"
 
 extern "C" {

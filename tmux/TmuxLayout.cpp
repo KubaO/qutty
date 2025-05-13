@@ -1,4 +1,4 @@
-#include "TmuxLayout.h"
+#include "TmuxLayout.hpp"
 
 using std::istringstream;
 using std::ostringstream;

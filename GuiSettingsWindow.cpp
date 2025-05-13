@@ -4,21 +4,23 @@
  * See COPYING for distribution information.
  */
 
-#include "GuiSettingsWindow.h"
-#include "GuiMainWindow.h"
-#include "GuiTerminalWindow.h"
-#include "ui_GuiSettingsWindow.h"
-#include <QDebug>
-#include <QVariant>
+#include "GuiSettingsWindow.hpp"
+
 #include <QAbstractButton>
+#include <QColorDialog>
+#include <QDebug>
+#include <QFontDialog>
+#include <QMessageBox>
 #include <QRadioButton>
 #include <QString>
-#include <QMessageBox>
-#include <QFontDialog>
-#include <QColorDialog>
-#include "serialize/QtMRUSessionList.h"
-#include "QtCommon.h"
-#include "QtConfig.h"
+#include <QVariant>
+
+#include "GuiMainWindow.hpp"
+#include "GuiTerminalWindow.hpp"
+#include "QtCommon.hpp"
+#include "QtConfig.hpp"
+#include "serialize/QtMRUSessionList.hpp"
+#include "ui_GuiSettingsWindow.h"
 extern "C" {
 #include "putty.h"
 }

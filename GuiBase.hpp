@@ -4,8 +4,9 @@
  * See COPYING for distribution information.
  */
 
-#ifndef GUILAYOUT_H
-#define GUILAYOUT_H
+#ifndef GUIBASE_H
+#define GUIBASE_H
+
 #include <QSplitter>
 #include <vector>
 
@@ -36,4 +37,4 @@ class GuiBase {
 // http://stackoverflow.com/questions/3726716/qt-interfaces-or-abstract-classes-and-qobject-cast
 Q_DECLARE_INTERFACE(GuiBase, "QuTTY/GuiBase/1.0");
 
-#endif  // GUILAYOUT_H
+#endif  // GUIBASE_H

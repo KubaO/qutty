@@ -6,9 +6,9 @@
 
 #include <QApplication>
 #include <QDir>
-#include "GuiMainWindow.h"
-#include "GuiTerminalWindow.h"
-#include "GuiSettingsWindow.h"
+#include "GuiMainWindow.hpp"
+#include "GuiTerminalWindow.hpp"
+#include "GuiSettingsWindow.hpp"
 
 #ifdef QUTTY_ENABLE_BREAKPAD_SUPPORT
 #include "client/windows/handler/exception_handler.h"

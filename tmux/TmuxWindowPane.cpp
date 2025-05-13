@@ -1,10 +1,13 @@
-#include "tmux/TmuxWindowPane.h"
+#include "tmux/TmuxWindowPane.hpp"
 
 #include <QDebug>
 #include <iostream>
 #include <sstream>
 
-#include "GuiTerminalWindow.h"
+#include "GuiTerminalWindow.hpp"
+extern "C" {
+#include "puttysrc/terminal.h"
+}
 
 using std::istringstream;
 using std::string;

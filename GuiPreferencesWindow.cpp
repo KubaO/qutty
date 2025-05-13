@@ -8,8 +8,8 @@
 #include <QPushButton>
 #include <QInputDialog>
 #include <QMessageBox>
-#include "GuiPreferencesWindow.h"
-#include "GuiMainWindow.h"
+#include "GuiPreferencesWindow.hpp"
+#include "GuiMainWindow.hpp"
 #include "ui_GuiPreferencesWindow.h"
 
 using std::map;

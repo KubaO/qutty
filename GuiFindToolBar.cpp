@@ -4,10 +4,15 @@
  * See COPYING for distribution information.
  */
 
+#include "GuiFindToolBar.hpp"
+
 #include <QScrollBar>
-#include "GuiMainWindow.h"
-#include "GuiTerminalWindow.h"
-#include "GuiFindToolBar.h"
+
+#include "GuiMainWindow.hpp"
+#include "GuiTerminalWindow.hpp"
+extern "C" {
+#include "puttysrc/terminal.h"
+}
 
 GuiFindToolBar::GuiFindToolBar(GuiMainWindow *p) : QToolBar(p), mainWnd(p) {
   searchedText = new QLineEdit();

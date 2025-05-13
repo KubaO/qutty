@@ -1,22 +1,20 @@
 #ifndef GUICOMPACTSETTINGSWINDOW_H
 #define GUICOMPACTSETTINGSWINDOW_H
 
+#include <QComboBox>
 #include <QDialog>
 #include <QFile>
-#include <QLineEdit>
-#include <QPushButton>
 #include <QGridLayout>
-#include <QListWidget>
-#include <QComboBox>
 #include <QIODevice>
-#include <string>
-#include "GuiBase.h"
-#include "QtConfig.h"
-#include "GuiSettingsWindow.h"
+#include <QLineEdit>
+#include <QListWidget>
 #include <QMessageBox>
 #include <QPainter>
-#include "QtComboBoxWithTreeView.h"
-#include "QtSessionTreeModel.h"
+#include <QPushButton>
+
+#include "GuiBase.hpp"
+#include "QtComboBoxWithTreeView.hpp"
+#include "QtSessionTreeModel.hpp"
 
 class GuiMainWindow;
 class QtCompleterWithAdvancedCompletion;
