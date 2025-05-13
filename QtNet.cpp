@@ -172,8 +172,9 @@ SockAddr sk_namelookup(const char *host, char **canonicalname, int address_famil
         QString str = info.hostName();
         QByteArray bstr = str.toUtf8();
         const char *cstr = bstr.constData();
-        *canonicalname = snewn(1 + strlen(cstr), char);
-        strcpy(*canonicalname, cstr);
+        size_t size = 1 + strlen(cstr);
+        *canonicalname = snewn(size, char);
+        memcpy(*canonicalname, cstr, size);
         ret->qtaddr = a;
         return ret;
       }
@@ -184,8 +185,9 @@ SockAddr sk_namelookup(const char *host, char **canonicalname, int address_famil
     QString str = info.hostName();
     QByteArray bstr = str.toUtf8();
     const char *cstr = bstr.constData();
-    *canonicalname = snewn(1 + strlen(cstr), char);
-    strcpy(*canonicalname, cstr);
+    size_t size = 1 + strlen(cstr);
+    *canonicalname = snewn(size, char);
+    memcpy(*canonicalname, cstr, size);
     ret->qtaddr = a;
     return ret;
   }
