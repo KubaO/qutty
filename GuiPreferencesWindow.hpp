@@ -31,9 +31,9 @@ class GuiPreferencesWindow : public QDialog {
 
  public:
   explicit GuiPreferencesWindow(GuiMainWindow *parent);
-  ~GuiPreferencesWindow();
+  ~GuiPreferencesWindow() override;
 
-  bool eventFilter(QObject *src, QEvent *e);
+  bool eventFilter(QObject *src, QEvent *e) override;
 
  private slots:
   void slot_GuiPreferencesWindow_accepted();

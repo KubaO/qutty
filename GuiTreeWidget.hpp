@@ -9,13 +9,9 @@ class GuiTreeWidget : public QTreeWidget {
   explicit GuiTreeWidget(QWidget *parent = 0);
 
   // Needed functions for drag-drop support
-  void dropEvent(QDropEvent *e);
+  void dropEvent(QDropEvent *e) override;
 
-signals:
-
- public slots:
-
-signals:
+ signals:
   void sig_hierarchyChanged(QTreeWidgetItem *item);
 };
 

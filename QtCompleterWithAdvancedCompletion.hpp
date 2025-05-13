@@ -29,7 +29,7 @@ class QtCompleterWithAdvancedCompletion : public QObject {
  public:
   explicit QtCompleterWithAdvancedCompletion(QLineEdit *le);
   explicit QtCompleterWithAdvancedCompletion(QComboBox *cb);
-  ~QtCompleterWithAdvancedCompletion();
+  ~QtCompleterWithAdvancedCompletion() override;
 
   void setModel(QStringList &completions);
   void setMaxVisibleItems(int maxItems) { maxVisibleItems = maxItems; }
@@ -40,9 +40,9 @@ class QtCompleterWithAdvancedCompletion : public QObject {
   void set_always_show_popup(bool b) { always_show_popup = b; }
 
  protected:
-  bool eventFilter(QObject *o, QEvent *e);
+  bool eventFilter(QObject *o, QEvent *e) override;
 
-signals:
+ signals:
   void activated(const QString &text);
   void deactivated();
 

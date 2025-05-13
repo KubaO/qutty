@@ -67,7 +67,7 @@ class GuiSettingsWindow : public QDialog {
 
  public:
   explicit GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmode = GuiBase::TYPE_LEAF);
-  ~GuiSettingsWindow();
+  ~GuiSettingsWindow() override;
 
   // getter/setter to config in the settings window
   void setConfig(Config *cfg);

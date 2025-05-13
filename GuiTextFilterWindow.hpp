@@ -24,11 +24,10 @@ class GuiTextFilterWindow : public QToolBar {
 
  public:
   explicit GuiTextFilterWindow(GuiMainWindow *p, bool isEditable, QString lbl);
-  virtual ~GuiTextFilterWindow() {}
 
   void init();
 
-  QSize sizeHint() const;
+  QSize sizeHint() const override;
 
  public slots:
   void on_text_completion_activated(QString str);

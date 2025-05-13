@@ -30,10 +30,10 @@ class GuiToolButton : public QToolButton {
   Q_OBJECT
 
  protected:
-  void paintEvent(QPaintEvent *);
+  void paintEvent(QPaintEvent *) override;
 
  public:
-  QSize sizeHint() const;
+  QSize sizeHint() const override;
 };
 
 class GuiMainWindow : public QMainWindow {
@@ -76,10 +76,10 @@ class GuiMainWindow : public QMainWindow {
   QSignalMapper *menuCustomSavedSessionSigMapper;
 
  public:
-  GuiMainWindow(QWidget *parent = 0);
-  ~GuiMainWindow();
+  explicit GuiMainWindow(QWidget *parent = 0);
+  ~GuiMainWindow() override;
   void createNewTab(Config *cfg, GuiBase::SplitType splittype = GuiBase::TYPE_LEAF);
-  void closeEvent(QCloseEvent *event);
+  void closeEvent(QCloseEvent *event) override;
   GuiTerminalWindow *getCurrentTerminal();
   GuiTerminalWindow *getCurrentTerminalInTab(int tabIndex);
 

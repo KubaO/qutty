@@ -24,10 +24,9 @@ class GuiFindToolBar : public QToolBar {
   int currentCol = -1;
   int pageStartPosition = 0;
   QString currentSearchedText;
-  GuiFindToolBar(GuiMainWindow *p);
-  virtual ~GuiFindToolBar() {}
+  explicit GuiFindToolBar(GuiMainWindow *p);
   QString getSearchedText();
-  bool eventFilter(QObject *obj, QEvent *event);
+  bool eventFilter(QObject *obj, QEvent *event) override;
 
  public slots:
   void on_findUp();

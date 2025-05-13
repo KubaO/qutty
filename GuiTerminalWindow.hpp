@@ -82,7 +82,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   uint32_t mru_count = 0;
 
   explicit GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow);
-  virtual ~GuiTerminalWindow();
+  ~GuiTerminalWindow() override;
 
   GuiMainWindow *getMainWindow() { return mainWindow; }
 
@@ -97,8 +97,8 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
 
   void createSplitLayout(GuiBase::SplitType split, GuiTerminalWindow *newTerm);
 
-  void keyPressEvent(QKeyEvent *e);
-  void keyReleaseEvent(QKeyEvent *e);
+  void keyPressEvent(QKeyEvent *e) override;
+  void keyReleaseEvent(QKeyEvent *e) override;
   int from_backend(int is_stderr, const char *data, size_t len);
   void preDrawTerm();
   void drawTerm();
@@ -121,21 +121,23 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   TmuxGateway *tmuxGateway() { return _tmuxGateway; }
 
   void closeTerminal();
-  void reqCloseTerminal(bool userConfirm);
+  void reqCloseTerminal(bool userConfirm) override;
   void highlightSearchedText(QPainter &painter);
   int getFontWidth() { return fontWidth; };
   int getFontHeight() { return fontHeight; };
 
-  QWidget *getWidget() { return this; }
+  QWidget *getWidget() override { return this; }
 
   // Needed functions for drag-drop support
   void dragStartEvent(QMouseEvent *e);
-  void dragEnterEvent(QDragEnterEvent *e);
-  void dragLeaveEvent(QDragLeaveEvent *e);
-  void dragMoveEvent(QDragMoveEvent *e);
-  void dropEvent(QDropEvent *e);
+  void dragEnterEvent(QDragEnterEvent *e) override;
+  void dragLeaveEvent(QDragLeaveEvent *e) override;
+  void dragMoveEvent(QDragMoveEvent *e) override;
+  void dropEvent(QDropEvent *e) override;
 
-  void populateAllTerminals(std::vector<GuiTerminalWindow *> *list) { list->push_back(this); }
+  void populateAllTerminals(std::vector<GuiTerminalWindow *> *list) override {
+    list->push_back(this);
+  }
 
   QString getSessionTitle() { return runtime_title; }
   QString getCustomSessionTitle() { return custom_title; }
@@ -151,15 +153,15 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   }
 
  protected:
-  void paintEvent(QPaintEvent *e);
-  void mouseDoubleClickEvent(QMouseEvent *e);
-  void mouseMoveEvent(QMouseEvent *e);
-  void mousePressEvent(QMouseEvent *e);
-  void mouseReleaseEvent(QMouseEvent *e);
-  void resizeEvent(QResizeEvent *e);
-  bool event(QEvent *event);
-  void focusInEvent(QFocusEvent *e);
-  void focusOutEvent(QFocusEvent *e);
+  void paintEvent(QPaintEvent *e) override;
+  void mouseDoubleClickEvent(QMouseEvent *e) override;
+  void mouseMoveEvent(QMouseEvent *e) override;
+  void mousePressEvent(QMouseEvent *e) override;
+  void mouseReleaseEvent(QMouseEvent *e) override;
+  void resizeEvent(QResizeEvent *e) override;
+  bool event(QEvent *event) override;
+  void focusInEvent(QFocusEvent *e) override;
+  void focusOutEvent(QFocusEvent *e) override;
 
  public slots:
   void readyRead();

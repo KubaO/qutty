@@ -19,20 +19,19 @@ class GuiTabBar : public QTabBar {
 
  public:
   GuiTabBar(GuiTabWidget *t, GuiMainWindow *main);
-  virtual ~GuiTabBar() {}
 
   // Needed functions for drag-drop support
-  void dragEnterEvent(QDragEnterEvent *e);
-  void dragLeaveEvent(QDragLeaveEvent *e);
-  void dragMoveEvent(QDragMoveEvent *e);
-  void dropEvent(QDropEvent *e);
+  void dragEnterEvent(QDragEnterEvent *e) override;
+  void dragLeaveEvent(QDragLeaveEvent *e) override;
+  void dragMoveEvent(QDragMoveEvent *e) override;
+  void dropEvent(QDropEvent *e) override;
 
  protected:
-  void tabInserted(int index) {
+  void tabInserted(int index) override {
     (void)index;
     emit sig_tabInserted();
   }
-  void tabRemoved(int index) {
+  void tabRemoved(int index) override {
     (void)index;
     emit sig_tabRemoved();
   }

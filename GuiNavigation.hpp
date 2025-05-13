@@ -18,15 +18,15 @@ class GuiTabNavigation : public QListWidget {
   GuiMainWindow *mainWindow = nullptr;
 
  public:
-  GuiTabNavigation(GuiMainWindow *p);
+  explicit GuiTabNavigation(GuiMainWindow *p);
 
   void navigateToTab(bool next);
   void acceptNavigation();
 
  protected:
-  void focusOutEvent(QFocusEvent *e);
-  void keyPressEvent(QKeyEvent *e);
-  void keyReleaseEvent(QKeyEvent *e);
+  void focusOutEvent(QFocusEvent *e) override;
+  void keyPressEvent(QKeyEvent *e) override;
+  void keyReleaseEvent(QKeyEvent *e) override;
 };
 
 class GuiPaneNavigation : public QWidget {
@@ -42,8 +42,8 @@ class GuiPaneNavigation : public QWidget {
   void acceptNavigation();
 
  protected:
-  void focusOutEvent(QFocusEvent *e);
-  void keyReleaseEvent(QKeyEvent *e);
+  void focusOutEvent(QFocusEvent *e) override;
+  void keyReleaseEvent(QKeyEvent *e) override;
 };
 
 #endif  // GUINAVIGATION_H

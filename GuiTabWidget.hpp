@@ -20,7 +20,7 @@ class GuiTabWidget : public QTabWidget {
   GuiTabBar *guiTabBar = nullptr;
 
  public:
-  GuiTabWidget(GuiMainWindow *parent);
+  explicit GuiTabWidget(GuiMainWindow *parent);
 
   GuiTabBar *getGuiTabBar() { return guiTabBar; }
 

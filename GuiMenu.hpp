@@ -126,7 +126,7 @@ class GuiToolbarTerminalTop : public QToolBar {
 
  public:
   QToolButton btns[MENU_TERMTOP_MAX_SIZE];
-  GuiToolbarTerminalTop(GuiMainWindow *p);
+  explicit GuiToolbarTerminalTop(GuiMainWindow *p);
   void hideMe();
   void initializeToolbarTerminalTop(GuiMainWindow *p);
   void processMouseMoveTerminalTop(GuiTerminalWindow *term, QMouseEvent *e);

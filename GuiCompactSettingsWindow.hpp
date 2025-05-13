@@ -53,7 +53,7 @@ class GuiCompactSettingsWindow : public QDialog {
 
 class QtHostNameCompleterItemDelegate : public QStyledItemDelegate {
   void paint(QPainter *painter, const QStyleOptionViewItem &option,
-             const QModelIndex &index) const {
+             const QModelIndex &index) const override {
     QStringList split = index.model()->data(index).toString().split('|');
     if (split.length() != 2) return;
 

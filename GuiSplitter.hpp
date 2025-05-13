@@ -18,19 +18,18 @@ class GuiSplitter : public QSplitter, public GuiBase {
  public:
   std::vector<GuiBase *> child;
   GuiSplitter(Qt::Orientation split, GuiSplitter *parentsplit = NULL, int ind = -1);
-  virtual ~GuiSplitter(){};
 
-  QWidget *getWidget() { return this; }
+  QWidget *getWidget() override { return this; }
 
   void addBaseWidget(int ind, GuiBase *base);
   void removeBaseWidget(GuiBase *base);
 
   void createSplitLayout(Qt::Orientation orient, SplitType split, GuiTerminalWindow *oldTerm,
                          GuiTerminalWindow *newTerm);
-  void reqCloseTerminal(bool userRequest);
+  void reqCloseTerminal(bool userRequest) override;
   void removeSplitLayout(GuiTerminalWindow *term);
 
-  void populateAllTerminals(std::vector<GuiTerminalWindow *> *list) {
+  void populateAllTerminals(std::vector<GuiTerminalWindow *> *list) override {
     for (auto it = child.begin(); it != child.end(); it++) (*it)->populateAllTerminals(list);
   }
 
