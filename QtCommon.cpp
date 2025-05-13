@@ -97,7 +97,7 @@ int GuiTerminalWindow::TranslateKey(QKeyEvent *keyevent, char *output) {
     return p - output;
   }
   if ((keyevent->modifiers() & Qt::ControlModifier) && (keyevent->modifiers() & Qt::AltModifier)) {
-    if (keyevent->text().count() >= 1) {
+    if (keyevent->text().size() >= 1) {
       /* Printing values for Ctrl + Alt + some characters
        * for diff keyboard layouts
        */

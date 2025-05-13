@@ -249,7 +249,7 @@ bool QtConfig::restoreConfig() {
   if (!file.open(QFile::ReadOnly | QFile::Text)) {
     QMessageBox::warning(
         NULL, QObject::tr("Qutty Configuration"),
-        QObject::tr("Cannot read file %1:\n%2.").arg(file.fileName()).arg(file.errorString()));
+        QObject::tr("Cannot read file %1:\n%2.").arg(file.fileName(), file.errorString()));
     return false;
   }
   readFromXML(&file);
@@ -312,7 +312,7 @@ bool QtConfig::saveConfig() {
   if (!file.open(QFile::WriteOnly | QFile::Text)) {
     QMessageBox::warning(
         NULL, QObject::tr("Qutty Configuration"),
-        QObject::tr("Cannot write file %1:\n%2.").arg(file.fileName()).arg(file.errorString()));
+        QObject::tr("Cannot write file %1:\n%2.").arg(file.fileName(), file.errorString()));
     return false;
   }
   writeToXML(&file);
@@ -324,7 +324,7 @@ void QtConfig::importFromFile(QFile *file) {
   if (!file->open(QFile::ReadWrite | QFile::Text)) {
     QMessageBox::warning(
         NULL, QObject::tr("Qutty Configuration"),
-        QObject::tr("Cannot read file %1:\n%2.").arg(file->fileName()).arg(file->errorString()));
+        QObject::tr("Cannot read file %1:\n%2.").arg(file->fileName(), file->errorString()));
     return;
   }
 
@@ -337,7 +337,7 @@ void QtConfig::exportToFile(QFile *file) {
   if (!file->open(QFile::WriteOnly | QFile::Text)) {
     QMessageBox::warning(
         NULL, QObject::tr("Qutty Configuration"),
-        QObject::tr("Cannot write file %1:\n%2.").arg(file->fileName()).arg(file->errorString()));
+        QObject::tr("Cannot write file %1:\n%2.").arg(file->fileName(), file->errorString()));
     return;
   }
   writeToXML(file);

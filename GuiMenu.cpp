@@ -273,7 +273,7 @@ void GuiTerminalWindow::showContextMenu(QMouseEvent *e) {
   }
   this->mainWindow->menuCookieTermWnd = this;
   mainWindow->menuGetActionById(id)->setVisible(false);
-  this->mainWindow->menuGetMenuById(MENU_TERM_WINDOW)->exec(e->globalPos());
+  this->mainWindow->menuGetMenuById(MENU_TERM_WINDOW)->exec(e->globalPosition().toPoint());
   mainWindow->menuGetActionById(id)->setVisible(true);
   this->mainWindow->menuCookieTermWnd = NULL;
 }
@@ -449,8 +449,9 @@ void GuiToolbarTerminalTop::hideMe() {
 }
 
 void GuiToolbarTerminalTop::processMouseMoveTerminalTop(GuiTerminalWindow *term, QMouseEvent *e) {
+  QPoint pos = e->pos();
   if ((!term->parentSplit ||
-       (e->y() > totalHeight || (e->x() < term->viewport()->width() - totalWidth))) &&
+       (pos.y() > totalHeight || (pos.x() < term->viewport()->width() - totalWidth))) &&
       !menuVisible)
     return;  // fast return
 
@@ -466,7 +467,7 @@ void GuiToolbarTerminalTop::processMouseMoveTerminalTop(GuiTerminalWindow *term,
     // be sure to remove parent from terminal
     hideMe();
   }
-  bool toShow = (e->x() >= term->viewport()->width() - totalWidth) && (e->y() <= totalHeight);
+  bool toShow = (pos.x() >= term->viewport()->width() - totalWidth) && (pos.y() <= totalHeight);
   if (toShow && !menuVisible) {
     term->getMainWindow()->menuCookieTermWnd = term;
     setParent(term);

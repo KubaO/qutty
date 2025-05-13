@@ -574,7 +574,8 @@ static Mouse_Button translate_button(Config *cfg, Mouse_Button button) {
 }
 
 void GuiTerminalWindow::mouseDoubleClickEvent(QMouseEvent *e) {
-  noise_ultralight(e->x() << 16 | e->y());
+  QPoint pos = e->position().toPoint();
+  noise_ultralight(pos.x() << 16 | pos.y());
   if (!term) return;
 
   if (e->button() == Qt::RightButton &&
@@ -588,7 +589,7 @@ void GuiTerminalWindow::mouseDoubleClickEvent(QMouseEvent *e) {
                                              : MBT_NOTHING;
   // assert(button!=MBT_NOTHING);
   if (button == MBT_NOTHING) return;
-  int x = e->x() / fontWidth, y = e->y() / fontHeight, mod = e->modifiers();
+  int x = pos.x() / fontWidth, y = pos.y() / fontHeight, mod = e->modifiers();
   bcooked = translate_button(&cfg, button);
 
   // detect single/double/triple click
@@ -603,7 +604,8 @@ void GuiTerminalWindow::mouseDoubleClickEvent(QMouseEvent *e) {
 
 //#define (e) e->button()&Qt::LeftButton
 void GuiTerminalWindow::mouseMoveEvent(QMouseEvent *e) {
-  noise_ultralight(e->x() << 16 | e->y());
+  QPoint pos = e->position().toPoint();
+  noise_ultralight(pos.x() << 16 | pos.y());
   if (e->buttons() == Qt::NoButton) {
     mainWindow->toolBarTerminalTop.processMouseMoveTerminalTop(this, e);
     return;
@@ -625,7 +627,7 @@ void GuiTerminalWindow::mouseMoveEvent(QMouseEvent *e) {
                                              : MBT_NOTHING;
   // assert(button!=MBT_NOTHING);
   if (button == MBT_NOTHING) return;
-  int x = e->x() / fontWidth, y = e->y() / fontHeight, mod = e->modifiers();
+  int x = pos.x() / fontWidth, y = pos.y() / fontHeight, mod = e->modifiers();
   bcooked = translate_button(&cfg, button);
   term_mouse(term, button, bcooked, MA_DRAG, x, y, mod & Qt::ShiftModifier,
              mod & Qt::ControlModifier, mod & Qt::AltModifier);
@@ -636,7 +638,8 @@ void GuiTerminalWindow::mouseMoveEvent(QMouseEvent *e) {
 #define CFG_MOUSE_TRIPLE_CLICK_INTERVAL 500
 
 void GuiTerminalWindow::mousePressEvent(QMouseEvent *e) {
-  noise_ultralight(e->x() << 16 | e->y());
+  QPoint pos = e->position().toPoint();
+  noise_ultralight(pos.x() << 16 | pos.y());
   if (!term) return;
 
   if (e->button() == Qt::LeftButton &&
@@ -659,7 +662,7 @@ void GuiTerminalWindow::mousePressEvent(QMouseEvent *e) {
                                              : MBT_NOTHING;
   // assert(button!=MBT_NOTHING);
   if (button == MBT_NOTHING) return;
-  int x = e->x() / fontWidth, y = e->y() / fontHeight, mod = e->modifiers();
+  int x = pos.x() / fontWidth, y = pos.y() / fontHeight, mod = e->modifiers();
   bcooked = translate_button(&cfg, button);
 
   // detect single/double/triple click
@@ -678,7 +681,8 @@ void GuiTerminalWindow::mousePressEvent(QMouseEvent *e) {
 }
 
 void GuiTerminalWindow::mouseReleaseEvent(QMouseEvent *e) {
-  noise_ultralight(e->x() << 16 | e->y());
+  QPoint pos = e->position().toPoint();
+  noise_ultralight(pos.x() << 16 | pos.y());
   if (!term) return;
 
   Mouse_Button button, bcooked;
@@ -688,7 +692,7 @@ void GuiTerminalWindow::mouseReleaseEvent(QMouseEvent *e) {
                                              : MBT_NOTHING;
   // assert(button!=MBT_NOTHING);
   if (button == MBT_NOTHING) return;
-  int x = e->x() / fontWidth, y = e->y() / fontHeight, mod = e->modifiers();
+  int x = pos.x() / fontWidth, y = pos.y() / fontHeight, mod = e->modifiers();
   bcooked = translate_button(&cfg, button);
   term_mouse(term, button, bcooked, MA_RELEASE, x, y, mod & Qt::ShiftModifier,
              mod & Qt::ControlModifier, mod & Qt::AltModifier);

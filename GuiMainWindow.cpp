@@ -52,11 +52,13 @@ GuiMainWindow::GuiMainWindow(QWidget *parent)
   // this removes the frame border of QTabWidget
   tabArea->setDocumentMode(true);
 
+  // clang-format off
   connect(tabArea, SIGNAL(tabCloseRequested(int)), SLOT(tabCloseRequested(int)));
   connect(tabArea, SIGNAL(currentChanged(int)), SLOT(currentChanged(int)));
   connect(tabArea->getGuiTabBar(), SIGNAL(sig_tabInserted()), SLOT(on_tabLayoutChanged()));
   connect(tabArea->getGuiTabBar(), SIGNAL(sig_tabRemoved()), SLOT(on_tabLayoutChanged()));
-  connect(tabArea->getGuiTabBar(), SIGNAL(tabMoved(int, int)), SLOT(on_tabLayoutChanged()));
+  connect(tabArea->getGuiTabBar(), SIGNAL(tabMoved(int,int)), SLOT(on_tabLayoutChanged()));
+  // clang-format on
 
   initializeMenuSystem();
   inittializeDragDropWidget();
@@ -173,9 +175,11 @@ void GuiMainWindow::on_openNewSession(Config cfg, GuiBase::SplitType splittype) 
     return;
   }
   settingsWindow = new GuiSettingsWindow(this, splittype);
-  connect(settingsWindow, SIGNAL(signal_session_open(Config, GuiBase::SplitType)),
-          SLOT(on_createNewSession(Config, GuiBase::SplitType)));
+  // clang-format off
+  connect(settingsWindow, SIGNAL(signal_session_open(Config,GuiBase::SplitType)),
+          SLOT(on_createNewSession(Config,GuiBase::SplitType)));
   connect(settingsWindow, SIGNAL(signal_session_close()), SLOT(on_settingsWindowClose()));
+  // clang-format on
   settingsWindow->loadInitialSettings(cfg);
   settingsWindow->show();
 }
@@ -192,11 +196,13 @@ void GuiMainWindow::on_openNewCompactSession(GuiBase::SplitType splittype) {
     return;
   }
   compactSettingsWindow = new GuiCompactSettingsWindow(this, splittype);
-  connect(compactSettingsWindow, SIGNAL(signal_on_open(Config, GuiBase::SplitType)),
-          SLOT(on_createNewSession(Config, GuiBase::SplitType)));
+  // clang-format off
+  connect(compactSettingsWindow, SIGNAL(signal_on_open(Config,GuiBase::SplitType)),
+          SLOT(on_createNewSession(Config,GuiBase::SplitType)));
   connect(compactSettingsWindow, SIGNAL(signal_on_close()), SLOT(on_settingsWindowClose()));
-  connect(compactSettingsWindow, SIGNAL(signal_on_detail(Config, GuiBase::SplitType)),
-          SLOT(on_openNewSession(Config, GuiBase::SplitType)));
+  connect(compactSettingsWindow, SIGNAL(signal_on_detail(Config,GuiBase::SplitType)),
+          SLOT(on_openNewSession(Config,GuiBase::SplitType)));
+  // clang-format on
   compactSettingsWindow->show();
 }
 
@@ -219,9 +225,11 @@ void GuiMainWindow::on_changeSettingsTab(GuiTerminalWindow *termWnd) {
   assert(terminalList.indexOf(termWnd) != -1);
   settingsWindow = new GuiSettingsWindow(this);
   settingsWindow->enableModeChangeSettings(&termWnd->cfg, termWnd);
-  connect(settingsWindow, SIGNAL(signal_session_change(Config, GuiTerminalWindow *)),
-          SLOT(on_changeSettingsTabComplete(Config, GuiTerminalWindow *)));
+  // clang-format off
+  connect(settingsWindow, SIGNAL(signal_session_change(Config,GuiTerminalWindow*)),
+          SLOT(on_changeSettingsTabComplete(Config,GuiTerminalWindow*)));
   connect(settingsWindow, SIGNAL(signal_session_close()), SLOT(on_settingsWindowClose()));
+  // clang-format on
   settingsWindow->show();
 }
 

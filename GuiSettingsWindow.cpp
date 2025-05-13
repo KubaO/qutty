@@ -147,9 +147,11 @@ GuiSettingsWindow::GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmod
   // resize to minimum needed dimension
   this->resize(0, 0);
 
-  this->connect(ui->l_saved_sess, SIGNAL(sig_hierarchyChanged(QTreeWidgetItem *)),
-                SLOT(slot_sessname_hierarchy_changed(QTreeWidgetItem *)));
+  // clang-format off
+  this->connect(ui->l_saved_sess, SIGNAL(sig_hierarchyChanged(QTreeWidgetItem*)),
+                SLOT(slot_sessname_hierarchy_changed(QTreeWidgetItem*)));
   this->connect(this, SIGNAL(rejected()), SLOT(slot_GuiSettingsWindow_rejected()));
+  // clang-format on
 
   // set focus to hostname/ipaddress
   this->ui->le_hostname->setFocus();

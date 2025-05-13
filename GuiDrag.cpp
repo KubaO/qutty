@@ -88,7 +88,7 @@ GuiBase::SplitType GuiDragDropSite::updateDropMode(const QPoint &pos) {
   if (w) {
     QVariant v = w->property("qutty_GuiDropSite_btn_drop_type");
     GuiBase::SplitType split;
-    if (v.type() == QVariant::Int && (split = (GuiBase::SplitType)(v.toInt())) != drop_mode) {
+    if (v.typeId() == QMetaType::Int && (split = (GuiBase::SplitType)(v.toInt())) != drop_mode) {
       drop_mode = split;
       repaint();
     }
@@ -126,7 +126,7 @@ int GuiDragDropSite::updateDropOnTabBar(const QPoint &pos, GuiTabBar *tab) {
   if (w) {
     QVariant v = w->property("qutty_GuiDropSite_btn_drop_type");
     GuiBase::SplitType split;
-    if (v.type() == QVariant::Int && (split = (GuiBase::SplitType)(v.toInt())) != drop_mode) {
+    if (v.typeId() == QMetaType::Int && (split = (GuiBase::SplitType)(v.toInt())) != drop_mode) {
       drop_mode = split;
       if (drop_mode == GuiBase::TYPE_LEAF) tab->setCurrentIndex(tabind);
       repaint();
@@ -183,7 +183,8 @@ void GuiTerminalWindow::dragMoveEvent(QDragMoveEvent *e) {
     return;
   }
 
-  if (mainWindow->dragDropSite.updateDropMode(e->pos()) == GuiBase::TYPE_NONE) {
+  QPoint pos = e->position().toPoint();
+  if (mainWindow->dragDropSite.updateDropMode(pos) == GuiBase::TYPE_NONE) {
     e->ignore();
     return;
   }
@@ -237,7 +238,8 @@ void GuiTabBar::dragMoveEvent(QDragMoveEvent *e) {
     return;
   }
 
-  if (mainWindow->dragDropSite.updateDropOnTabBar(e->pos(), this) == -1) {
+  QPoint pos = e->position().toPoint();
+  if (mainWindow->dragDropSite.updateDropOnTabBar(pos, this) == -1) {
     e->ignore();
     return;
   }
