@@ -25,10 +25,10 @@ void noise_get_heavy(void (*func) (void *, int))
     HANDLE srch;
     WIN32_FIND_DATA finddata;
     DWORD pid;
-    char winpath[MAX_PATH + 3];
+    WCHAR winpath[MAX_PATH + 3];
 
     GetWindowsDirectory(winpath, sizeof(winpath));
-    strcat(winpath, "\\*");
+    wcscat(winpath, L"\\*");
     srch = FindFirstFile(winpath, &finddata);
     if (srch != INVALID_HANDLE_VALUE) {
 	do {
