@@ -11,10 +11,8 @@
 
 #include "GuiMainWindow.hpp"
 #include "GuiMenu.hpp"
-#include "GuiSettingsWindow.hpp"
 #include "GuiTabBar.hpp"
 #include "GuiTerminalWindow.hpp"
-#include "QtConfig.hpp"
 
 GuiTabWidget::GuiTabWidget(GuiMainWindow *parent)
     : QTabWidget(parent), mainWindow(parent), guiTabBar(new GuiTabBar(this, parent)) {

@@ -2,7 +2,6 @@
 #define QTMRUSESSIONLIST_H
 
 #include <QVector>
-#include <QMap>
 #include <QPair>
 #include <QString>
 

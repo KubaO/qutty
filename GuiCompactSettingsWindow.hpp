@@ -3,14 +3,7 @@
 
 #include <QComboBox>
 #include <QDialog>
-#include <QFile>
-#include <QGridLayout>
-#include <QIODevice>
-#include <QLineEdit>
-#include <QListWidget>
-#include <QMessageBox>
 #include <QPainter>
-#include <QPushButton>
 
 #include "GuiBase.hpp"
 #include "QtComboBoxWithTreeView.hpp"

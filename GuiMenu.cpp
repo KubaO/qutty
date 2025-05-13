@@ -8,6 +8,7 @@
 #include <QFile>
 #include <QInputDialog>
 #include <QMenuBar>
+#include <QMessageBox>
 #include <QMouseEvent>
 #include <QProxyStyle>
 #include <QString>
@@ -19,9 +20,8 @@
 #include "GuiTabBar.hpp"
 #include "GuiTabWidget.hpp"
 #include "GuiTerminalWindow.hpp"
-#include "QtConfig.hpp"
 #include "GuiTextFilterWindow.hpp"
-#include "serialize/QtWebPluginMap.hpp"
+#include "QtConfig.hpp"
 
 using std::make_tuple;
 

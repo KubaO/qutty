@@ -10,7 +10,6 @@
 #include <QKeyEvent>
 #include <QTimer>
 #include <QtNetwork/QTcpSocket>
-// #include <cstdlib>
 extern "C" {
 #include "putty.h"
 }

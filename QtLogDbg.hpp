@@ -7,7 +7,6 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include <iostream>
 #include <fstream>
 
 extern std::ofstream logg;
