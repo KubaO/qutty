@@ -31,7 +31,7 @@ class QtCompleterWithAdvancedCompletion : public QObject {
   explicit QtCompleterWithAdvancedCompletion(QComboBox *cb);
   ~QtCompleterWithAdvancedCompletion() override;
 
-  void setModel(QStringList &completions);
+  void setModel(const QStringList &completions);
   void setMaxVisibleItems(int maxItems) { maxVisibleItems = maxItems; }
   void setFilterMode(FilterMode mode) { filterMode = mode; }
 
@@ -50,8 +50,8 @@ class QtCompleterWithAdvancedCompletion : public QObject {
   void slot_completerComplete(QModelIndex index);
 
  public slots:
-  void completionSearchString(QString str);
-  void setText(QString str);
+  void completionSearchString(const QString &str);
+  void setText(const QString &str);
 };
 
 #endif  // QTCOMPLETERWITHADVANCEDCOMPLETION_H

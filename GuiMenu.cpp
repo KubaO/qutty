@@ -204,7 +204,7 @@ QAction *GuiMainWindow::menuGetActionById(qutty_menu_id_t id) {
   return NULL;
 }
 
-void GuiMainWindow::menuSetShortcutById(qutty_menu_id_t id, QKeySequence key) {
+void GuiMainWindow::menuSetShortcutById(qutty_menu_id_t id, const QKeySequence &key) {
   auto it = std::lower_bound(menuCommonShortcuts.begin(), menuCommonShortcuts.end(),
                              std::make_tuple(id, (QShortcut *)NULL, (QAction *)NULL));
   if (it != menuCommonShortcuts.end() && std::get<0>(*it) == id) {
@@ -295,7 +295,7 @@ void GuiMainWindow::contextMenuSavedSessionTriggered() {
   QString sessname = action->text();
 
   if (qutty_config.config_list.find(sessname) == qutty_config.config_list.end()) return;
-  this->createNewTab(&qutty_config.config_list[sessname]);
+  this->createNewTab(qutty_config.config_list[sessname]);
 }
 
 void GuiMainWindow::contextMenuPaste() {
@@ -310,7 +310,7 @@ void GuiMainWindow::contextMenuDuplicateSessionTriggered() {
   if (!term) term = this->getCurrentTerminal();
   if (terminalList.indexOf(term) == -1) return;
   if (!term->tmuxGateway())
-    this->createNewTab(&term->cfg);
+    this->createNewTab(term->cfg);
   else
     term->tmuxGateway()->sendCommandNewWindowInSession();
 }

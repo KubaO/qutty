@@ -151,12 +151,12 @@ void GuiCompactSettingsWindow::on_cb_session_list_activated(int n) {
   }
 }
 
-void GuiCompactSettingsWindow::on_cb_hostname_activated(QString str) {
+void GuiCompactSettingsWindow::on_cb_hostname_activated(const QString &str) {
   on_hostname_completion_activated(str);
   hostname_completer->popup()->hide();
 }
 
-void GuiCompactSettingsWindow::on_hostname_completion_activated(QString str) {
+void GuiCompactSettingsWindow::on_hostname_completion_activated(const QString &str) {
   QStringList split = str.split('|');
   if (split.length() > 1) {
     hostname_completer->setText(split[0]);

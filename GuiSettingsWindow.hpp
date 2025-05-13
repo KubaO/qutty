@@ -70,16 +70,16 @@ class GuiSettingsWindow : public QDialog {
   ~GuiSettingsWindow() override;
 
   // getter/setter to config in the settings window
-  void setConfig(Config *cfg);
+  void setConfig(const Config &_cfg);
   Config *getConfig();
 
   void loadSessionNames();
-  void loadInitialSettings(Config);
-  void enableModeChangeSettings(Config *cfg, GuiTerminalWindow *termWnd);
+  void loadInitialSettings(const Config &);
+  void enableModeChangeSettings(const Config &cfg, GuiTerminalWindow *termWnd);
 
-signals:
-  void signal_session_open(Config cfg, GuiBase::SplitType splittype);
-  void signal_session_change(Config cfg, GuiTerminalWindow *termWnd);
+ signals:
+  void signal_session_open(const Config &cfg, GuiBase::SplitType splittype);
+  void signal_session_change(const Config &cfg, GuiTerminalWindow *termWnd);
   void signal_session_close();
 
  private slots:

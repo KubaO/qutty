@@ -24,7 +24,7 @@ void QtMRUSessionList::initialize() {
   }
 }
 
-void QtMRUSessionList::insertSession(QString &sessname, QString &hostname) {
+void QtMRUSessionList::insertSession(QStringView sessname, QStringView hostname) {
   QPair<QString, QString> e(sessname, hostname);
   int ind = mru_list.indexOf(e);
   if (ind != -1) mru_list.remove(ind);
@@ -32,7 +32,7 @@ void QtMRUSessionList::insertSession(QString &sessname, QString &hostname) {
   save();
 }
 
-void QtMRUSessionList::deleteSession(QString &sessname) {
+void QtMRUSessionList::deleteSession(QStringView sessname) {
   for (int index = 0; index < mru_list.size(); index++) {
     QPair<QString, QString> tmp = mru_list.value(index);
     if (tmp.first == sessname) {

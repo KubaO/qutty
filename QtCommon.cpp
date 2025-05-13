@@ -486,7 +486,7 @@ size_t tmux_from_backend(void *frontend, int is_stderr, const char *data, int le
   return f->tmuxGateway()->fromBackend(is_stderr, data, len);
 }
 
-void qstring_to_char(char *dst, QString src, int dstlen) {
+void qstring_to_char(char *dst, const QString &src, int dstlen) {
   QByteArray name = src.toUtf8();
   strncpy(dst, name.constData(), dstlen);
 }

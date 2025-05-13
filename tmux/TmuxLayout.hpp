@@ -23,7 +23,7 @@ class TmuxLayout {
   TmuxLayout *parent = nullptr;
 
  public:
-  bool initLayout(std::string layout) {
+  bool initLayout(const std::string &layout) {
     std::istringstream iresp(layout, std::istringstream::in);
     return parseLayout(iresp);
   }

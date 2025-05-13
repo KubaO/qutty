@@ -89,6 +89,6 @@ typedef struct telnet_tag {
   Pinger pinger;
 } * Telnet;
 
-void qstring_to_char(char *dst, QString src, int dstlen);
+void qstring_to_char(char *dst, const QString &src, int dstlen);
 
 #endif  // QTCOMMON_H

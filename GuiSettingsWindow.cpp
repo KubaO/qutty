@@ -173,7 +173,7 @@ void GuiSettingsWindow::on_buttonBox_accepted() {
   } else if (ui->le_hostname->text() == "") {
     QString config_name = ui->l_saved_sess->currentItem()->text(0);
     if (qutty_config.config_list.find(config_name) == qutty_config.config_list.end()) return;
-    setConfig(&qutty_config.config_list[config_name]);
+    setConfig(qutty_config.config_list[config_name]);
   }
   // check for NOT_YET_SUPPORTED configs
   chkUnsupportedConfigs(*getConfig());
@@ -199,10 +199,10 @@ void GuiSettingsWindow::saveConfigChanges() {
   qutty_config.saveConfig();
 }
 
-void GuiSettingsWindow::setConfig(Config *_cfg) {
+void GuiSettingsWindow::setConfig(const Config &_cfg) {
   int ind;
 
-  this->cfg = *_cfg;
+  this->cfg = _cfg;
 
   // update the ui with the given settings
   if (cfg.host[0] != '\0') ui->le_hostname->setText(cfg.host);
@@ -461,7 +461,7 @@ void GuiSettingsWindow::on_l_saved_sess_currentItemChanged(QTreeWidgetItem *curr
   QString config_name;
   config_name = current->data(0, QUTTY_ROLE_FULL_SESSNAME).toString();
   if (qutty_config.config_list.find(config_name) == qutty_config.config_list.end()) return;
-  setConfig(&qutty_config.config_list[config_name]);
+  setConfig(qutty_config.config_list[config_name]);
   ui->le_saved_sess->setText(current->text(0));
 }
 
@@ -493,16 +493,16 @@ void GuiSettingsWindow::on_b_save_sess_clicked() {
   pending_session_changes = true;
 }
 
-void GuiSettingsWindow::loadInitialSettings(Config cfg) {
+void GuiSettingsWindow::loadInitialSettings(const Config &cfg) {
   if (qutty_config.config_list.find(QString(cfg.config_name)) != qutty_config.config_list.end()) {
-    setConfig(&qutty_config.config_list[QString(cfg.config_name)]);
+    setConfig(qutty_config.config_list[QString(cfg.config_name)]);
     vector<string> split = qutty_string_split(string(cfg.config_name), QUTTY_SESSION_NAME_SPLIT);
     string sessname = split.back();
     ui->le_saved_sess->setText(QString::fromStdString(sessname));
   }
 }
 
-void GuiSettingsWindow::enableModeChangeSettings(Config *cfg, GuiTerminalWindow *termWnd) {
+void GuiSettingsWindow::enableModeChangeSettings(const Config &cfg, GuiTerminalWindow *termWnd) {
   isChangeSettingsMode = true;
   this->termWnd = termWnd;
   setConfig(cfg);

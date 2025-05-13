@@ -55,7 +55,7 @@ void QtCompleterWithAdvancedCompletion::init() {
   if (always_show_popup) popuplist->show();
 }
 
-void QtCompleterWithAdvancedCompletion::setModel(QStringList &completions) {
+void QtCompleterWithAdvancedCompletion::setModel(const QStringList &completions) {
   this->completions = completions;
   QComboBox *c = qobject_cast<QComboBox *>(w);
   if (c) c->addItems(completions);
@@ -167,7 +167,7 @@ void QtCompleterWithAdvancedCompletion::slot_completerComplete(QModelIndex index
   popuplist->hide();
 }
 
-void QtCompleterWithAdvancedCompletion::completionSearchString(QString str) {
+void QtCompleterWithAdvancedCompletion::completionSearchString(const QString &str) {
   if (!always_show_popup && (!w || str.isEmpty())) {
     popuplist->hide();
     return;
@@ -213,7 +213,7 @@ void QtCompleterWithAdvancedCompletion::completionSearchString(QString str) {
     popuplist->setCurrentIndex(popuplist->model()->index(0, 0));
 }
 
-void QtCompleterWithAdvancedCompletion::setText(QString str) {
+void QtCompleterWithAdvancedCompletion::setText(const QString &str) {
   is_keypress = false;
   QComboBox *c = qobject_cast<QComboBox *>(w);
   if (c) c->setEditText(str);

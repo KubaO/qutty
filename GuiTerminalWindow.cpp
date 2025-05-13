@@ -81,8 +81,8 @@ int GuiTerminalWindow::initTerminal() {
 
   memset(&ucsdata, 0, sizeof(struct unicode_data));
   init_ucs(&cfg, &ucsdata);
-  setTermFont(&cfg);
-  cfgtopalette(&cfg);
+  setTermFont(cfg);
+  cfgtopalette(cfg);
 
   backend = backend_from_proto(cfg.protocol);
   const char *error =
@@ -166,10 +166,10 @@ int GuiTerminalWindow::restartTerminal() {
   return initTerminal();
 }
 
-int GuiTerminalWindow::reconfigureTerminal(Config *new_cfg) {
+int GuiTerminalWindow::reconfigureTerminal(const Config &new_cfg) {
   Config prev_cfg = this->cfg;
 
-  this->cfg = *new_cfg;
+  this->cfg = new_cfg;
 
   /* Pass new config data to the logging module */
   log_reconfig(term->logctx, &cfg);
@@ -180,7 +180,7 @@ int GuiTerminalWindow::reconfigureTerminal(Config *new_cfg) {
    */
   if (ldisc) ldisc_send(ldisc, NULL, 0, 0);
 
-  cfgtopalette(&cfg);
+  cfgtopalette(cfg);
 
   /* Pass new config data to the terminal */
   term_reconfig(term, &cfg);
@@ -206,7 +206,7 @@ int GuiTerminalWindow::reconfigureTerminal(Config *new_cfg) {
       cfg.resize_action == RESIZE_DISABLED || cfg.resize_action == RESIZE_EITHER ||
       (cfg.resize_action != prev_cfg.resize_action)) {
     init_ucs(&cfg, &ucsdata);
-    setTermFont(&cfg);
+    setTermFont(cfg);
   }
 
   repaint();
@@ -220,8 +220,8 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
 
   memset(&ucsdata, 0, sizeof(struct unicode_data));
   init_ucs(&cfg, &ucsdata);
-  setTermFont(&cfg);
-  cfgtopalette(&cfg);
+  setTermFont(cfg);
+  cfgtopalette(cfg);
 
   term = term_init(&cfg, &ucsdata, this);
   void *logctx = log_init(NULL, &cfg);
@@ -503,14 +503,14 @@ void GuiTerminalWindow::drawText(int row, int col, wchar_t * /*ch*/, int len, un
   termrgn |= QRect(col * fontWidth, row * fontHeight, fontWidth * len, fontHeight);
 }
 
-void GuiTerminalWindow::setTermFont(Config *cfg) {
-  _font.setFamily(cfg->font.name);
-  _font.setPointSize(cfg->font.height);
+void GuiTerminalWindow::setTermFont(const Config &cfg) {
+  _font.setFamily(cfg.font.name);
+  _font.setPointSize(cfg.font.height);
   _font.setStyleHint(QFont::TypeWriter);
 
-  if (cfg->font_quality == FQ_NONANTIALIASED)
+  if (cfg.font_quality == FQ_NONANTIALIASED)
     _font.setStyleStrategy(QFont::NoAntialias);
-  else if (cfg->font_quality == FQ_ANTIALIASED)
+  else if (cfg.font_quality == FQ_ANTIALIASED)
     _font.setStyleStrategy(QFont::PreferAntialias);
   setFont(_font);
 
@@ -520,13 +520,13 @@ void GuiTerminalWindow::setTermFont(Config *cfg) {
   fontAscent = fontMetrics.ascent();
 }
 
-void GuiTerminalWindow::cfgtopalette(Config *cfg) {
+void GuiTerminalWindow::cfgtopalette(const Config &cfg) {
   int i;
   static const int ww[] = {256, 257, 258, 259, 260, 261, 0,  8, 1,  9, 2,
                            10,  3,   11,  4,   12,  5,   13, 6, 14, 7, 15};
 
   for (i = 0; i < 22; i++) {
-    colours[ww[i]] = QColor::fromRgb(cfg->colours[i][0], cfg->colours[i][1], cfg->colours[i][2]);
+    colours[ww[i]] = QColor::fromRgb(cfg.colours[i][0], cfg.colours[i][1], cfg.colours[i][2]);
   }
   for (i = 0; i < NEXTCOLOURS; i++) {
     if (i < 216) {

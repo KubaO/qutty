@@ -23,7 +23,8 @@ class QtMenuActionConfig {
   QString str_data;
   uint32_t int_data;
 
-  QtMenuActionConfig(uint32_t _id, QKeySequence &k, QString n = "", QString s = "", uint32_t i = 0)
+  QtMenuActionConfig(uint32_t _id, const QKeySequence &k, QString n = {}, QString s = {},
+                     uint32_t i = 0)
       : id(_id), shortcut(k), name(n), str_data(s), int_data(i) {}
 };
 

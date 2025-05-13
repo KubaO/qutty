@@ -209,8 +209,8 @@ void GuiPreferencesWindow::slot_keysh_custom_saved_session_shortcut_create() {
   keyshAddCustomSavedSessionToTree(session, opentypeind, QKeySequence());
 }
 
-void GuiPreferencesWindow::keyshAddCustomSavedSessionToTree(QString session, int opentypeind,
-                                                            QKeySequence key) {
+void GuiPreferencesWindow::keyshAddCustomSavedSessionToTree(QStringView session, int opentypeind,
+                                                            const QKeySequence &key) {
   QString opentypestr =
       opentypeind == GuiBase::TYPE_LEAF ? "New Tab" : opentypeind == GuiBase::TYPE_HORIZONTAL
                                                           ? "Horizontal Split"
@@ -220,7 +220,7 @@ void GuiPreferencesWindow::keyshAddCustomSavedSessionToTree(QString session, int
   item->setText(0, "Open '" + session + "' in " + opentypestr);
   item->setToolTip(
       0, "Custom keyboard shortcut to open saved session '" + session + "' in " + opentypestr);
-  item->setData(0, QTreeWidgetItem::UserType, session);
+  item->setData(0, QTreeWidgetItem::UserType, QVariant::fromValue(session));
   item->setData(0, QTreeWidgetItem::UserType + 1, opentypeind);
   item->setText(1, key.toString());
   shkey_root_custom_saved_session->insertChild(shkey_root_custom_saved_session->childCount() - 1,

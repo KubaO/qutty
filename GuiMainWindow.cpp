@@ -74,17 +74,17 @@ GuiMainWindow::~GuiMainWindow() {
   }
 }
 
-void GuiMainWindow::on_createNewSession(Config cfg, GuiBase::SplitType splittype) {
+void GuiMainWindow::on_createNewSession(const Config &cfg, GuiBase::SplitType splittype) {
   // User has selected a session
-  this->createNewTab(&cfg, splittype);
+  this->createNewTab(cfg, splittype);
 }
 
-void GuiMainWindow::createNewTab(Config *cfg, GuiBase::SplitType splittype) {
+void GuiMainWindow::createNewTab(const Config &cfg, GuiBase::SplitType splittype) {
   int rc;
   GuiTerminalWindow *newWnd = new GuiTerminalWindow(tabArea, this);
-  newWnd->cfg = *cfg;
-  auto config_name = QString(cfg->config_name);
-  auto hostname = QString(cfg->host);
+  newWnd->cfg = cfg;
+  auto config_name = QString(cfg.config_name);
+  auto hostname = QString(cfg.host);
 
   if ((rc = newWnd->initTerminal())) goto err_exit;
 
@@ -156,7 +156,7 @@ void GuiMainWindow::tabCloseRequested(int index) {
   }
 }
 
-void GuiMainWindow::on_openNewSession(Config cfg, GuiBase::SplitType splittype) {
+void GuiMainWindow::on_openNewSession(const Config &cfg, GuiBase::SplitType splittype) {
   /*
    * 1. Context menu -> New Tab
    * 2. Main Menu -> New tab
@@ -217,7 +217,7 @@ void GuiMainWindow::on_changeSettingsTab(GuiTerminalWindow *termWnd) {
   }
   assert(terminalList.indexOf(termWnd) != -1);
   settingsWindow = new GuiSettingsWindow(this);
-  settingsWindow->enableModeChangeSettings(&termWnd->cfg, termWnd);
+  settingsWindow->enableModeChangeSettings(termWnd->cfg, termWnd);
   // clang-format off
   connect(settingsWindow, SIGNAL(signal_session_change(Config,GuiTerminalWindow*)),
           SLOT(on_changeSettingsTabComplete(Config,GuiTerminalWindow*)));
@@ -226,10 +226,10 @@ void GuiMainWindow::on_changeSettingsTab(GuiTerminalWindow *termWnd) {
   settingsWindow->show();
 }
 
-void GuiMainWindow::on_changeSettingsTabComplete(Config cfg, GuiTerminalWindow *termWnd) {
+void GuiMainWindow::on_changeSettingsTabComplete(const Config &cfg, GuiTerminalWindow *termWnd) {
   settingsWindow = NULL;
   assert(terminalList.indexOf(termWnd) != -1);
-  termWnd->reconfigureTerminal(&cfg);
+  termWnd->reconfigureTerminal(cfg);
 }
 
 extern "C" Socket get_ssh_socket(void *handle);
@@ -537,7 +537,7 @@ void GuiMainWindow::on_tabLayoutChanged() {
       term->on_sessionTitleChange(true);
     } else if ((split = qobject_cast<GuiSplitter *>(w))) {
       vector<GuiTerminalWindow *> list;
-      split->populateAllTerminals(&list);
+      split->populateAllTerminals(list);
       for (auto it = list.begin(); it - list.end(); ++it) {
         tabIndexMap[*it] = i;
         (*it)->on_sessionTitleChange(true);

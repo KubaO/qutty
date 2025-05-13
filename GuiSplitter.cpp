@@ -163,7 +163,7 @@ GuiTerminalWindow *GuiSplitter::navigatePane(Qt::Key key, GuiTerminalWindow *tof
     vector<GuiTerminalWindow *> list;
     int bestdist = INT_MAX;
     GuiTerminalWindow *bestterm = NULL;
-    split->populateAllTerminals(&list);
+    split->populateAllTerminals(list);
     for (auto it = list.begin(); it != list.end(); ++it) {
       QPoint tmpmidp =
           (*it)->mapToGlobal(QPoint((*it)->width() / 2, (*it)->height() / 2)) - findmidp;

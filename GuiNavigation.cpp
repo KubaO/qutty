@@ -84,7 +84,7 @@ GuiPaneNavigation::GuiPaneNavigation(GuiMainWindow *p, bool is_direction_mode)
   GuiSplitter *base;
   vector<GuiTerminalWindow *> list;
   if (!(base = qobject_cast<GuiSplitter *>(mainWindow->tabArea->currentWidget()))) goto cu0;
-  base->populateAllTerminals(&list);
+  base->populateAllTerminals(list);
   for (auto it = list.begin(); it != list.end(); ++it)
     mrupanemap.insert(std::pair<uint32_t, GuiTerminalWindow *>((*it)->mru_count, (*it)));
 

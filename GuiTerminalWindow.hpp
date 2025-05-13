@@ -93,7 +93,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
    */
   int initTerminal();
   int restartTerminal();
-  int reconfigureTerminal(Config *new_cfg);
+  int reconfigureTerminal(const Config &new_cfg);
 
   void createSplitLayout(GuiBase::SplitType split, GuiTerminalWindow *newTerm);
 
@@ -104,8 +104,8 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void drawTerm();
   void drawText(int row, int col, wchar_t *ch, int len, unsigned long attr, int lattr);
 
-  void setTermFont(Config *cfg);
-  void cfgtopalette(Config *cfg);
+  void setTermFont(const Config &cfg);
+  void cfgtopalette(const Config &cfg);
   void requestPaste();
   void getClip(wchar_t **p, int *len);
   void writeClip(wchar_t *data, int *attr, int len, int must_deselect);
@@ -135,19 +135,19 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void dragMoveEvent(QDragMoveEvent *e) override;
   void dropEvent(QDropEvent *e) override;
 
-  void populateAllTerminals(std::vector<GuiTerminalWindow *> *list) override {
-    list->push_back(this);
+  void populateAllTerminals(std::vector<GuiTerminalWindow *> &list) override {
+    list.push_back(this);
   }
 
-  QString getSessionTitle() { return runtime_title; }
-  QString getCustomSessionTitle() { return custom_title; }
-  void setSessionTitle(QString t) {
+  const QString &getSessionTitle() const { return runtime_title; }
+  const QString &getCustomSessionTitle() const { return custom_title; }
+  void setSessionTitle(const QString &t) {
     if (runtime_title != t) {
       runtime_title = t;
       on_sessionTitleChange();
     }
   }
-  void setCustomSessionTitle(QString t) {
+  void setCustomSessionTitle(const QString &t) {
     custom_title = t;
     on_sessionTitleChange();
   }

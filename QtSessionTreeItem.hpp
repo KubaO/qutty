@@ -23,14 +23,14 @@ class QtSessionTreeItem {
 
   QtSessionTreeItem *parent() { return parentItem; }
 
-  QString getSessionName() const { return sessionName; }
+  const QString &getSessionName() const { return sessionName; }
 
   QString getFullSessionName() const {
     if (parentItem) {
       if (parentItem->parent()) return parentItem->getFullSessionName() + "/" + sessionName;
       return sessionName;
     }
-    return "";
+    return {};
   }
 
  private:

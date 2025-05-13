@@ -3,14 +3,14 @@
 
 using std::map;
 
-QtSessionTreeModel::QtSessionTreeModel(QObject *parent, map<QString, Config> &config_list)
+QtSessionTreeModel::QtSessionTreeModel(QObject *parent,
+                                       const std::map<QString, Config> &config_list)
     : QAbstractItemModel(parent) {
   map<QString, QtSessionTreeItem *> folders;
   rootItem = new QtSessionTreeItem("Session Name", NULL);
   folders[""] = rootItem;
 
-  for (std::map<QString, Config>::iterator it = config_list.begin(); it != config_list.end();
-       it++) {
+  for (auto it = config_list.begin(); it != config_list.end(); it++) {
     QString fullsessname = it->first;
     if (folders.find(fullsessname) != folders.end()) continue;
     if (fullsessname.endsWith(QUTTY_SESSION_NAME_SPLIT)) fullsessname.chop(1);
@@ -45,7 +45,7 @@ int QtSessionTreeModel::columnCount(const QModelIndex &parent) const {
   return 1;  // only 1 column - session_name
 }
 
-QModelIndex QtSessionTreeModel::findIndexForSessionName(QString fullsessname) const {
+QModelIndex QtSessionTreeModel::findIndexForSessionName(const QString &fullsessname) const {
   QStringList dirname = fullsessname.split(QUTTY_SESSION_NAME_SPLIT);
   QModelIndex par;
   QModelIndex ch;

@@ -29,7 +29,7 @@ class GuiSplitter : public QSplitter, public GuiBase {
   void reqCloseTerminal(bool userRequest) override;
   void removeSplitLayout(GuiTerminalWindow *term);
 
-  void populateAllTerminals(std::vector<GuiTerminalWindow *> *list) override {
+  void populateAllTerminals(std::vector<GuiTerminalWindow *> &list) override {
     for (auto it = child.begin(); it != child.end(); it++) (*it)->populateAllTerminals(list);
   }
 

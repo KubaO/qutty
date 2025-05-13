@@ -8,7 +8,7 @@ extern "C" {
 #include "puttysrc/terminal.h"
 }
 
-GuiTextFilterWindow::GuiTextFilterWindow(GuiMainWindow *p, bool isEditable, QString lbl)
+GuiTextFilterWindow::GuiTextFilterWindow(GuiMainWindow *p, bool isEditable, const QString &lbl)
     : QToolBar(p), mainWnd(p), label(lbl), is_editable(isEditable) {
   filter = new QLineEdit();
   addWidget(filter);
@@ -46,14 +46,14 @@ QStringList GuiTextFilterWindow::getCompletions() {
   return completions;
 }
 
-void GuiTextFilterWindow::setCompletions(QString str) {
+void GuiTextFilterWindow::setCompletions(const QString &str) {
   QVariantList varl;
   for (auto &e : str.split("\n")) varl.append(e);
   qutty_web_plugin_map.hash_map[label] = varl;
   qutty_web_plugin_map.save();
 }
 
-void GuiTextFilterWindow::on_text_completion_activated(QString str) {
+void GuiTextFilterWindow::on_text_completion_activated(const QString &str) {
   GuiTerminalWindow *t = mainWnd->getCurrentTerminal();
 
   wchar_t *buf = new wchar_t[str.length() + 1];

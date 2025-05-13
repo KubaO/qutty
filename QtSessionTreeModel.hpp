@@ -10,7 +10,7 @@
 class QtSessionTreeModel : public QAbstractItemModel {
   Q_OBJECT
  public:
-  explicit QtSessionTreeModel(QObject *parent, std::map<QString, Config> &config_list);
+  explicit QtSessionTreeModel(QObject *parent, const std::map<QString, Config> &config_list);
   ~QtSessionTreeModel() override;
 
   QVariant data(const QModelIndex &index, int role) const override;
@@ -22,7 +22,7 @@ class QtSessionTreeModel : public QAbstractItemModel {
   int rowCount(const QModelIndex &parent = QModelIndex()) const override;
   int columnCount(const QModelIndex &parent = QModelIndex()) const override;
 
-  QModelIndex findIndexForSessionName(QString fullsessname) const;
+  QModelIndex findIndexForSessionName(const QString &fullsessname) const;
 
  private:
   QtSessionTreeItem *rootItem = nullptr;

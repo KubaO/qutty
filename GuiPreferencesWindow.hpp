@@ -27,7 +27,8 @@ class GuiPreferencesWindow : public QDialog {
   void addItemToTree(QTreeWidgetItem *par, qutty_menu_id_t menu_index, const char *text = NULL,
                      const char *desc = NULL);
   void keysh_saveShortcutChange(QTreeWidgetItem *item);
-  void keyshAddCustomSavedSessionToTree(QString session, int opentypeind, QKeySequence key);
+  void keyshAddCustomSavedSessionToTree(QStringView session, int opentypeind,
+                                        const QKeySequence &key);
 
  public:
   explicit GuiPreferencesWindow(GuiMainWindow *parent);

@@ -31,17 +31,17 @@ class GuiCompactSettingsWindow : public QDialog {
                                     GuiBase::SplitType openmode = GuiBase::TYPE_LEAF);
 
  signals:
-  void signal_on_open(Config cfg, GuiBase::SplitType splittype);
+  void signal_on_open(const Config &cfg, GuiBase::SplitType splittype);
   void signal_on_close();
-  void signal_on_detail(Config cfg, GuiBase::SplitType splittype);
+  void signal_on_detail(const Config &cfg, GuiBase::SplitType splittype);
 
  public slots:
   void on_open_clicked();
   void on_close_clicked();
   void on_details_clicked();
   void on_cb_session_list_activated(int);
-  void on_cb_hostname_activated(QString);
-  void on_hostname_completion_activated(QString str);
+  void on_cb_hostname_activated(const QString &);
+  void on_hostname_completion_activated(const QString &);
 };
 
 class QtHostNameCompleterItemDelegate : public QStyledItemDelegate {
@@ -52,8 +52,8 @@ class QtHostNameCompleterItemDelegate : public QStyledItemDelegate {
 
     if (option.state & QStyle::State_Selected)
       painter->fillRect(option.rect, option.palette.highlight());
-    QString hostname = split[0];
-    QString sessname = split[1];
+    const QString &hostname = split[0];
+    const QString &sessname = split[1];
     painter->drawText(option.rect, hostname);
     painter->drawText(option.rect, Qt::AlignRight, sessname);
   }

@@ -20,17 +20,17 @@ class GuiTextFilterWindow : public QToolBar {
   bool is_editable = false;
 
   QStringList getCompletions();
-  void setCompletions(QString str);
+  void setCompletions(const QString &str);
 
  public:
-  explicit GuiTextFilterWindow(GuiMainWindow *p, bool isEditable, QString lbl);
+  explicit GuiTextFilterWindow(GuiMainWindow *p, bool isEditable, const QString &lbl);
 
   void init();
 
   QSize sizeHint() const override;
 
  public slots:
-  void on_text_completion_activated(QString str);
+  void on_text_completion_activated(const QString &str);
   void on_deactivated();
   void on_editList();
   void on_saveList();

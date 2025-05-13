@@ -8,8 +8,8 @@
 class QtMRUSessionList {
  public:
   void initialize();
-  void insertSession(QString &sessname, QString &hostname);
-  void deleteSession(QString &sessname);
+  void insertSession(QStringView sessname, QStringView hostname);
+  void deleteSession(QStringView sessname);
   QVector<QPair<QString, QString> > mru_list;
 
  private:
