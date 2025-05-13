@@ -11,8 +11,6 @@
 #include <stdint.h>
 #include <QListWidget>
 
-using namespace std;
-
 class GuiMainWindow;
 class GuiTerminalWindow;
 
@@ -33,7 +31,7 @@ class GuiTabNavigation : public QListWidget {
 
 class GuiPaneNavigation : public QWidget {
   GuiMainWindow *mainWindow;
-  map<uint32_t, GuiTerminalWindow *> mrupanemap;
+  std::map<uint32_t, GuiTerminalWindow *> mrupanemap;
   uint32_t curr_sel;
 
  public:

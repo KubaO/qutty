@@ -8,6 +8,8 @@
 #include "serialize/QtMRUSessionList.h"
 #include <QStringList>
 
+using std::map;
+
 GuiCompactSettingsWindow::GuiCompactSettingsWindow(QWidget *parent, GuiBase::SplitType openmode)
     : QDialog(parent), session_list_model(NULL) {
   setModal(true);

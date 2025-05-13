@@ -15,8 +15,6 @@ extern "C" {
 #include <stddef.h>
 #include <QFile>
 
-using namespace std;
-
 class QtMenuActionConfig {
  public:
   uint32_t id;
@@ -42,9 +40,9 @@ class QtConfig : public QObject {
   Q_OBJECT
 
  public:
-  map<string, string> ssh_host_keys;
-  map<QString, Config> config_list;
-  map<uint32_t, QtMenuActionConfig> menu_action_list;
+  std::map<std::string, std::string> ssh_host_keys;
+  std::map<QString, Config> config_list;
+  std::map<uint32_t, QtMenuActionConfig> menu_action_list;
   qutty_mainwindow_settings_t mainwindow;
 
   QtConfig();
@@ -67,7 +65,7 @@ signals:
 // all global config is here
 extern QtConfig qutty_config;
 
-extern vector<string> qutty_string_split(const string &str, char delim);
+extern std::vector<std::string> qutty_string_split(const std::string &str, char delim);
 
 #define QUTTY_DEFAULT_CONFIG_SETTINGS "Default Settings"
 #define QUTTY_SESSION_NAME_SPLIT '/'

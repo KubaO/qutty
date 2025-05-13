@@ -12,6 +12,8 @@
 #include "GuiMainWindow.h"
 #include "ui_GuiPreferencesWindow.h"
 
+using std::map;
+
 void GuiPreferencesWindow::addItemToTree(QTreeWidgetItem *par, qutty_menu_id_t menu_index,
                                          const char *text, const char *desc) {
   if (!text) text = qutty_menu_actions[menu_index].name;

@@ -18,6 +18,9 @@ extern "C" {
 #include "storage.h"
 }
 
+using std::string;
+using std::map;
+
 QtConfig::QtConfig() {}
 
 int QtConfig::readFromXML(QIODevice *device) {

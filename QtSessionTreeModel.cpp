@@ -1,6 +1,8 @@
 #include "QtSessionTreeModel.h"
 #include "QtConfig.h"
 
+using std::map;
+
 QtSessionTreeModel::QtSessionTreeModel(QObject *parent, map<QString, Config> &config_list)
     : QAbstractItemModel(parent) {
   map<QString, QtSessionTreeItem *> folders;

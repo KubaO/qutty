@@ -71,7 +71,7 @@ class GuiMainWindow : public QMainWindow {
   std::vector<std::pair<GuiSplitter *, GuiTerminalWindow *>> widgetAtIndex;
 
   // members for action/menu support
-  vector<std::tuple<int32_t, QShortcut *, QAction *>> menuCommonShortcuts;
+  std::vector<std::tuple<int32_t, QShortcut *, QAction *>> menuCommonShortcuts;
   QMenu menuCommonMenus[MENU_MAX_MENU];
   QMenu menuSavedSessions;
   QSignalMapper *menuCustomSavedSessionSigMapper;

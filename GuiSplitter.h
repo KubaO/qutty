@@ -16,7 +16,7 @@ class GuiSplitter : public QSplitter, public GuiBase {
   Q_INTERFACES(GuiBase)
 
  public:
-  vector<GuiBase *> child;
+  std::vector<GuiBase *> child;
   GuiSplitter(Qt::Orientation split, GuiSplitter *parentsplit = NULL, int ind = -1);
   virtual ~GuiSplitter(){};
 
@@ -30,7 +30,7 @@ class GuiSplitter : public QSplitter, public GuiBase {
   void reqCloseTerminal(bool userRequest);
   void removeSplitLayout(GuiTerminalWindow *term);
 
-  void populateAllTerminals(vector<GuiTerminalWindow *> *list) {
+  void populateAllTerminals(std::vector<GuiTerminalWindow *> *list) {
     for (auto it = child.begin(); it != child.end(); it++) (*it)->populateAllTerminals(list);
   }
 

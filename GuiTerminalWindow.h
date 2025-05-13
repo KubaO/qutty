@@ -135,7 +135,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void dragMoveEvent(QDragMoveEvent *e);
   void dropEvent(QDropEvent *e);
 
-  void populateAllTerminals(vector<GuiTerminalWindow *> *list) { list->push_back(this); }
+  void populateAllTerminals(std::vector<GuiTerminalWindow *> *list) { list->push_back(this); }
 
   QString getSessionTitle() { return runtime_title; }
   QString getCustomSessionTitle() { return custom_title; }

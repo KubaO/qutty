@@ -6,12 +6,10 @@
 #include "QtSessionTreeItem.h"
 #include "QtConfig.h"
 
-using namespace std;
-
 class QtSessionTreeModel : public QAbstractItemModel {
   Q_OBJECT
  public:
-  explicit QtSessionTreeModel(QObject *parent, map<QString, Config> &config_list);
+  explicit QtSessionTreeModel(QObject *parent, std::map<QString, Config> &config_list);
   ~QtSessionTreeModel();
 
   QVariant data(const QModelIndex &index, int role) const;

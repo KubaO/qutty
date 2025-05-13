@@ -3,6 +3,8 @@
 #include "GuiSettingsWindow.h"
 #include "GuiMainWindow.h"
 
+using std::map;
+
 GuiImportExportFile::GuiImportExportFile(GuiMainWindow *parent, QFile *file, bool isImportMode)
     : QDialog(parent) {
   content = new QListWidget;

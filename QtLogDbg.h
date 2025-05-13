@@ -10,8 +10,6 @@
 #include <iostream>
 #include <fstream>
 
-using namespace std;
-
-extern ofstream logg;
+extern std::ofstream logg;
 
 #endif  // LOG_H
