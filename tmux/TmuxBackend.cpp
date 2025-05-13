@@ -7,8 +7,6 @@ extern "C" {
 #include "tmux/TmuxGateway.h"
 #include "tmux/TmuxWindowPane.h"
 #include "tmux/tmux.h"
-#include "tmux/TmuxWindowPane.h"
-#include "tmux/TmuxGateway.h"
 
 extern "C" {
 typedef struct __tmux_window_pane_t {
