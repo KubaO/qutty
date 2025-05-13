@@ -15,9 +15,9 @@ class QtCompleterWithAdvancedCompletion;
 class GuiCompactSettingsWindow : public QDialog {
   Q_OBJECT
 
-  QtComboBoxWithTreeView *cb_session_list = nullptr;
-  QComboBox *cb_connection_type = nullptr;
-  QComboBox *cb_hostname = nullptr;
+  QtComboBoxWithTreeView cb_session_list;
+  QComboBox cb_connection_type;
+  QComboBox cb_hostname;
   GuiBase::SplitType openMode = {};
   QtCompleterWithAdvancedCompletion *hostname_completer;
 
