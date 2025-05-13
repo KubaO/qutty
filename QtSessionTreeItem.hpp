@@ -5,23 +5,35 @@
 #include <QString>
 
 class QtSessionTreeItem {
- public:
-  explicit QtSessionTreeItem(const QString &sessionName, QtSessionTreeItem *parent)
+  QtSessionTreeItem(const QString &sessionName, QtSessionTreeItem *parent)
       : sessionName(sessionName), parentItem(parent) {}
 
-  ~QtSessionTreeItem() { qDeleteAll(childItems); }
+  friend struct QtPrivate::QGenericArrayOps<QtSessionTreeItem>;
 
-  void appendChild(QtSessionTreeItem *child) { childItems.append(child); }
+ public:
+  explicit QtSessionTreeItem(const QString &sessionName) : sessionName(sessionName) {}
 
-  QtSessionTreeItem *child(int row) { return childItems.value(row); }
+  QtSessionTreeItem &emplaceChild(const QString &name) {
+    return childItems.emplace_back(name, this);
+  }
+
+  const QtSessionTreeItem *child(int row) const { return &childItems.at(row); }
+  QtSessionTreeItem *child(int row) { return &childItems[row]; }
+
   int childCount() const { return childItems.count(); }
 
   int row() const {
-    if (parentItem) return parentItem->childItems.indexOf(const_cast<QtSessionTreeItem *>(this));
-    return 0;
+    if (parentItem) {
+      int i = 0;
+      for (const QtSessionTreeItem &item : std::as_const(parentItem->childItems)) {
+        if (&item == this) return i;
+        i++;
+      }
+    }
+    return 0;  // TODO: shouldn't that be -1?
   }
 
-  QtSessionTreeItem *parent() { return parentItem; }
+  QtSessionTreeItem *parent() const { return parentItem; }
 
   const QString &getSessionName() const { return sessionName; }
 
@@ -34,7 +46,7 @@ class QtSessionTreeItem {
   }
 
  private:
-  QList<QtSessionTreeItem *> childItems;
+  QList<QtSessionTreeItem> childItems;
   QString sessionName;
   QtSessionTreeItem *parentItem = nullptr;
 };

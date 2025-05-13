@@ -11,7 +11,6 @@ class QtSessionTreeModel : public QAbstractItemModel {
   Q_OBJECT
  public:
   explicit QtSessionTreeModel(QObject *parent, const std::map<QString, Config> &config_list);
-  ~QtSessionTreeModel() override;
 
   QVariant data(const QModelIndex &index, int role) const override;
   Qt::ItemFlags flags(const QModelIndex &index) const override;
@@ -25,7 +24,7 @@ class QtSessionTreeModel : public QAbstractItemModel {
   QModelIndex findIndexForSessionName(const QString &fullsessname) const;
 
  private:
-  QtSessionTreeItem *rootItem = nullptr;
+  QtSessionTreeItem rootItem{"Session Name"};
 };
 
 class QtSessionTreeItemDelegate : public QStyledItemDelegate {

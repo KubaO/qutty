@@ -7,8 +7,7 @@ QtSessionTreeModel::QtSessionTreeModel(QObject *parent,
                                        const std::map<QString, Config> &config_list)
     : QAbstractItemModel(parent) {
   map<QString, QtSessionTreeItem *> folders;
-  rootItem = new QtSessionTreeItem("Session Name", NULL);
-  folders[""] = rootItem;
+  folders[""] = &rootItem;
 
   for (auto it = config_list.begin(); it != config_list.end(); it++) {
     QString fullsessname = it->first;
@@ -17,29 +16,25 @@ QtSessionTreeModel::QtSessionTreeModel(QObject *parent,
     QStringList split = fullsessname.split(QUTTY_SESSION_NAME_SPLIT);
     QString sessname = split.back();
     QString dirname = fullsessname.mid(0, fullsessname.lastIndexOf(QUTTY_SESSION_NAME_SPLIT));
-    if (dirname == fullsessname) dirname = "";
+    if (dirname == fullsessname) dirname = {};
     if (folders.find(dirname) == folders.end()) {
-      QtSessionTreeItem *par = rootItem;
+      QtSessionTreeItem *parent = &rootItem;
       QString tmpdir = "";
       for (int i = 0; i < split.size() - 1; i++) {
         tmpdir += split[i];
         if (folders.find(tmpdir) == folders.end()) {
-          QtSessionTreeItem *newitem = new QtSessionTreeItem(split[i], par);
-          par->appendChild(newitem);
-          folders[tmpdir] = newitem;
-          par = newitem;
+          QtSessionTreeItem &newitem = parent->emplaceChild(split[i]);
+          folders[tmpdir] = &newitem;
+          parent = &newitem;
         } else
-          par = folders[tmpdir];
+          parent = folders[tmpdir];
         tmpdir += QUTTY_SESSION_NAME_SPLIT;
       }
     }
-    QtSessionTreeItem *item = new QtSessionTreeItem((sessname), folders[dirname]);
-    folders[dirname]->appendChild(item);
-    folders[fullsessname] = item;
+    QtSessionTreeItem &item = folders[dirname]->emplaceChild(sessname);
+    folders[fullsessname] = &item;
   }
 }
-
-QtSessionTreeModel::~QtSessionTreeModel() { delete rootItem; }
 
 int QtSessionTreeModel::columnCount(const QModelIndex &parent) const {
   return 1;  // only 1 column - session_name
@@ -71,7 +66,7 @@ QModelIndex QtSessionTreeModel::findIndexForSessionName(const QString &fullsessn
 QVariant QtSessionTreeModel::data(const QModelIndex &index, int role) const {
   if (!index.isValid() || role != Qt::DisplayRole) return QVariant();
 
-  QtSessionTreeItem *item = static_cast<QtSessionTreeItem *>(index.internalPointer());
+  const QtSessionTreeItem *item = static_cast<QtSessionTreeItem *>(index.internalPointer());
 
   return item->getFullSessionName();
 }
@@ -83,7 +78,7 @@ Qt::ItemFlags QtSessionTreeModel::flags(const QModelIndex &index) const {
 }
 
 QVariant QtSessionTreeModel::headerData(int section, Qt::Orientation orientation, int role) const {
-  if (orientation == Qt::Horizontal && role == Qt::DisplayRole) return rootItem->getSessionName();
+  if (orientation == Qt::Horizontal && role == Qt::DisplayRole) return rootItem.getSessionName();
 
   return QVariant();
 }
@@ -91,14 +86,14 @@ QVariant QtSessionTreeModel::headerData(int section, Qt::Orientation orientation
 QModelIndex QtSessionTreeModel::index(int row, int column, const QModelIndex &parent) const {
   if (!hasIndex(row, column, parent)) return QModelIndex();
 
-  QtSessionTreeItem *parentItem;
+  const QtSessionTreeItem *parentItem;
 
   if (!parent.isValid())
-    parentItem = rootItem;
+    parentItem = &rootItem;
   else
     parentItem = static_cast<QtSessionTreeItem *>(parent.internalPointer());
 
-  QtSessionTreeItem *childItem = parentItem->child(row);
+  const QtSessionTreeItem *childItem = parentItem->child(row);
   if (childItem)
     return createIndex(row, column, childItem);
   else
@@ -108,20 +103,20 @@ QModelIndex QtSessionTreeModel::index(int row, int column, const QModelIndex &pa
 QModelIndex QtSessionTreeModel::parent(const QModelIndex &index) const {
   if (!index.isValid()) return QModelIndex();
 
-  QtSessionTreeItem *childItem = static_cast<QtSessionTreeItem *>(index.internalPointer());
-  QtSessionTreeItem *parentItem = childItem->parent();
+  const QtSessionTreeItem *childItem = static_cast<QtSessionTreeItem *>(index.internalPointer());
+  const QtSessionTreeItem *parentItem = childItem->parent();
 
-  if (parentItem == rootItem) return QModelIndex();
+  if (parentItem == &rootItem) return QModelIndex();
 
   return createIndex(parentItem->row(), 0, parentItem);
 }
 
 int QtSessionTreeModel::rowCount(const QModelIndex &parent) const {
-  QtSessionTreeItem *parentItem;
+  const QtSessionTreeItem *parentItem;
   if (parent.column() > 0) return 0;
 
   if (!parent.isValid())
-    parentItem = rootItem;
+    parentItem = &rootItem;
   else
     parentItem = static_cast<QtSessionTreeItem *>(parent.internalPointer());
 
