@@ -26,11 +26,11 @@ class TmuxWindowPane : public TmuxCmdRespReceiver {
   bool ready;
 
   TmuxWindowPane(TmuxGateway *gateway, GuiTerminalWindow *termwnd);
-  virtual ~TmuxWindowPane();
+  ~TmuxWindowPane() override;
 
   TmuxGateway *gateway() { return _gateway; }
   GuiTerminalWindow *termWnd() { return _termWnd; }
-  int performCallback(tmux_cb_index_t index, std::string &response);
+  int performCallback(tmux_cb_index_t index, std::string &response) override;
 
   int resp_hdlr_dump_term_state(std::string &response);
   int resp_hdlr_dump_history(std::string &response, bool is_alt = false);

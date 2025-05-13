@@ -43,6 +43,7 @@ extern const char *get_tmux_cb_index_str(tmux_cb_index_t index);
 class TmuxCmdRespReceiver {
  public:
   virtual int performCallback(tmux_cb_index_t index, std::string &response) = 0;
+  virtual ~TmuxCmdRespReceiver() {}
 };
 
 class TmuxCmdResp {
@@ -82,8 +83,8 @@ class TmuxGateway : public TmuxCmdRespReceiver {
 
  public:
   TmuxGateway(GuiTerminalWindow *termWindow);
-  virtual ~TmuxGateway();
-  int performCallback(tmux_cb_index_t index, std::string &response);
+  ~TmuxGateway() override;
+  int performCallback(tmux_cb_index_t index, std::string &response) override;
   size_t fromBackend(int is_stderr, const char *data, size_t len);
   int parseCommand(const char *command, size_t len);
   int openWindowsInitial();
