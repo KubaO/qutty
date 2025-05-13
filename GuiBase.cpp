@@ -5,5 +5,3 @@
  */
 
 #include "GuiBase.hpp"
-
-GuiBase::GuiBase() : parentSplit(NULL) {}

@@ -14,15 +14,15 @@ class QtCompleterWithAdvancedCompletion : public QObject {
   enum FilterMode { StartsWith, Contains, ContainsWord };
 
  private:
-  QWidget *w;
-  QListView *popuplist;
+  QWidget *w = nullptr;
+  QListView *popuplist = nullptr;
   QStringList completions;
-  QStringListModel *model;
-  int maxVisibleItems;
-  int noItemsShown;
-  FilterMode filterMode;
-  bool is_keypress;
-  bool always_show_popup;
+  QStringListModel *model = nullptr;
+  int maxVisibleItems = 10;
+  int noItemsShown = 0;
+  FilterMode filterMode = QtCompleterWithAdvancedCompletion::ContainsWord;
+  bool is_keypress = false;
+  bool always_show_popup = false;
 
   void init();
 

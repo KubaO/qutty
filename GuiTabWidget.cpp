@@ -32,7 +32,7 @@ void GuiTabWidget::showContextMenu(const QPoint &point) {
   // handling only right-click on tabbar
   if (point.isNull()) return;
 
-  GuiTerminalWindow *termWindow;
+  GuiTerminalWindow *termWindow = nullptr;
   int menuTabIndex;
   if (((menuTabIndex = tabBar()->tabAt(point)) == -1) ||
       (!(termWindow = this->mainWindow->getCurrentTerminalInTab(menuTabIndex))))

@@ -16,12 +16,7 @@
 
 void GuiMainWindow::inittializeDragDropWidget() { dragDropSite.hide(); }
 
-GuiDragDropSite::GuiDragDropSite(QWidget *parent)
-    : QWidget(parent),
-      layout(this),
-      drop_loc(GuiDragDropSite::DRAG_DROP_NONE),
-      tabind(-1),
-      drop_mode(GuiBase::TYPE_NONE) {
+GuiDragDropSite::GuiDragDropSite(QWidget *parent) : QWidget(parent), layout(this) {
   setAttribute(Qt::WA_TransparentForMouseEvents);
   btn[GuiBase::TYPE_UP].setText(QString::fromUtf8("\xe2\x96\xb2"));
   layout.addWidget(&btn[GuiBase::TYPE_UP], 1, 2);

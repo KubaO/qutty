@@ -21,7 +21,7 @@
 class QtComboBoxWithTreeView : public QComboBox {
   Q_OBJECT
  public:
-  explicit QtComboBoxWithTreeView(QWidget* parent = 0) : QComboBox(parent), skipNextHide(false) {
+  explicit QtComboBoxWithTreeView(QWidget* parent = 0) : QComboBox(parent) {
     QTreeView* view = new QTreeView(this);
     view->setHeaderHidden(true);
     setView(view);
@@ -55,7 +55,7 @@ class QtComboBoxWithTreeView : public QComboBox {
   }
 
  private:
-  bool skipNextHide;
+  bool skipNextHide = false;
 };
 
 #endif  // QTCOMBOBOXWITHTREEVIEW_H

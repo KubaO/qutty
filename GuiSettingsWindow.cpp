@@ -47,13 +47,7 @@ vector<string> qutty_string_split(const string &str, char delim) {
 }
 
 GuiSettingsWindow::GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmode)
-    : QDialog(parent),
-      openMode(openmode),
-      ui(new Ui::GuiSettingsWindow),
-      pending_session_changes(false) {
-  memset(&this->cfg, 0, sizeof(Config));
-  isChangeSettingsMode = false;
-
+    : QDialog(parent), openMode(openmode), ui(new Ui::GuiSettingsWindow) {
   ui->setupUi(this);
   ui->stackedWidget->setCurrentIndex(0);
   ui->treeWidget->topLevelItem(0)->setData(0, Qt::UserRole, GUI_PAGE_SESSION);

@@ -40,28 +40,28 @@ class GuiMainWindow : public QMainWindow {
   Q_OBJECT
 
  public:
-  GuiTerminalWindow *menuCookieTermWnd;
+  GuiTerminalWindow *menuCookieTermWnd = nullptr;
   GuiToolbarTerminalTop toolBarTerminalTop;  // top-right of terminal in split-mode
 
   // members for drag-drop support
   GuiDragDropSite dragDropSite;
 
   // find window
-  GuiFindToolBar *findToolBar;
+  GuiFindToolBar *findToolBar = nullptr;
 
   // tab order-of-usage navigation window
-  uint32_t mru_count_last;
-  GuiTabNavigation *tabNavigate;
-  GuiPaneNavigation *paneNavigate;
+  uint32_t mru_count_last = 0;
+  GuiTabNavigation *tabNavigate = nullptr;
+  GuiPaneNavigation *paneNavigate = nullptr;
 
-  GuiTabWidget *tabArea;
+  GuiTabWidget *tabArea = nullptr;
 
   // text filter window.
-  GuiTextFilterWindow *textFilterWnd;
+  GuiTextFilterWindow *textFilterWnd = nullptr;
 
  private:
-  GuiCompactSettingsWindow *compactSettingsWindow;
-  GuiSettingsWindow *settingsWindow;
+  GuiCompactSettingsWindow *compactSettingsWindow = nullptr;
+  GuiSettingsWindow *settingsWindow = nullptr;
   QList<GuiTerminalWindow *> terminalList;
   GuiToolButton newTabToolButton;  // shown in top right corner of tabbar
 

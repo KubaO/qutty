@@ -36,7 +36,7 @@ class QtSessionTreeItem {
  private:
   QList<QtSessionTreeItem *> childItems;
   QString sessionName;
-  QtSessionTreeItem *parentItem;
+  QtSessionTreeItem *parentItem = nullptr;
 };
 
 #endif  // QTSESSIONTREEITEM_H

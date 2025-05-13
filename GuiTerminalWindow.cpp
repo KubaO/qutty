@@ -24,12 +24,7 @@ extern "C" {
 }
 
 GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow)
-    : QAbstractScrollArea(parent),
-      clipboard_contents(NULL),
-      clipboard_length(0),
-      runtime_title(""),
-      custom_title(""),
-      mru_count(0) {
+    : QAbstractScrollArea(parent) {
   this->mainWindow = mainWindow;
 
   setFrameShape(QFrame::NoFrame);
@@ -43,23 +38,10 @@ GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow)
   connect(verticalScrollBar(), SIGNAL(valueChanged(int)), this, SLOT(vertScrollBarMoved(int)));
 
   setFocusPolicy(Qt::StrongFocus);
-  _any_update = false;
-
-  termrgn = QRegion();
-  term = NULL;
-  ldisc = NULL;
-  backend = NULL;
-  backhandle = NULL;
-  qtsock = NULL;
-  userClosingTab = false;
-  isSockDisconnected = false;
 
   mouseButtonAction = MA_NOTHING;
   setMouseTracking(true);
   viewport()->setCursor(Qt::IBeamCursor);
-
-  _tmuxMode = TMUX_MODE_NONE;
-  _tmuxGateway = NULL;
 
   // enable drag-drop
   setAcceptDrops(true);

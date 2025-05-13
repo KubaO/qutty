@@ -21,18 +21,18 @@ class GuiDragDropSite : public QWidget {
 
  private:
   QGridLayout layout;
-  GuiDragDropLocation drop_loc;
-  int tabind;
+  GuiDragDropLocation drop_loc = GuiDragDropSite::DRAG_DROP_NONE;
+  int tabind = -1;
   QToolButton btn[5];
 
  public:
-  GuiBase::SplitType drop_mode;
+  GuiBase::SplitType drop_mode = GuiBase::TYPE_NONE;
 
-  GuiDragDropSite(QWidget *parent = NULL);
+  explicit GuiDragDropSite(QWidget *parent = nullptr);
   GuiBase::SplitType updateDropMode(const QPoint &pos);
   int updateDropOnTabBar(const QPoint &pos, GuiTabBar *tab);
   void clearDropMode();
-  void paintEvent(QPaintEvent *e);
+  void paintEvent(QPaintEvent *e) override;
 
   GuiBase::SplitType get_drop_mode() { return drop_mode; }
   int get_tabind() { return tabind; }

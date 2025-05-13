@@ -100,14 +100,14 @@ enum qutty_menu_id_t {
 #define MENU_MAX_MENU (MENU_ID_LAST - MENU_SEPARATOR - 1)
 
 struct qutty_menu_actions_t {
-  const char *name;
+  const char *name = nullptr;
   const char *key = nullptr;
   const char *slot = nullptr;
   const char *tooltip = nullptr;
 };
 
 struct qutty_menu_links_t {
-  const char *name;
+  const char *name = nullptr;
   int len;
   qutty_menu_id_t links[20];
 };
@@ -119,10 +119,10 @@ class GuiToolbarTerminalTop : public QToolBar {
   Q_OBJECT
 
   enum { MENU_TERMTOP_MENU, MENU_TERMTOP_MOVE, MENU_TERMTOP_CLOSE, MENU_TERMTOP_MAX_SIZE };
-  bool menuVisible;
-  bool initSizes;
-  int totalWidth;
-  int totalHeight;
+  bool menuVisible = false;
+  bool initSizes = false;
+  int totalWidth = INT_MAX;
+  int totalHeight = INT_MAX;
 
  public:
   QToolButton btns[MENU_TERMTOP_MAX_SIZE];

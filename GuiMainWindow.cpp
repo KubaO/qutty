@@ -34,17 +34,8 @@ using std::vector;
 
 GuiMainWindow::GuiMainWindow(QWidget *parent)
     : QMainWindow(parent),
-      menuCookieTermWnd(NULL),
       toolBarTerminalTop(this),
-      dragDropSite(),
-      findToolBar(NULL),
-      mru_count_last(0),
-      tabNavigate(NULL),
-      paneNavigate(NULL),
       tabArea(new GuiTabWidget(this)),
-      textFilterWnd(NULL),
-      compactSettingsWindow(NULL),
-      settingsWindow(NULL),
       newTabToolButton() {
   setWindowTitle(APPNAME);
 

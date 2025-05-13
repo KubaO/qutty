@@ -23,7 +23,7 @@ class QtSessionTreeModel : public QAbstractItemModel {
   QModelIndex findIndexForSessionName(QString fullsessname) const;
 
  private:
-  QtSessionTreeItem *rootItem;
+  QtSessionTreeItem *rootItem = nullptr;
 };
 
 class QtSessionTreeItemDelegate : public QStyledItemDelegate {

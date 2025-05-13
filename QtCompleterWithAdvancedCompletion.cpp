@@ -14,14 +14,7 @@
  */
 
 QtCompleterWithAdvancedCompletion::QtCompleterWithAdvancedCompletion(QLineEdit *le)
-    : QObject(le),
-      popuplist(new QListView),
-      w(le),
-      model(new QStringListModel),
-      maxVisibleItems(10),
-      noItemsShown(0),
-      filterMode(QtCompleterWithAdvancedCompletion::ContainsWord),
-      always_show_popup(false) {
+    : QObject(le), popuplist(new QListView), w(le), model(new QStringListModel) {
   init();
 
   connect(popuplist, SIGNAL(clicked(QModelIndex)), this, SLOT(slot_completerComplete(QModelIndex)));
@@ -30,14 +23,7 @@ QtCompleterWithAdvancedCompletion::QtCompleterWithAdvancedCompletion(QLineEdit *
 }
 
 QtCompleterWithAdvancedCompletion::QtCompleterWithAdvancedCompletion(QComboBox *cb)
-    : QObject(cb),
-      popuplist(new QListView),
-      w(cb),
-      model(new QStringListModel),
-      maxVisibleItems(10),
-      noItemsShown(0),
-      filterMode(QtCompleterWithAdvancedCompletion::ContainsWord),
-      always_show_popup(false) {
+    : QObject(cb), popuplist(new QListView), w(cb), model(new QStringListModel) {
   init();
 
   cb->setEditable(true);

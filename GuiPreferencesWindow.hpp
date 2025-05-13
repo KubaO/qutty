@@ -15,13 +15,13 @@ class GuiPreferencesWindow;
 class GuiPreferencesWindow : public QDialog {
   Q_OBJECT
 
-  GuiMainWindow *mainWindow;
+  GuiMainWindow *mainWindow = nullptr;
 
   /****** Members for Keyboard Shortcuts Tab *********************/
-  int shkey_entered[4];
-  int shkey_len;
-  bool shkey_changed;
-  QTreeWidgetItem *shkey_root_custom_saved_session;
+  int shkey_entered[4] = {};
+  int shkey_len = 0;
+  bool shkey_changed = false;
+  QTreeWidgetItem *shkey_root_custom_saved_session = nullptr;
   /***************************************************************/
 
   void addItemToTree(QTreeWidgetItem *par, qutty_menu_id_t menu_index, const char *text = NULL,

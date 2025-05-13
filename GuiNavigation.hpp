@@ -15,7 +15,7 @@ class GuiMainWindow;
 class GuiTerminalWindow;
 
 class GuiTabNavigation : public QListWidget {
-  GuiMainWindow *mainWindow;
+  GuiMainWindow *mainWindow = nullptr;
 
  public:
   GuiTabNavigation(GuiMainWindow *p);
@@ -30,9 +30,9 @@ class GuiTabNavigation : public QListWidget {
 };
 
 class GuiPaneNavigation : public QWidget {
-  GuiMainWindow *mainWindow;
+  GuiMainWindow *mainWindow = nullptr;
   std::map<uint32_t, GuiTerminalWindow *> mrupanemap;
-  uint32_t curr_sel;
+  uint32_t curr_sel = -1;
 
  public:
   GuiPaneNavigation(GuiMainWindow *p, bool is_direction_mode = false);

@@ -25,9 +25,8 @@ class GuiBase {
     TYPE_HORIZONTAL = TYPE_DOWN,
     TYPE_VERTICAL = TYPE_RIGHT
   };
-  GuiSplitter *parentSplit;
+  GuiSplitter *parentSplit = nullptr;
 
-  GuiBase();
   virtual ~GuiBase() {};
   virtual void reqCloseTerminal(bool userRequest) = 0;
   virtual QWidget *getWidget() = 0;

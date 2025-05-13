@@ -15,7 +15,7 @@ class GuiMainWindow;
 class GuiTabBar : public QTabBar {
   Q_OBJECT
 
-  GuiMainWindow *mainWindow;
+  GuiMainWindow *mainWindow = nullptr;
 
  public:
   GuiTabBar(GuiTabWidget *t, GuiMainWindow *main);

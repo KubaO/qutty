@@ -8,7 +8,6 @@
 
 class QtMRUSessionList {
  public:
-  QtMRUSessionList() {}
   void initialize();
   void insertSession(QString &sessname, QString &hostname);
   void deleteSession(QString &sessname);

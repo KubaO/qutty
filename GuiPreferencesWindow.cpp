@@ -28,13 +28,9 @@ void GuiPreferencesWindow::addItemToTree(QTreeWidgetItem *par, qutty_menu_id_t m
 GuiPreferencesWindow::GuiPreferencesWindow(GuiMainWindow *parent)
     : QDialog(parent),
       mainWindow(parent),
-      shkey_len(0),
-      shkey_changed(false),
       ui(new Ui::GuiPreferencesWindow) {
   QTreeWidget *tree;
   QTreeWidgetItem *item;
-
-  memset(shkey_entered, 0, sizeof(shkey_entered));
 
   ui->setupUi(this);
 

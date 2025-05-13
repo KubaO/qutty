@@ -59,10 +59,11 @@ class GuiSettingsWindow : public QDialog {
   } gui_loglevel_t;
 
   // config that is loaded onto the settings window
-  Config cfg;
-  bool isChangeSettingsMode;
-  GuiTerminalWindow *termWnd;  // terminal for which 'change settings' happens
-  GuiBase::SplitType openMode;
+  Config cfg = {};
+  bool isChangeSettingsMode = false;
+  GuiTerminalWindow *termWnd = nullptr;  // terminal for which 'change settings' happens
+  GuiBase::SplitType openMode = {};
+  bool pending_session_changes = false;
 
  public:
   explicit GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmode = GuiBase::TYPE_LEAF);
@@ -120,8 +121,6 @@ signals:
 
  private:
   Ui::GuiSettingsWindow *ui;
-
-  bool pending_session_changes;
 
   void saveConfigChanges();
 };

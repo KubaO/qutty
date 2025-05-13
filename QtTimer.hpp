@@ -11,12 +11,10 @@ extern "C" {
 class QtTimer : public QObject {
   Q_OBJECT
 
-  int timerId;
-  long nextTick;
+  int timerId = -1;
+  long nextTick = 0;
 
  public:
-  QtTimer() { timerId = -1; }
-
   void startTimerForTick(long nextTick) {
     long ticks = nextTick - GETTICKCOUNT();
     if (ticks <= 0) ticks = 1; /* just in case */

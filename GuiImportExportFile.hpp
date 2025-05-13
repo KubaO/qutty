@@ -15,8 +15,8 @@ class GuiMainWindow;
 class GuiImportExportFile : public QDialog {
   Q_OBJECT
  private:
-  QListWidget *content;
-  QtConfig config;
+  QListWidget *content = nullptr;
+  QtConfig config = {};
 
   void setSessions(void);
   void getSessionsFromQutty(void);

@@ -16,12 +16,7 @@ extern "C" {
 
 GuiFindToolBar::GuiFindToolBar(GuiMainWindow *p) : QToolBar(p), mainWnd(p) {
   searchedText = new QLineEdit();
-  findTextFlag = false;
-  currentRow = -1;
-  currentCol = -1;
-  pageStartPosition = 0;
-  QToolButton *b;
-  currentSearchedText = "";
+  QToolButton *b = nullptr;
   addWidget(searchedText);
 
   searchedText->installEventFilter(this);

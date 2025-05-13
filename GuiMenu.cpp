@@ -414,8 +414,7 @@ void GuiMainWindow::contextMenuTermTopDragPaneTriggered() {
   term->dragStartEvent(NULL);
 }
 
-GuiToolbarTerminalTop::GuiToolbarTerminalTop(GuiMainWindow *p)
-    : QToolBar(p), menuVisible(false), initSizes(false) {}
+GuiToolbarTerminalTop::GuiToolbarTerminalTop(GuiMainWindow *p) : QToolBar(p) {}
 
 void GuiToolbarTerminalTop::initializeToolbarTerminalTop(GuiMainWindow *p) {
   btns[MENU_TERMTOP_MENU].setIcon(QIcon(":/images/cog_alt_16x16.png"));

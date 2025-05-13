@@ -20,8 +20,6 @@ extern "C" {
 using std::string;
 using std::map;
 
-QtConfig::QtConfig() {}
-
 int QtConfig::readFromXML(QIODevice *device) {
   QXmlStreamReader xml;
   int i;

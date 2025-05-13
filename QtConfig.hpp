@@ -45,8 +45,6 @@ class QtConfig : public QObject {
   std::map<uint32_t, QtMenuActionConfig> menu_action_list;
   qutty_mainwindow_settings_t mainwindow;
 
-  QtConfig();
-
   bool restoreConfig();
   bool saveConfig();
   void importFromFile(QFile *);

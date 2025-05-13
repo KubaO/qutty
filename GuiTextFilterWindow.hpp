@@ -11,13 +11,13 @@
 class GuiTextFilterWindow : public QToolBar {
   Q_OBJECT
 
-  GuiMainWindow *mainWnd;
-  QLineEdit *filter;
-  QtCompleterWithAdvancedCompletion *completer;
-  QToolButton *edit, *save;
-  QPlainTextEdit *editor;
+  GuiMainWindow *mainWnd = nullptr;
+  QLineEdit *filter = nullptr;
+  QtCompleterWithAdvancedCompletion *completer = nullptr;
+  QToolButton *edit = nullptr, *save = nullptr;
+  QPlainTextEdit *editor = nullptr;
   QString label;
-  bool is_editable;
+  bool is_editable = false;
 
   QStringList getCompletions();
   void setCompletions(QString str);

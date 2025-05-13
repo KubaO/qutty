@@ -80,7 +80,7 @@ void GuiTabNavigation::keyReleaseEvent(QKeyEvent *e) {
 }
 
 GuiPaneNavigation::GuiPaneNavigation(GuiMainWindow *p, bool is_direction_mode)
-    : QWidget(p), mainWindow(p), curr_sel(-1) {
+    : QWidget(p), mainWindow(p) {
   GuiSplitter *base;
   vector<GuiTerminalWindow *> list;
   if (!(base = qobject_cast<GuiSplitter *>(mainWindow->tabArea->currentWidget()))) goto cu0;

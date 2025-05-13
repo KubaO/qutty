@@ -15,14 +15,14 @@ class GuiMainWindow;
 class GuiFindToolBar : public QToolBar {
   Q_OBJECT
 
-  GuiMainWindow *mainWnd;
-  QLineEdit *searchedText;
+  GuiMainWindow *mainWnd = nullptr;
+  QLineEdit *searchedText = nullptr;
 
  public:
-  bool findTextFlag;
-  int currentRow;
-  int currentCol;
-  int pageStartPosition;
+  bool findTextFlag = false;
+  int currentRow = -1;
+  int currentCol = -1;
+  int pageStartPosition = 0;
   QString currentSearchedText;
   GuiFindToolBar(GuiMainWindow *p);
   virtual ~GuiFindToolBar() {}

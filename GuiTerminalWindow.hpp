@@ -35,18 +35,18 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   Q_INTERFACES(GuiBase)
 
  private:
-  enum tmux_mode_t _tmuxMode;
-  TmuxGateway *_tmuxGateway;
-  GuiMainWindow *mainWindow;
+  enum tmux_mode_t _tmuxMode = TMUX_MODE_NONE;
+  TmuxGateway *_tmuxGateway = nullptr;
+  GuiMainWindow *mainWindow = nullptr;
 
   void showContextMenu(QMouseEvent *e);
 
   QFont _font;
   int fontWidth, fontHeight, fontAscent;
-  struct unicode_data ucsdata;
-  Actual_Socket as;
-  QTcpSocket *qtsock;
-  bool _any_update;
+  struct unicode_data ucsdata = {};
+  Actual_Socket as = nullptr;
+  QTcpSocket *qtsock = nullptr;
+  bool _any_update = false;
   QRegion termrgn;
   QColor colours[NALLCOLOURS];
 
@@ -60,8 +60,8 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   QPoint dragStartPos;
 
   // support for clipboard paste
-  wchar_t *clipboard_contents;
-  int clipboard_length;
+  wchar_t *clipboard_contents = nullptr;
+  int clipboard_length = 0;
 
   // session title
   QString runtime_title;  // given by terminal/shell
@@ -69,17 +69,17 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   QString temp_title;
 
  public:
-  Config cfg;
-  Terminal *term;
-  Backend *backend;
-  void *backhandle;
-  void *ldisc;
+  Config cfg = {};
+  Terminal *term = nullptr;
+  Backend *backend = nullptr;
+  void *backhandle = nullptr;
+  void *ldisc = nullptr;
 
-  bool userClosingTab;
-  bool isSockDisconnected;
+  bool userClosingTab = false;
+  bool isSockDisconnected = false;
 
   // order-of-usage
-  uint32_t mru_count;
+  uint32_t mru_count = 0;
 
   explicit GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow);
   virtual ~GuiTerminalWindow();

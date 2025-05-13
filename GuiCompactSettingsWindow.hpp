@@ -22,13 +22,13 @@ class QtCompleterWithAdvancedCompletion;
 class GuiCompactSettingsWindow : public QDialog {
   Q_OBJECT
 
-  QtComboBoxWithTreeView *cb_session_list;
-  QComboBox *cb_connection_type;
-  QComboBox *cb_hostname;
-  GuiBase::SplitType openMode;
+  QtComboBoxWithTreeView *cb_session_list = nullptr;
+  QComboBox *cb_connection_type = nullptr;
+  QComboBox *cb_hostname = nullptr;
+  GuiBase::SplitType openMode = {};
   QtCompleterWithAdvancedCompletion *hostname_completer;
 
-  QtSessionTreeModel *session_list_model;
+  QtSessionTreeModel *session_list_model = nullptr;
 
   void setConnectionType(int conntype);
   int getConnectionType();
@@ -37,7 +37,7 @@ class GuiCompactSettingsWindow : public QDialog {
   explicit GuiCompactSettingsWindow(QWidget *parent,
                                     GuiBase::SplitType openmode = GuiBase::TYPE_LEAF);
 
-signals:
+ signals:
   void signal_on_open(Config cfg, GuiBase::SplitType splittype);
   void signal_on_close();
   void signal_on_detail(Config cfg, GuiBase::SplitType splittype);

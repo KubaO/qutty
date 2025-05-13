@@ -26,14 +26,9 @@ GuiTextFilterWindow::GuiTextFilterWindow(GuiMainWindow *p, bool isEditable, QStr
     edit->setText("Edit");
     connect(edit, SIGNAL(clicked()), this, SLOT(on_editList()));
     addWidget(edit);
-  } else {
-    edit = NULL;
   }
 
   filter->setFocus();
-
-  editor = NULL;
-  save = NULL;
 }
 
 void GuiTextFilterWindow::init() {

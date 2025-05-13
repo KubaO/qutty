@@ -7,8 +7,6 @@
 
 class QtWebPluginMap {
  public:
-  QtWebPluginMap();
-  ~QtWebPluginMap();
   void initialize();
   void save();
 
