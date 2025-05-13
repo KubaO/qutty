@@ -77,7 +77,7 @@ QVariant QtSessionTreeModel::data(const QModelIndex &index, int role) const {
 }
 
 Qt::ItemFlags QtSessionTreeModel::flags(const QModelIndex &index) const {
-  if (!index.isValid()) return 0;
+  if (!index.isValid()) return {};
 
   return QAbstractItemModel::flags(index);
 }

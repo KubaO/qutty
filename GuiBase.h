@@ -27,7 +27,7 @@ class GuiBase {
   GuiSplitter *parentSplit;
 
   GuiBase();
-  virtual ~GuiBase(){};
+  virtual ~GuiBase() {};
   virtual void reqCloseTerminal(bool userRequest) = 0;
   virtual QWidget *getWidget() = 0;
   virtual void populateAllTerminals(std::vector<GuiTerminalWindow *> *list) = 0;
