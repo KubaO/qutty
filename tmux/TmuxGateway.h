@@ -2,9 +2,10 @@
 #define TMUXGATEWAY_H
 
 class GuiSplitter;
+class GuiTerminalWindow;
 class TmuxGateway;
+class TmuxWindowPane;
 
-#include "GuiTerminalWindow.h"
 extern "C" {
 #include "misc.h"
 // min/max interferes with std::min/max
@@ -15,7 +16,6 @@ extern "C" {
 #include <string>
 #include <queue>
 #include <map>
-using namespace std;
 
 #define is_hex_char(ch) \
   (((ch) >= '0' && (ch) <= '9') || ((ch) >= 'a' && (ch) <= 'f') || ((ch) >= 'A' && (ch) <= 'F'))
@@ -41,7 +41,7 @@ extern const char *get_tmux_cb_index_str(tmux_cb_index_t index);
 
 class TmuxCmdRespReceiver {
  public:
-  virtual int performCallback(tmux_cb_index_t index, string &response) = 0;
+  virtual int performCallback(tmux_cb_index_t index, std::string &response) = 0;
 };
 
 class TmuxCmdResp {
@@ -57,13 +57,13 @@ class TmuxCmdResp {
 class TmuxGateway : public TmuxCmdRespReceiver {
   GuiTerminalWindow *termGatewayWnd;
   bufchain buffer;
-  queue<TmuxCmdResp> _commandQueue;
+  std::queue<TmuxCmdResp> _commandQueue;
   TmuxCmdResp _currentCommand;
-  string _currentCommandResponse;
+  std::string _currentCommandResponse;
   long _sessionID;
   char *_sessionName;
-  map<int, TmuxLayout> _mapLayout;
-  map<int, TmuxWindowPane *> _mapPanes;
+  std::map<int, TmuxLayout> _mapLayout;
+  std::map<int, TmuxWindowPane *> _mapPanes;
 
   void closeAllPanes();
   void closePane(int paneid);
@@ -76,23 +76,23 @@ class TmuxGateway : public TmuxCmdRespReceiver {
   int cmd_hdlr_window_close(const char *command, size_t len);
   int cmd_hdlr_layout_change(const char *command, size_t len);
 
-  int resp_hdlr_list_windows(string &response);
-  int resp_hdlr_open_listed_windows(string &response);
+  int resp_hdlr_list_windows(std::string &response);
+  int resp_hdlr_open_listed_windows(std::string &response);
 
  public:
   TmuxGateway(GuiTerminalWindow *termWindow);
   virtual ~TmuxGateway();
-  int performCallback(tmux_cb_index_t index, string &response);
+  int performCallback(tmux_cb_index_t index, std::string &response);
   size_t fromBackend(int is_stderr, const char *data, size_t len);
   int parseCommand(const char *command, size_t len);
   int openWindowsInitial();
-  int createNewWindow(int id, const char *name, int width, int height, const string &layout);
+  int createNewWindow(int id, const char *name, int width, int height, const std::string &layout);
   int createNewWindowPane(int id, const char *name, const TmuxLayout &layout,
                           GuiSplitter *splitter);
   int sendCommand(TmuxCmdRespReceiver *recv, tmux_cb_index_t cb, const wchar_t cmd_str[],
                   size_t cmd_str_len);
   int sendCommand(TmuxCmdRespReceiver *recv, tmux_cb_index_t cb, const wchar_t cmd_str[]);
-  int sendCommand(TmuxCmdResp cmd_list[], wstring cmd_str[], int len = 1);
+  int sendCommand(TmuxCmdResp cmd_list[], std::wstring cmd_str[], int len = 1);
 
   void sendCommandNewWindowInSession();
 

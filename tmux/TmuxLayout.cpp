@@ -1,5 +1,9 @@
 #include "TmuxLayout.h"
 
+using std::istringstream;
+using std::ostringstream;
+using std::string;
+
 bool TmuxLayout::parseLayoutChildren(istringstream &iresp) {
   for (int i = 0;; i++) {
     TmuxLayout tchild;

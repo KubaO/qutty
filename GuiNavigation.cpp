@@ -13,6 +13,8 @@
 #include "GuiSplitter.h"
 #include "GuiTabWidget.h"
 
+using std::vector;
+
 GuiTabNavigation::GuiTabNavigation(GuiMainWindow *p) : QListWidget(p), mainWindow(p) {
   std::map<int, uint32_t> mrumap;
   auto termlist = mainWindow->getTerminalList();

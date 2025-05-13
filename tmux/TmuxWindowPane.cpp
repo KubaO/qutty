@@ -1,6 +1,14 @@
 #include "tmux/TmuxWindowPane.h"
+
+#include <QDebug>
 #include <iostream>
 #include <sstream>
+
+#include "GuiTerminalWindow.h"
+
+using std::istringstream;
+using std::string;
+using std::swap;
 
 extern "C" void swap_screen(Terminal *, int, int, int);
 

@@ -27,6 +27,9 @@ extern "C" {
 #include "ssh.h"
 }
 
+using std::list;
+using std::vector;
+
 GuiMainWindow::GuiMainWindow(QWidget *parent)
     : QMainWindow(parent),
       menuCookieTermWnd(NULL),

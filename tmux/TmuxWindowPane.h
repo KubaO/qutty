@@ -20,7 +20,7 @@ class TmuxWindowPane : public TmuxCmdRespReceiver {
 
  public:
   int id;
-  string name;
+  std::string name;
   int width;
   int height;
   bool ready;
@@ -30,10 +30,10 @@ class TmuxWindowPane : public TmuxCmdRespReceiver {
 
   TmuxGateway *gateway() { return _gateway; }
   GuiTerminalWindow *termWnd() { return _termWnd; }
-  int performCallback(tmux_cb_index_t index, string &response);
+  int performCallback(tmux_cb_index_t index, std::string &response);
 
-  int resp_hdlr_dump_term_state(string &response);
-  int resp_hdlr_dump_history(string &response, bool is_alt = false);
+  int resp_hdlr_dump_term_state(std::string &response);
+  int resp_hdlr_dump_history(std::string &response, bool is_alt = false);
 };
 
 #endif  // TMUXWINDOWPANE_H

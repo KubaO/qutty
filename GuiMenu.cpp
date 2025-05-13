@@ -22,6 +22,8 @@
 #include "serialize/QtWebPluginMap.h"
 #include "guitextfilterwindow.h"
 
+using std::make_tuple;
+
 qutty_menu_actions_t qutty_menu_actions[MENU_STATIC_ACTION_MAX] = {
     {"Restart Session", "", SLOT(contextMenuRestartSessionTriggered()),
      "Restart the currently active session/pane"},

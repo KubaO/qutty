@@ -1,13 +1,19 @@
+#include "tmux/TmuxGateway.h"
+
 #include <tmux/tmux.h>
+
 #include <iostream>
 #include <sstream>
-#include "tmux/TmuxWindowPane.h"
-#include "tmux/TmuxGateway.h"
-#include "GuiMainWindow.h"
-#include "GuiTabWidget.h"
-#include "GuiSplitter.h"
 
-using namespace std;
+#include "GuiMainWindow.h"
+#include "GuiSplitter.h"
+#include "GuiTabWidget.h"
+#include "GuiTerminalWindow.h"
+#include "tmux/TmuxWindowPane.h"
+
+using std::istringstream;
+using std::map;
+using std::string;
 
 TmuxGateway::TmuxGateway(GuiTerminalWindow *termWindow)
     : termGatewayWnd(termWindow),

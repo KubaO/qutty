@@ -9,6 +9,8 @@
 #include "GuiTerminalWindow.h"
 #include "GuiTabWidget.h"
 
+using std::vector;
+
 GuiSplitter::GuiSplitter(Qt::Orientation split, GuiSplitter *parentsplit, int ind)
     : QSplitter(split, parentsplit), child() {
   parentSplit = parentsplit;

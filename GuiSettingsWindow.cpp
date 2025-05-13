@@ -23,6 +23,11 @@ extern "C" {
 #include "putty.h"
 }
 
+using std::map;
+using std::string;
+using std::stringstream;
+using std::vector;
+
 QtConfig qutty_config;
 
 static int QUTTY_ROLE_FULL_SESSNAME = Qt::UserRole + 3;

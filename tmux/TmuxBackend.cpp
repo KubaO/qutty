@@ -1,6 +1,11 @@
 extern "C" {
 #include "putty.h"
 }
+#include <QDebug>
+
+#include "GuiTerminalWindow.h"
+#include "tmux/TmuxGateway.h"
+#include "tmux/TmuxWindowPane.h"
 #include "tmux/tmux.h"
 #include "tmux/TmuxWindowPane.h"
 #include "tmux/TmuxGateway.h"
