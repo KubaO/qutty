@@ -40,9 +40,9 @@ int QtConfig::readFromXML(QIODevice *device) {
       memset(&cfg, 0, sizeof(Config));
       while (xml.readNextStartElement()) {
         if (xml.name() == "dataelement") {
-          QStringRef tmptype = xml.attributes().value("datatype");
-          QStringRef tmpname = xml.attributes().value("dataname");
-          QStringRef tmpqstr = xml.attributes().value("datavalue");
+          QStringView tmptype = xml.attributes().value("datatype");
+          QStringView tmpname = xml.attributes().value("dataname");
+          QStringView tmpqstr = xml.attributes().value("datavalue");
           QByteArray tmpbarr = tmpqstr.toLocal8Bit();
           tmpbuf = tmpbarr.data();
 #define int(a) if (tmptype == "int" && tmpname == #a) sscanf(tmpbuf, "%d", &cfg.a);
@@ -96,8 +96,8 @@ int QtConfig::readFromXML(QIODevice *device) {
     } else if (xml.name() == "sshhostkeys" && xml.attributes().value("version") == "1.0") {
       while (xml.readNextStartElement()) {
         if (xml.name() == "entry") {
-          QStringRef key = xml.attributes().value("datakey");
-          QStringRef val = xml.attributes().value("datavalue");
+          QStringView key = xml.attributes().value("datakey");
+          QStringView val = xml.attributes().value("datavalue");
           QByteArray key_barr = key.toLocal8Bit();
           QByteArray val_barr = val.toLocal8Bit();
           ssh_host_keys[key_barr.constData()] = val_barr.constData();

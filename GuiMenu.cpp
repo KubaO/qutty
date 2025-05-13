@@ -76,16 +76,16 @@ qutty_menu_actions_t qutty_menu_actions[MENU_STATIC_ACTION_MAX] = {
     {"Rename Session", "", SLOT(contextMenuRenameTab()),
      "Rename the currently active session/pane"},
     {"Find", "Ctrl+Shift+F", SLOT(contextMenuFind()), "Find text in the terminal"},
-    {"Find Next", "F3", SLOT(contextMenuFindNext()), ""},
-    {"Find Previous", "Shift+F3", SLOT(contextMenuFindPrevious()), ""},
-    {"Case sensitive", "", "", ""},
-    {"Match regular expression", "", "", ""},
-    {"Highlight all matches", "", "", ""},
+    {"Find Next", "F3", SLOT(contextMenuFindNext())},
+    {"Find Previous", "Shift+F3", SLOT(contextMenuFindPrevious())},
+    {"Case sensitive"},
+    {"Match regular expression"},
+    {"Highlight all matches"},
     {"Show Tabs in Titlebar", "", SLOT(contextMenuTabInTitleBar()),
      "Toggle viewing of tabs in titlebar"},
-    {"Auto complete from predefined list", "Ctrl+'", SLOT(contextMenuAutoComplete()), ""},
-    {"Paste history", "Ctrl+;", SLOT(contextMenuPasteHistory()), ""},
-    {"Calculator", "", SLOT(contextMenuCalculator()), ""},
+    {"Auto complete from predefined list", "Ctrl+'", SLOT(contextMenuAutoComplete())},
+    {"Paste history", "Ctrl+;", SLOT(contextMenuPasteHistory())},
+    {"Calculator", "", SLOT(contextMenuCalculator())},
 };
 
 qutty_menu_links_t qutty_menu_links[MENU_MAX_MENU] = {
@@ -149,10 +149,11 @@ void GuiMainWindow::initializeMenuSystem() {
     QAction *act = new QAction(qutty_menu_actions[i].name, this);
     act->setToolTip(qutty_menu_actions[i].tooltip);
     act->setShortcutContext(Qt::WidgetShortcut);
-    connect(act, SIGNAL(triggered()), this, qutty_menu_actions[i].slot);
+    if (qutty_menu_actions[i].slot)
+      connect(act, SIGNAL(triggered()), this, qutty_menu_actions[i].slot);
 
     QShortcut *shortcut = NULL;
-    if (qutty_menu_actions[i].slot && qutty_menu_actions[i].slot[0] && !keyseq.isEmpty()) {
+    if (qutty_menu_actions[i].slot && !keyseq.isEmpty()) {
       act->setShortcut(keyseq);
       shortcut = new QShortcut(QKeySequence(keyseq), this);
       shortcut->setContext(Qt::ApplicationShortcut);
@@ -188,7 +189,7 @@ void GuiMainWindow::initializeMenuSystem() {
   menuGetActionById(MENU_FIND_REGEX)->setCheckable(true);
 
   menuCustomSavedSessionSigMapper = new QSignalMapper(this);
-  connect(menuCustomSavedSessionSigMapper, SIGNAL(mapped(int)),
+  connect(menuCustomSavedSessionSigMapper, SIGNAL(mappedInt(int)),
           SLOT(contextMenuCustomSavedSession(int)));
   initializeCustomSavedSessionShortcuts();
 }
@@ -396,7 +397,7 @@ void GuiMainWindow::contextMenuTermTopDragPaneTriggered() {
   // trick to perform a complete click, so that the image goes to normal
   GuiTerminalWindow *term = menuCookieTermWnd;
   menuCookieTermWnd = NULL;
-  toolBarTerminalTop.btns[1].animateClick(0);
+  toolBarTerminalTop.btns[1].animateClick();
 
   toolBarTerminalTop.hideMe();
   term->dragStartEvent(NULL);
@@ -496,7 +497,7 @@ void GuiMainWindow::contextMenuCustomSavedSession(int ind) {
 void GuiMainWindow::contextMenuImportFromFile() {
   QString fileName;
   fileName = QFileDialog::getOpenFileName(this, tr("Select a file to import"));
-  if (fileName != NULL) {
+  if (!fileName.isNull()) {
     QFile file(fileName);
     GuiImportExportFile *importExportFile = new GuiImportExportFile(this, &file, true);
     importExportFile->show();

@@ -10,7 +10,7 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network widgets
+QT       += core gui network widgets core5compat
 
 TARGET = QuTTY
 TEMPLATE = app
@@ -140,6 +140,7 @@ HEADERS +=  \
     serialize/QtMRUSessionList.h \
     serialize/QtWebPluginMap.h
 
+QMAKE_PROJECT_DEPTH = 2
 
 INCLUDEPATH += ./ puttysrc/
 

@@ -41,7 +41,7 @@ QtCompleterWithAdvancedCompletion::QtCompleterWithAdvancedCompletion(QComboBox *
   init();
 
   cb->setEditable(true);
-  cb->setAutoCompletion(false);
+  cb->setCompleter(nullptr);
   cb->installEventFilter(this);
 
   connect(popuplist, SIGNAL(clicked(QModelIndex)), this, SLOT(slot_completerComplete(QModelIndex)));

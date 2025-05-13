@@ -136,7 +136,7 @@ int GuiTerminalWindow::initTerminal() {
   }
   qtsock = as->qtsock;
   QObject::connect(as->qtsock, SIGNAL(readyRead()), this, SLOT(readyRead()));
-  QObject::connect(as->qtsock, SIGNAL(error(QAbstractSocket::SocketError)), this,
+  QObject::connect(as->qtsock, SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this,
                    SLOT(sockError(QAbstractSocket::SocketError)));
   QObject::connect(as->qtsock, SIGNAL(disconnected()), this, SLOT(sockDisconnected()));
 
@@ -375,7 +375,7 @@ void GuiTerminalWindow::paintEvent(QPaintEvent *e) {
   painter.fillRect(e->rect(), colours[258]);
 
   for (int i = 0; i < e->region().rects().size(); i++) {
-    const QRect &r = e->region().rects().at(i);
+    const QRect &r = e->region().rects()[i];
     int row = r.top() / fontHeight;
     int colstart = r.left() / fontWidth;
     int rowend = (r.bottom() + 1) / fontHeight;
@@ -529,7 +529,7 @@ void GuiTerminalWindow::setTermFont(Config *cfg) {
   setFont(_font);
 
   QFontMetrics fontMetrics = QFontMetrics(_font);
-  fontWidth = fontMetrics.width(QChar('a'));
+  fontWidth = fontMetrics.horizontalAdvance(QChar('a'));
   fontHeight = fontMetrics.height();
   fontAscent = fontMetrics.ascent();
 }
@@ -582,11 +582,10 @@ void GuiTerminalWindow::mouseDoubleClickEvent(QMouseEvent *e) {
     // TODO right click menu
   }
   Mouse_Button button, bcooked;
-  button = e->button() == Qt::LeftButton ? MBT_LEFT : e->button() == Qt::RightButton
-                                                          ? MBT_RIGHT
-                                                          : e->button() == Qt::MidButton
-                                                                ? MBT_MIDDLE
-                                                                : MBT_NOTHING;
+  button = e->button() == Qt::LeftButton     ? MBT_LEFT
+           : e->button() == Qt::RightButton  ? MBT_RIGHT
+           : e->button() == Qt::MiddleButton ? MBT_MIDDLE
+                                             : MBT_NOTHING;
   // assert(button!=MBT_NOTHING);
   if (button == MBT_NOTHING) return;
   int x = e->x() / fontWidth, y = e->y() / fontHeight, mod = e->modifiers();
@@ -620,11 +619,10 @@ void GuiTerminalWindow::mouseMoveEvent(QMouseEvent *e) {
   }
 
   Mouse_Button button, bcooked;
-  button = e->buttons() & Qt::LeftButton ? MBT_LEFT : e->buttons() & Qt::RightButton
-                                                          ? MBT_RIGHT
-                                                          : e->buttons() & Qt::MidButton
-                                                                ? MBT_MIDDLE
-                                                                : MBT_NOTHING;
+  button = e->buttons() & Qt::LeftButton     ? MBT_LEFT
+           : e->buttons() & Qt::RightButton  ? MBT_RIGHT
+           : e->buttons() & Qt::MiddleButton ? MBT_MIDDLE
+                                             : MBT_NOTHING;
   // assert(button!=MBT_NOTHING);
   if (button == MBT_NOTHING) return;
   int x = e->x() / fontWidth, y = e->y() / fontHeight, mod = e->modifiers();
@@ -655,11 +653,10 @@ void GuiTerminalWindow::mousePressEvent(QMouseEvent *e) {
     return;
   }
   Mouse_Button button, bcooked;
-  button = e->button() == Qt::LeftButton ? MBT_LEFT : e->button() == Qt::RightButton
-                                                          ? MBT_RIGHT
-                                                          : e->button() == Qt::MidButton
-                                                                ? MBT_MIDDLE
-                                                                : MBT_NOTHING;
+  button = e->button() == Qt::LeftButton     ? MBT_LEFT
+           : e->button() == Qt::RightButton  ? MBT_RIGHT
+           : e->button() == Qt::MiddleButton ? MBT_MIDDLE
+                                             : MBT_NOTHING;
   // assert(button!=MBT_NOTHING);
   if (button == MBT_NOTHING) return;
   int x = e->x() / fontWidth, y = e->y() / fontHeight, mod = e->modifiers();
@@ -667,11 +664,10 @@ void GuiTerminalWindow::mousePressEvent(QMouseEvent *e) {
 
   // detect single/double/triple click
   if (button == MBT_LEFT && !mouseClickTimer.hasExpired(CFG_MOUSE_TRIPLE_CLICK_INTERVAL)) {
-    mouseButtonAction = mouseButtonAction == MA_CLICK ? MA_2CLK : mouseButtonAction == MA_2CLK
-                                                                      ? MA_3CLK
-                                                                      : mouseButtonAction == MA_3CLK
-                                                                            ? MA_CLICK
-                                                                            : MA_NOTHING;
+    mouseButtonAction = mouseButtonAction == MA_CLICK  ? MA_2CLK
+                        : mouseButtonAction == MA_2CLK ? MA_3CLK
+                        : mouseButtonAction == MA_3CLK ? MA_CLICK
+                                                       : MA_NOTHING;
     qDebug() << __FUNCTION__ << "not expired" << mouseButtonAction;
   } else
     mouseButtonAction = MA_CLICK;
@@ -686,11 +682,10 @@ void GuiTerminalWindow::mouseReleaseEvent(QMouseEvent *e) {
   if (!term) return;
 
   Mouse_Button button, bcooked;
-  button = e->button() == Qt::LeftButton ? MBT_LEFT : e->button() == Qt::RightButton
-                                                          ? MBT_RIGHT
-                                                          : e->button() == Qt::MidButton
-                                                                ? MBT_MIDDLE
-                                                                : MBT_NOTHING;
+  button = e->button() == Qt::LeftButton     ? MBT_LEFT
+           : e->button() == Qt::RightButton  ? MBT_RIGHT
+           : e->button() == Qt::MiddleButton ? MBT_MIDDLE
+                                             : MBT_NOTHING;
   // assert(button!=MBT_NOTHING);
   if (button == MBT_NOTHING) return;
   int x = e->x() / fontWidth, y = e->y() / fontHeight, mod = e->modifiers();

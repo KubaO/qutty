@@ -33,7 +33,7 @@ GuiCompactSettingsWindow::GuiCompactSettingsWindow(QWidget *parent, GuiBase::Spl
   QStringList completions;
   for (auto it = qutty_mru_sesslist.mru_list.begin(); it != qutty_mru_sesslist.mru_list.end();
        ++it) {
-    if (it->second[0] == '\0') continue;
+    if (it->second.isEmpty() || it->second[0] == QChar('\0')) continue;
     // in 'hostname|sessname' format
     completions << it->second + "|" + it->first;
   }
@@ -43,7 +43,7 @@ GuiCompactSettingsWindow::GuiCompactSettingsWindow(QWidget *parent, GuiBase::Spl
   connect(hostname_completer, SIGNAL(activated(QString)), this,
           SLOT(on_hostname_completion_activated(QString)));
   cb_hostname->setItemDelegate(new QtHostNameCompleterItemDelegate);
-  connect(cb_hostname, SIGNAL(activated(QString)), SLOT(on_cb_hostname_activated(QString)));
+  connect(cb_hostname, SIGNAL(textActivated(QString)), SLOT(on_cb_hostname_activated(QString)));
 
   cb_session_list = new QtComboBoxWithTreeView(this);
   cb_session_list->setItemDelegate(new QtSessionTreeItemDelegate);

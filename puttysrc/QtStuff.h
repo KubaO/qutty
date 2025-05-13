@@ -83,6 +83,7 @@ void qt_message_box_no_frontend(const char *title, const char *fmt, ...);
 #define fatalbox(fmt, ...) \
     qt_message_box_no_frontend(APPNAME " Fatal Error", fmt, __VA_ARGS__)
 
+#undef assert
 #define assert(cond) do {\
     if(!(cond)) qt_message_box_no_frontend(APPNAME " Fatal Error", "fatal assert %s(%d)"#cond, __FUNCTION__, __LINE__); \
 } while(0)

@@ -101,9 +101,9 @@ enum qutty_menu_id_t {
 
 struct qutty_menu_actions_t {
   const char *name;
-  const char *key;
-  const char *slot;
-  const char *tooltip;
+  const char *key = nullptr;
+  const char *slot = nullptr;
+  const char *tooltip = nullptr;
 };
 
 struct qutty_menu_links_t {

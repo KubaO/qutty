@@ -53,7 +53,7 @@ void GuiImportExportFile::setSessions(void) {
       item->setText(QString(cfg->config_name) + tr(" (will be replaced)"));
       item->setCheckState(Qt::Unchecked);
     } else {
-      item->setData(Qt::UserRole + 1, cfg->config_name);
+      item->setData(Qt::UserRole + 1, QString(cfg->config_name));
       item->setText(QString(cfg->config_name));
       item->setCheckState(Qt::Checked);
     }
@@ -109,7 +109,7 @@ void GuiImportExportFile::on_export_clicked() {
   }
   QString fileName =
       QFileDialog::getSaveFileName(this, tr("Save File"), NULL, tr("XML files (*.xml)"));
-  if (fileName != NULL) {
+  if (! fileName.isNull()) {
     QFile file(fileName);
     config.exportToFile(&file);
   }
