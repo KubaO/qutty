@@ -14,7 +14,9 @@
 #include <QTreeWidgetItem>
 
 #include "GuiBase.hpp"
+extern "C" {
 #include "putty.h"
+}
 
 namespace Ui {
 class GuiSettingsWindow;
