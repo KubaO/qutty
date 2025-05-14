@@ -7,12 +7,7 @@
 
 #include "putty.h"
 #include "ssh.h"
-#ifndef __linux
-#include "windows.h"
 #include "storage.h"
-#else
-typedef uint32_t DWORD;
-#endif
 
 /*
  * This function is called once, at PuTTY startup, and will do some
@@ -25,10 +20,10 @@ void noise_get_heavy(void (*func) (void *, int))
     HANDLE srch;
     WIN32_FIND_DATA finddata;
     DWORD pid;
-    WCHAR winpath[MAX_PATH + 3];
+    char winpath[MAX_PATH + 3];
 
     GetWindowsDirectory(winpath, sizeof(winpath));
-    wcscat(winpath, L"\\*");
+    strcat(winpath, "\\*");
     srch = FindFirstFile(winpath, &finddata);
     if (srch != INVALID_HANDLE_VALUE) {
 	do {
@@ -40,15 +35,11 @@ void noise_get_heavy(void (*func) (void *, int))
     pid = GetCurrentProcessId();
     func(&pid, sizeof(pid));
 
-    //read_random_seed(func);
+    read_random_seed(func);
     /* Update the seed immediately, in case another instance uses it. */
     random_save_seed();
 }
 
-/*
- * TODO read_random_seed() write_random_seed() needs to be implemented
- * NOT_YET_IMPL
- */
 void random_save_seed(void)
 {
     int len;
@@ -56,7 +47,7 @@ void random_save_seed(void)
 
     if (random_active) {
 	random_get_savedata(&data, &len);
-    //write_random_seed(data, len);
+	write_random_seed(data, len);
 	sfree(data);
     }
 }

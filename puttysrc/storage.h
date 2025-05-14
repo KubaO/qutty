@@ -6,20 +6,6 @@
 #ifndef PUTTY_STORAGE_H
 #define PUTTY_STORAGE_H
 
-#define PUTTY_REG_POS "Software\\SimonTatham\\PuTTY"
-#define PUTTY_REG_PARENT "Software\\SimonTatham"
-#define PUTTY_REG_PARENT_CHILD "PuTTY"
-#define PUTTY_REG_GPARENT "Software"
-#define PUTTY_REG_GPARENT_CHILD "SimonTatham"
-
-/* Result values for the jumplist registry functions. */
-#define JUMPLISTREG_OK 0
-#define JUMPLISTREG_ERROR_INVALID_PARAMETER 1
-#define JUMPLISTREG_ERROR_KEYOPENCREATE_FAILURE 2
-#define JUMPLISTREG_ERROR_VALUEREAD_FAILURE 3
-#define JUMPLISTREG_ERROR_VALUEWRITE_FAILURE 4
-#define JUMPLISTREG_ERROR_INVALID_VALUE 5
-
 /* ----------------------------------------------------------------------
  * Functions to save and restore PuTTY sessions. Note that this is
  * only the low-level code to do the reading and writing. The
@@ -42,14 +28,12 @@
  * 
  * Any returned error message must be freed after use.
  */
-/*
 void *open_settings_w(const char *sessionname, char **errmsg);
 void write_setting_s(void *handle, const char *key, const char *value);
 void write_setting_i(void *handle, const char *key, int value);
 void write_setting_filename(void *handle, const char *key, Filename value);
 void write_setting_fontspec(void *handle, const char *key, FontSpec font);
 void close_settings_w(void *handle);
-*/
 
 /*
  * Read a saved session. The caller is expected to call
@@ -78,7 +62,7 @@ void close_settings_r(void *handle);
 /*
  * Delete a whole saved session.
  */
-//void del_settings(const char *sessionname);
+void del_settings(const char *sessionname);
 
 /*
  * Enumerate all saved sessions.
@@ -103,8 +87,8 @@ int verify_host_key(const char *hostname, int port,
  * Write a host key into the database, overwriting any previous
  * entry that might have been there.
  */
-//void store_host_key(const char *hostname, int port,
-//		    const char *keytype, const char *key);
+void store_host_key(const char *hostname, int port,
+		    const char *keytype, const char *key);
 
 /* ----------------------------------------------------------------------
  * Functions to access PuTTY's random number seed file.
@@ -116,23 +100,16 @@ typedef void (*noise_consumer_t) (void *data, int len);
  * Read PuTTY's random seed file and pass its contents to a noise
  * consumer function.
  */
-//void read_random_seed(noise_consumer_t consumer);
+void read_random_seed(noise_consumer_t consumer);
 
 /*
  * Write PuTTY's random seed file from a given chunk of noise.
  */
-//void write_random_seed(void *data, int len);
+void write_random_seed(void *data, int len);
 
 /* ----------------------------------------------------------------------
  * Cleanup function: remove all of PuTTY's persistent state.
  */
-//void cleanup_all(void);
-
-#ifdef _MSC_VER
-void *enum_sshhostkey_start(void);
-int enum_sshhostkey_next(void *handle, unsigned char *hostkey, DWORD hostkeylen,
-                         unsigned char *hostkey_val, DWORD hostkey_val_len);
-void enum_sshhostkey_finish(void *handle);
-#endif
+void cleanup_all(void);
 
 #endif

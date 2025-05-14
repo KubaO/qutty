@@ -20,6 +20,16 @@ extern "C" {
 using std::string;
 using std::map;
 
+struct enumsettings {
+  HKEY key;
+  int i;
+};
+
+enumsettings *enum_sshhostkey_start(void);
+int enum_sshhostkey_next(enumsettings *handle, char *hostkey, DWORD hostkeylen,
+                         unsigned char *hostkey_val, DWORD hostkey_val_len);
+void enum_sshhostkey_finish(enumsettings *handle);
+
 int QtConfig::readFromXML(QIODevice *device) {
   QXmlStreamReader xml;
   int i;
@@ -287,8 +297,9 @@ bool QtConfig::restoreFromPuttyWinRegistry() {
   }
 
   // load ssh hostkey list from registry
-  void *handle = enum_sshhostkey_start();
-  uchar hostkey[512], hostkey_val[2048];
+  enumsettings *handle = enum_sshhostkey_start();
+  char hostkey[512];
+  unsigned char hostkey_val[2048];
   if (handle) {
     while (
         enum_sshhostkey_next(handle, hostkey, sizeof(hostkey), hostkey_val, sizeof(hostkey_val))) {
@@ -339,4 +350,31 @@ void QtConfig::exportToFile(QFile *file) {
     return;
   }
   writeToXML(file);
+}
+
+enumsettings *enum_sshhostkey_start(void) {
+  struct enumsettings *ret;
+  HKEY key;
+
+  if (RegOpenKeyA(HKEY_CURRENT_USER, PUTTY_REG_POS "\\SshHostKeys", &key) != ERROR_SUCCESS)
+    return NULL;
+
+  ret = snew(struct enumsettings);
+  if (ret) {
+    ret->key = key;
+    ret->i = 0;
+  }
+
+  return ret;
+}
+
+int enum_sshhostkey_next(enumsettings *e, char *hostkey, DWORD hostkeylen,
+                         unsigned char *hostkey_val, DWORD hostkey_val_len) {
+  return RegEnumValueA(e->key, e->i++, hostkey, &hostkeylen, NULL, NULL, hostkey_val,
+                       &hostkey_val_len) == ERROR_SUCCESS;
+}
+
+void enum_sshhostkey_finish(enumsettings *e) {
+  RegCloseKey(e->key);
+  sfree(e);
 }

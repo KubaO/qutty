@@ -6,9 +6,19 @@
 
 cmake_minimum_required(VERSION 3.16)
 
+# Using putty 0.62 source code in puttysrc
+#
+# settings.c:
+# In QuTTY this file is only used for loading saved sessions in
+# Windows registry by PuTTY
+
 project(QuTTY VERSION 0.8.3 LANGUAGES C CXX)
 
-add_compile_definitions(QUTTY_RELEASE_VERSION="${PROJECT_VERSION}")
+add_compile_definitions(
+    IS_QUTTY=1
+    NO_GSSAPI=1
+    QUTTY_RELEASE_VERSION="${PROJECT_VERSION}"
+)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -33,7 +43,6 @@ set(PROJECT_SOURCES
     QtUnicode.cpp
     QtPageant.cpp
     QtDlg.cpp
-    QtGss.cpp
     QtX11.cpp
     QtConfig.cpp
     GuiTabWidget.cpp
@@ -86,7 +95,7 @@ set(PROJECT_SOURCES
     puttysrc/wcwidth.c
     puttysrc/sshcrc.c
     puttysrc/wildcard.c
-    puttysrc/be_all_s.c
+    puttysrc/be_qutty.c
     puttysrc/settings.c
     tmux/TmuxBackend.cpp
     tmux/TmuxGateway.cpp
@@ -122,7 +131,6 @@ set(PROJECT_SOURCES
     QtCompleterWithAdvancedCompletion.hpp
     puttysrc/ssh.h
     puttysrc/putty.h
-    puttysrc/missing.h
     puttysrc/QtStuff.h
     puttysrc/puttyps.h
     puttysrc/network.h
@@ -178,6 +186,12 @@ set(BREAKPAD_SOURCES
 )
 
 if (WIN32)
+    # winnoise.c and winstore.c must be built without UNICODE nor _UNICODE
+    set_property(SOURCE
+        ${PROJECT_SOURCES}
+        puttysrc/windows/windefs.c
+        PROPERTY COMPILE_DEFINITIONS UNICODE _UNICODE
+    )
     list(APPEND PROJECT_SOURCES
         qutty.rc
 
@@ -185,8 +199,18 @@ if (WIN32)
         puttysrc/windows/winstore.c
         puttysrc/windows/windefs.c
     )
+    set_property(SOURCE
+        puttysrc/windows/winstore.c PROPERTY COMPILE_DEFINITIONS
+        verify_host_key=verify_host_key_disabled
+        store_host_key=store_host_key_disabled
+    )
     link_libraries(user32 advapi32)
 endif()
+
+set_property(SOURCE
+    puttysrc/settings.c PROPERTY COMPILE_DEFINITIONS
+    get_remote_username=get_remote_username_disabled
+)
 
 if (LINUX)
     list(APPEND PROJECT_SOURCES
@@ -267,6 +291,12 @@ install(TARGETS QuTTY
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+if (WIN32)
+    if(QT_VERSION_MAJOR GREATER_EQUAL 6)
+        qt_disable_unicode_defines(QuTTY)
+    endif()
+endif()
 
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(QuTTY)

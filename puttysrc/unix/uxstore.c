@@ -277,8 +277,7 @@ const char *get_setting(const char *key)
 	if (ret)
 	    return ret->value;
     }
-    //return x_get_default(key);
-    return NULL;
+    return x_get_default(key);
 }
 
 void *open_settings_r(const char *sessionname)
@@ -683,18 +682,4 @@ void write_random_seed(void *data, int len)
 
 void cleanup_all(void)
 {
-}
-
-/**
- * @brief getticks wrapper for linux.
- * http://stackoverflow.com/questions/2958291/equivalent-to-gettickcount-on-linux
- * @return the number of milliseconds since the system was started.
- */
-uint64_t getticks() {
-    struct timespec ts;
-    uint64_t theTick = 0U;
-    clock_gettime( CLOCK_REALTIME, &ts );
-    theTick  = ts.tv_nsec / 1000000;
-    theTick += ts.tv_sec * 1000;
-    return theTick;
 }

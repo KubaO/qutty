@@ -189,21 +189,54 @@ void old_keyfile_warning(void) {
 }
 
 void qt_message_box_no_frontend(const char *title, const char *fmt, ...) {
-  QString msg;
   va_list args;
   va_start(args, fmt);
-  QMessageBox::critical(NULL, QString(title), msg.vasprintf(fmt, args), QMessageBox::Ok);
+  qt_vmessage_box_no_frontend(title, fmt, args);
   va_end(args);
 }
 
-void qt_message_box(void *frontend, const char *title, const char *fmt, ...) {
+void qt_vmessage_box_no_frontend(const char *title, const char *fmt, va_list args) {
   QString msg;
+  QMessageBox::critical(NULL, QString(title), msg.vasprintf(fmt, args), QMessageBox::Ok);
+}
+
+void qt_message_box(void *frontend, const char *title, const char *fmt, ...) {
   va_list args;
+  va_start(args, fmt);
+  qt_vmessage_box(frontend, title, fmt, args);
+  va_end(args);
+}
+
+void qt_vmessage_box(void *frontend, const char *title, const char *fmt, va_list args) {
+  QString msg;
   assert(frontend);
   GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  va_start(args, fmt);
   QMessageBox::critical(f, QString(title), msg.vasprintf(fmt, args), QMessageBox::Ok);
+}
+
+extern "C" {
+
+void update_specials_menu(void *) {}
+
+void connection_fatal(void *frontend, char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  char buf[1000];
+  _snprintf(buf, sizeof(buf), fmt, args);
+  qutty_connection_fatal(frontend, buf);
   va_end(args);
+}
+
+void fatalbox(char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  char buf[1000];
+  _snprintf(buf, sizeof(buf), fmt, args);
+  qt_message_box_no_frontend(APPNAME " Fatal Error", fmt, args);
+  va_end(args);
+}
+
+void modalfatalbox(char *msg, ...) { qt_message_box_no_frontend(APPNAME " Fatal Error", msg); }
 }
 
 void logevent(void *frontend, const char *string) { qDebug() << frontend << string; }

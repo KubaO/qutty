@@ -24,7 +24,11 @@ Filename platform_default_filename(const char *name)
 {
     Filename ret;
     if (!strcmp(name, "LogFileName"))
+#ifdef IS_QUTTY    
     strcpy(ret.path, "qutty.log");
+#else
+	strcpy(ret.path, "putty.log");
+#endif
     else
 	*ret.path = '\0';
     return ret;

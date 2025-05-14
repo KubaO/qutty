@@ -1090,8 +1090,10 @@ Backend telnet_backend = {
     23
 };
 
+#ifdef IS_QUTTY
 Socket get_telnet_socket(void *handle)
 {
     Telnet h = (Telnet) handle;
     return h->s;
 }
+#endif

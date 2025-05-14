@@ -9,7 +9,6 @@
 #ifndef PUTTY_TERMINAL_H
 #define PUTTY_TERMINAL_H
 
-#include "misc.h"
 #include "tree234.h"
 
 struct beeptime {
@@ -180,8 +179,10 @@ struct terminal_tag {
     char osc_string[OSC_STR_MAX + 1];
     int osc_w;
 
+#ifdef IS_QUTTY
     char esc_buf[10];
     uint8_t esc_buf_len;
+#endif
 
     char id_string[1024];
 
@@ -198,8 +199,10 @@ struct terminal_tag {
 
 	SEEN_OSC_P,
 	OSC_STRING, OSC_MAYBE_ST,
+#ifdef IS_QUTTY
     SEEN_DCS,
-    VT52_ESC,
+#endif
+	VT52_ESC,
 	VT52_Y1,
 	VT52_Y2,
 	VT52_FG,
@@ -279,9 +282,10 @@ struct terminal_tag {
     struct bidi_cache_entry *pre_bidi_cache, *post_bidi_cache;
     int bidi_cache_size;
 
-//    QChar **dispstr;
+#ifdef IS_QUTTY
     wchar_t *dispstr;
     unsigned long *dispstr_attr;
+#endif
 };
 
 #define in_utf(term) ((term)->utf || (term)->ucsdata->line_codepage==CP_UTF8)

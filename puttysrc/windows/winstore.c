@@ -3,7 +3,6 @@
  * defined in storage.h.
  */
 
-#include "windows.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -18,20 +17,16 @@
 #define CSIDL_LOCAL_APPDATA 0x001c
 #endif
 
-#if 0
 static const char *const reg_jumplist_key = PUTTY_REG_POS "\\Jumplist";
 static const char *const reg_jumplist_value = "Recent sessions";
-#endif  // #if 0
-static const char *puttystr = PUTTY_REG_POS "\\Sessions";
+static const char *const puttystr = PUTTY_REG_POS "\\Sessions";
 
 static const char hex[16] = "0123456789ABCDEF";
 
-#if 0
 static int tried_shgetfolderpath = FALSE;
 static HMODULE shell32_module = NULL;
-DECL_WINDOWS_FUNCTION(static, HRESULT, SHGetFolderPathA,
-              (HWND, int, HANDLE, DWORD, LPSTR));
-#endif  // #if 0
+DECL_WINDOWS_FUNCTION(static, HRESULT, SHGetFolderPathA, 
+		      (HWND, int, HANDLE, DWORD, LPSTR));
 
 static void mungestr(const char *in, char *out)
 {
@@ -77,8 +72,6 @@ static void unmungestr(const char *in, char *out, int outlen)
     *out = '\0';
     return;
 }
-
-#if 0
 
 void *open_settings_w(const char *sessionname, char **errmsg)
 {
@@ -132,8 +125,6 @@ void close_settings_w(void *handle)
     RegCloseKey((HKEY) handle);
 }
 
-#endif // #if 0
-
 void *open_settings_r(const char *sessionname)
 {
     HKEY subkey1, sesskey;
@@ -145,10 +136,10 @@ void *open_settings_r(const char *sessionname)
     p = snewn(3 * strlen(sessionname) + 1, char);
     mungestr(sessionname, p);
 
-    if (RegOpenKeyA(HKEY_CURRENT_USER, puttystr, &subkey1) != ERROR_SUCCESS) {
+    if (RegOpenKey(HKEY_CURRENT_USER, puttystr, &subkey1) != ERROR_SUCCESS) {
 	sesskey = NULL;
     } else {
-    if (RegOpenKeyA(subkey1, p, &sesskey) != ERROR_SUCCESS) {
+	if (RegOpenKey(subkey1, p, &sesskey) != ERROR_SUCCESS) {
 	    sesskey = NULL;
 	}
 	RegCloseKey(subkey1);
@@ -165,8 +156,8 @@ char *read_setting_s(void *handle, const char *key, char *buffer, int buflen)
     size = buflen;
 
     if (!handle ||
-    RegQueryValueExA((HKEY) handle, key, 0,
-            &type, (BYTE *) buffer, &size) != ERROR_SUCCESS ||
+	RegQueryValueEx((HKEY) handle, key, 0,
+			&type, buffer, &size) != ERROR_SUCCESS ||
 	type != REG_SZ) return NULL;
     else
 	return buffer;
@@ -178,7 +169,7 @@ int read_setting_i(void *handle, const char *key, int defvalue)
     size = sizeof(val);
 
     if (!handle ||
-    RegQueryValueExA((HKEY) handle, key, 0, &type,
+	RegQueryValueEx((HKEY) handle, key, 0, &type,
 			(BYTE *) &val, &size) != ERROR_SUCCESS ||
 	size != sizeof(val) || type != REG_DWORD)
 	return defvalue;
@@ -209,7 +200,6 @@ int read_setting_fontspec(void *handle, const char *name, FontSpec *result)
     return 1;
 }
 
-#if 0
 void write_setting_fontspec(void *handle, const char *name, FontSpec font)
 {
     char *settingname;
@@ -225,26 +215,22 @@ void write_setting_fontspec(void *handle, const char *name, FontSpec font)
     write_setting_i(handle, settingname, font.height);
     sfree(settingname);
 }
-#endif  // #if 0
 
 int read_setting_filename(void *handle, const char *name, Filename *result)
 {
     return !!read_setting_s(handle, name, result->path, sizeof(result->path));
 }
 
-#if 0
 void write_setting_filename(void *handle, const char *name, Filename result)
 {
     write_setting_s(handle, name, result.path);
 }
-#endif  // #if 0
 
 void close_settings_r(void *handle)
 {
     RegCloseKey((HKEY) handle);
 }
 
-#if 0
 void del_settings(const char *sessionname)
 {
     HKEY subkey1;
@@ -262,7 +248,6 @@ void del_settings(const char *sessionname)
 
     remove_session_from_jumplist(sessionname);
 }
-#endif  // #if 0
 
 struct enumsettings {
     HKEY key;
@@ -274,7 +259,7 @@ void *enum_settings_start(void)
     struct enumsettings *ret;
     HKEY key;
 
-    if (RegOpenKeyA(HKEY_CURRENT_USER, puttystr, &key) != ERROR_SUCCESS)
+    if (RegOpenKey(HKEY_CURRENT_USER, puttystr, &key) != ERROR_SUCCESS)
 	return NULL;
 
     ret = snew(struct enumsettings);
@@ -291,7 +276,7 @@ char *enum_settings_next(void *handle, char *buffer, int buflen)
     struct enumsettings *e = (struct enumsettings *) handle;
     char *otherbuf;
     otherbuf = snewn(3 * buflen, char);
-    if (RegEnumKeyA(e->key, e->i++, otherbuf, 3 * buflen) == ERROR_SUCCESS) {
+    if (RegEnumKey(e->key, e->i++, otherbuf, 3 * buflen) == ERROR_SUCCESS) {
 	unmungestr(otherbuf, buffer, buflen);
 	sfree(otherbuf);
 	return buffer;
@@ -319,42 +304,6 @@ static void hostkey_regname(char *buffer, const char *hostname,
     mungestr(hostname, buffer + strlen(buffer));
 }
 
-
-void *enum_sshhostkey_start(void)
-{
-    struct enumsettings *ret;
-    HKEY key;
-
-    if (RegOpenKeyA(HKEY_CURRENT_USER, PUTTY_REG_POS "\\SshHostKeys", &key) != ERROR_SUCCESS)
-    return NULL;
-
-    ret = snew(struct enumsettings);
-    if (ret) {
-    ret->key = key;
-    ret->i = 0;
-    }
-
-    return ret;
-}
-
-int enum_sshhostkey_next(void *handle, unsigned char *hostkey, DWORD hostkeylen,
-                         unsigned char *hostkey_val, DWORD hostkey_val_len)
-{
-    struct enumsettings *e = (struct enumsettings *) handle;
-    return RegEnumValueA(e->key, e->i++,
-                         hostkey, &hostkeylen, NULL, NULL,
-                         hostkey_val, &hostkey_val_len) == ERROR_SUCCESS;
-}
-
-void enum_sshhostkey_finish(void *handle)
-{
-    struct enumsettings *e = (struct enumsettings *) handle;
-    RegCloseKey(e->key);
-    sfree(e);
-}
-
-#if 0
-
 int verify_host_key(const char *hostname, int port,
 		    const char *keytype, const char *key)
 {
@@ -376,12 +325,12 @@ int verify_host_key(const char *hostname, int port,
 
     hostkey_regname(regname, hostname, port, keytype);
 
-    if (RegOpenKeyA(HKEY_CURRENT_USER, PUTTY_REG_POS "\\SshHostKeys",
+    if (RegOpenKey(HKEY_CURRENT_USER, PUTTY_REG_POS "\\SshHostKeys",
 		   &rkey) != ERROR_SUCCESS)
 	return 1;		       /* key does not exist in registry */
 
     readlen = len;
-    ret = RegQueryValueExA(rkey, regname, NULL, &type, otherstr, &readlen);
+    ret = RegQueryValueEx(rkey, regname, NULL, &type, otherstr, &readlen);
 
     if (ret != ERROR_SUCCESS && ret != ERROR_MORE_DATA &&
 	!strcmp(keytype, "rsa")) {
@@ -393,7 +342,7 @@ int verify_host_key(const char *hostname, int port,
 	char *justhost = regname + 1 + strcspn(regname, ":");
 	char *oldstyle = snewn(len + 10, char);	/* safety margin */
 	readlen = len;
-    ret = RegQueryValueExA(rkey, justhost, NULL, &type,
+	ret = RegQueryValueEx(rkey, justhost, NULL, &type,
 			      oldstyle, &readlen);
 
 	if (ret == ERROR_SUCCESS && type == REG_SZ) {
@@ -440,7 +389,7 @@ int verify_host_key(const char *hostname, int port,
 	     * wrong, and hyper-cautiously do nothing.
 	     */
 	    if (!strcmp(otherstr, key))
-        RegSetValueExA(rkey, regname, 0, REG_SZ, otherstr,
+		RegSetValueEx(rkey, regname, 0, REG_SZ, otherstr,
 			      strlen(otherstr) + 1);
 	}
     }
@@ -875,5 +824,3 @@ void cleanup_all(void)
      * Now we're done.
      */
 }
-
-#endif  // #if 0

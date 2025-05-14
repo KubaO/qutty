@@ -490,3 +490,14 @@ void qstring_to_char(char *dst, const QString &src, int dstlen) {
   QByteArray name = src.toUtf8();
   strncpy(dst, name.constData(), dstlen);
 }
+
+char *get_username(void) { return nullptr; }
+
+int default_protocol = PROT_SSH;
+int default_port = 22;
+
+const struct keyvalwhere gsslibkeywords[] = {
+    {(char *)"gssapi32", 0, -1, -1},
+    {(char *)"sspi", 1, -1, -1},
+    {(char *)"custom", 2, -1, -1},
+};

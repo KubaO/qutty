@@ -666,7 +666,6 @@ static const word32 D3[256] = {
  * Macros for the encryption routine. There are three encryption
  * cores, for Nb=4,6,8.
  */
-#undef MAKEWORD
 #define MAKEWORD(i) ( newstate[i] = (E0[(block[i] >> 24) & 0xFF] ^ \
 				     E1[(block[(i+C1)%Nb] >> 16) & 0xFF] ^ \
 				     E2[(block[(i+C2)%Nb] >> 8) & 0xFF] ^ \

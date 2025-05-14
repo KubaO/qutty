@@ -9998,8 +9998,11 @@ Backend ssh_backend = {
     22
 };
 
+#ifdef IS_QUTTY
 Socket get_ssh_socket(void *handle)
 {
     Ssh h = (Ssh) handle;
     return h->s;
 }
+#endif
+

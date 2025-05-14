@@ -1,6 +1,8 @@
 #ifndef PUTTY_PUTTY_H
 #define PUTTY_PUTTY_H
+#ifdef IS_QUTTY
 #define SECURITY_WIN32
+#endif
 
 #include <stddef.h>		       /* for wchar_t */
 
@@ -27,7 +29,6 @@ typedef struct terminal_tag Terminal;
 #include "puttyps.h"
 #include "network.h"
 #include "misc.h"
-#include "missing.h"
 
 /*
  * Fingerprints of the PGP master keys that can be used to establish a trust
@@ -156,13 +157,17 @@ struct unicode_data {
     wchar_t unitab_xterm[256];
     wchar_t unitab_oemcp[256];
     unsigned char unitab_ctrl[256];
+#if IS_QUTTY
     void *encoder;      // any specific encoder/decoder
+#endif
 };
 
 #define LGXF_OVR  1		       /* existing logfile overwrite */
 #define LGXF_APN  0		       /* existing logfile append */
 #define LGXF_ASK -1		       /* existing logfile ask */
+#ifdef IS_QUTTY
 #define LGXF_ASK__ 2		   /* existing logfile ask +ve val */
+#endif
 #define LGTYP_NONE  0		       /* logmode: no logging */
 #define LGTYP_ASCII 1		       /* logmode: pure ascii */
 #define LGTYP_DEBUG 2		       /* logmode: all chars of traffic */
@@ -312,8 +317,10 @@ enum {
     PROT_RAW, PROT_TELNET, PROT_RLOGIN, PROT_SSH,
     /* PROT_SERIAL is supported on a subset of platforms, but it doesn't
      * hurt to define it globally. */
-    PROT_SERIAL,
-    PROT_TMUX_CLIENT
+    PROT_SERIAL
+#ifdef IS_QUTTY
+    , PROT_TMUX_CLIENT
+#endif
 };
 
 enum {
@@ -474,8 +481,12 @@ extern const char *const appname;
  * and we can't run the risk of porting to some system on which the
  * enum comes out as a different size from int.
  */
+#ifdef IS_QUTTY
 #include "QtConfigTag.h"
 struct config_tag_not_used {
+#else
+struct config_tag {
+#endif
     /* Basic options */
     char host[512];
     int port;
@@ -500,9 +511,9 @@ struct config_tag_not_used {
     /* SSH options */
     char remote_cmd[512];
     char *remote_cmd_ptr;	       /* might point to a larger command
-                        * but never for loading/saving */
+				        * but never for loading/saving */
     char *remote_cmd_ptr2;	       /* might point to a larger command
-                        * but never for loading/saving */
+				        * but never for loading/saving */
     int nopty;
     int compression;
     int ssh_kexlist[KEX_MAX];
@@ -778,7 +789,7 @@ int char_width(Context ctx, int uc);
 #ifdef OPTIMISE_SCROLL
 void do_scroll(Context, int, int, int);
 #endif
-void set_title(void *frontend, const char *);
+void set_title(void *frontend, char *);
 void set_icon(void *frontend, char *);
 void set_sbar(void *frontend, int, int, int);
 Context get_ctx(void *frontend);
@@ -790,9 +801,9 @@ void write_clip(void *frontend, wchar_t *, int *, int, int);
 void get_clip(void *frontend, wchar_t **, int *);
 void optimised_move(void *frontend, int, int, int);
 void set_raw_mouse_mode(void *frontend, int);
-//extern void connection_fatal(void *frontend, char *, ...);
-//extern void fatalbox(char *, ...);
-//extern void modalfatalbox(char *, ...);
+void connection_fatal(void *frontend, char *, ...);
+void fatalbox(char *, ...);
+void modalfatalbox(char *, ...);
 #ifdef macintosh
 #pragma noreturn(fatalbox)
 #pragma noreturn(modalfatalbox)
@@ -807,10 +818,10 @@ void ldisc_update(void *frontend, int echo, int edit);
  * connection, if necessary; it can also invoke it later if the set of
  * special commands changes. It does not need to invoke it at session
  * shutdown. */
-//extern void update_specials_menu(void *frontend);
+void update_specials_menu(void *frontend);
 int from_backend(void *frontend, int is_stderr, const char *data, int len);
 int from_backend_untrusted(void *frontend, const char *data, int len);
-//extern void notify_remote_exit(void *frontend);
+void notify_remote_exit(void *frontend);
 /* Get a sensible value for a tty mode. NULL return = don't set.
  * Otherwise, returned value should be freed by caller. */
 char *get_ttymode(void *frontend, const char *mode);
@@ -819,9 +830,12 @@ char *get_ttymode(void *frontend, const char *mode);
  * 0  = `user cancelled' (FIXME distinguish "give up entirely" and "next auth"?)
  * <0 = `please call back later with more in/inlen'
  */
-//int get_userpass_input(prompts_t *p, unsigned char *in, int inlen);
+#ifdef IS_QUTTY
 int get_userpass_input_v2(void *frontend, prompts_t *p, unsigned char *in, int inlen);
 #define get_userpass_input(p, in, inlen) get_userpass_input_v2(ssh->frontend, p, in, inlen)
+#else
+int get_userpass_input(prompts_t *p, unsigned char *in, int inlen);
+#endif
 #define OPTIMISE_IS_SCROLL 1
 
 void set_iconic(void *frontend, int iconic);
@@ -1026,8 +1040,7 @@ char const *cfg_dest(const Config *cfg);
 /*
  * Exports from sercfg.c.
  */
-typedef struct controlbox controlbox_t;
-void ser_setup_config_box(controlbox_t *b, int midsession,
+void ser_setup_config_box(struct controlbox *b, int midsession,
 			  int parity_mask, int flow_mask);
 
 /*
@@ -1044,8 +1057,11 @@ extern char ver[];
 /* void init_ucs(void); -- this is now in platform-specific headers */
 int is_dbcs_leadbyte(int codepage, char byte);
 int mb_to_wc(int codepage, int flags, char *mbstr, int mblen,
-             wchar_t *wcstr, int wclen,
-             struct unicode_data *ucsdata);
+             wchar_t *wcstr, int wclen
+#ifdef IS_QUTTY
+             , struct unicode_data *ucsdata
+#endif
+             );
 int wc_to_mb(int codepage, int flags, wchar_t *wcstr, int wclen,
 	     char *mbstr, int mblen, char *defchr, int *defused,
 	     struct unicode_data *ucsdata);

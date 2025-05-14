@@ -22,7 +22,7 @@ void frontend_keypress(void * /*handle*/) {
   return;
 }
 
-void set_title(void *frontend, const char *title) {
+void set_title(void *frontend, char *title) {
   assert(frontend);
   GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
   f->setSessionTitle(QString::fromLatin1(title));

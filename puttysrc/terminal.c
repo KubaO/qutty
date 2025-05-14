@@ -49,9 +49,12 @@
 
 #define UPDATE_DELAY    ((TICKSPERSEC+49)/50)/* ticks to defer window update */
 #define TBLINK_DELAY    ((TICKSPERSEC*9+19)/20)/* ticks between text blinks*/
-//#define CBLINK_DELAY    (CURSORBLINK) /* ticks between cursor blinks */
+#ifdef IS_QUTTY
 //#define CBLINK_DELAY    (QApplication::cursorFlashTime()) /* ticks between cursor blinks */
 #define CBLINK_DELAY    1000
+#else
+#define CBLINK_DELAY    (CURSORBLINK) /* ticks between cursor blinks */
+#endif
 #define VBELL_DELAY     (VBELL_TIMEOUT) /* visual bell timeout in ticks */
 
 #define compatibility(x) \
@@ -97,7 +100,7 @@ const wchar_t sel_nl[] = SEL_NL;
 /*
  * Internal prototypes.
  */
-void resizeline(Terminal *, termline *, int);
+static void resizeline(Terminal *, termline *, int);
 static termline *lineptr(Terminal *, int, int, int);
 static void unlineptr(termline *);
 static void do_paint(Terminal *, Context, int);
@@ -112,7 +115,7 @@ static void scroll(Terminal *, int, int, int, int);
 static void scroll_display(Terminal *, int, int, int);
 #endif /* OPTIMISE_SCROLL */
 
-termline *newline(Terminal *term, int cols, int bce)
+static termline *newline(Terminal *term, int cols, int bce)
 {
     termline *line;
     int j;
@@ -307,7 +310,7 @@ static int termchars_equal(termchar *a, termchar *b)
  * Copy a character cell. (Requires a pointer to the destination
  * termline, so as to access its free list.)
  */
-void copy_termchar(termline *destline, int x, termchar *src)
+static void copy_termchar(termline *destline, int x, termchar *src)
 {
     clear_cc(destline, x);
 
@@ -634,7 +637,11 @@ static void makeliteral_cc(struct buf *b, termchar *c, unsigned long *state)
     makeliteral_chr(b, &z, &zstate);
 }
 
+#ifdef IS_QUTTY
 termline *decompressline(unsigned char *data, int *bytes_used);
+#else
+static termline *decompressline(unsigned char *data, int *bytes_used);
+#endif
 
 static unsigned char *compressline(termline *ldata)
 {
@@ -844,7 +851,11 @@ static void readliteral_cc(struct buf *b, termchar *c, termline *ldata,
     }
 }
 
+#ifdef IS_QUTTY
 termline *decompressline(unsigned char *data, int *bytes_used)
+#else
+static termline *decompressline(unsigned char *data, int *bytes_used)
+#endif
 {
     int ncols, byte, shift;
     struct buf buffer, *b = &buffer;
@@ -911,7 +922,7 @@ termline *decompressline(unsigned char *data, int *bytes_used)
 /*
  * Resize a line to make it `cols' columns wide.
  */
-void resizeline(Terminal *term, termline *line, int cols)
+static void resizeline(Terminal *term, termline *line, int cols)
 {
     int i, oldcols;
 
@@ -1499,8 +1510,10 @@ Terminal *term_init(Config *mycfg, struct unicode_data *ucsdata,
     term->basic_erase_char.cc_next = 0;
     term->erase_char = term->basic_erase_char;
 
+#ifdef IS_QUTTY
     term->dispstr_attr = NULL;
     term->dispstr = NULL;
+#endif
 
     return term;
 }
@@ -1548,10 +1561,12 @@ void term_free(Terminal *term)
 
     expire_timer_context(term);
 
+#ifdef IS_QUTTY
     if (term->dispstr) sfree(term->dispstr);
     if (term->dispstr_attr) sfree(term->dispstr_attr);
     term->dispstr_attr = NULL;
     term->dispstr = NULL;
+#endif    
 
     sfree(term);
 }
@@ -1587,15 +1602,19 @@ void term_size(Terminal *term, int newrows, int newcols, int newsavelines)
 	term->screen = newtree234(NULL);
 	term->tempsblines = 0;
 	term->rows = 0;
+#ifdef IS_QUTTY
     term->dispstr_attr = NULL;
     term->dispstr = NULL;
+#endif
     }
 
+#ifdef IS_QUTTY
     if (term->dispstr) sfree(term->dispstr);
     if (term->dispstr_attr) sfree(term->dispstr_attr);
     // temporary precaution to not crash for combining chars
     term->dispstr = snewn((newrows+2) * newcols, wchar_t);
     term->dispstr_attr = snewn((newrows+2) * newcols, unsigned long);
+#endif
 
     /*
      * Resize the screen and scrollback. We only need to shift
@@ -2555,7 +2574,7 @@ static void term_out(Terminal *term)
 		bufchain_prefix(&term->inbuf, &ret, &nchars);
 		if (nchars > sizeof(localbuf))
 		    nchars = sizeof(localbuf);
-        memcpy(localbuf, ret, nchars);
+		memcpy(localbuf, ret, nchars);
 		bufchain_consume(&term->inbuf, nchars);
 		chars = localbuf;
 		assert(chars != NULL);
@@ -3104,7 +3123,7 @@ static void term_out(Terminal *term)
 		    term->termstate = TOPLEVEL;
 		    break;
 		}
-        /* else fall through */
+		/* else fall through */
 	      case SEEN_ESC:
 		if (c >= ' ' && c <= '/') {
 		    if (term->esc_query)
@@ -3196,10 +3215,12 @@ static void term_out(Terminal *term)
 		    term->tabs[term->curs.x] = TRUE;
 		    break;
 
+#ifdef IS_QUTTY
           case 'P':           /* DCS sequence */
             term->termstate = SEEN_DCS;
             term->esc_buf_len = 0;
             break;
+#endif
 
 		  case ANSI('8', '#'):	/* DECALN: fills screen with Es :-) */
 		    compatibility(VT100);
@@ -4244,6 +4265,7 @@ static void term_out(Terminal *term)
 		    term->osc_strlen = 0;
 		}
 		break;
+#ifdef IS_QUTTY
         case SEEN_DCS:
           if (term->esc_buf_len<sizeof(term->esc_buf)) {
             term->esc_buf[term->esc_buf_len++] = c;
@@ -4267,7 +4289,8 @@ static void term_out(Terminal *term)
             }
           }
           break;
-          case VT52_ESC:
+#endif
+	      case VT52_ESC:
 		term->termstate = TOPLEVEL;
 		seen_disp_event(term);
 		switch (c) {
@@ -4521,7 +4544,7 @@ static void term_out(Terminal *term)
 
     term_print_flush(term);
     if (term->cfg.logflush)
-    logflush(term->logctx);
+	logflush(term->logctx);
 }
 
 /*
@@ -5042,8 +5065,10 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 		ch = sresize(ch, chlen, wchar_t);
 	    }
 	    ch[ccount++] = (wchar_t) tchar;
+#ifdef IS_QUTTY
         term->dispstr[i*term->cols + j] = (tchar);
         term->dispstr_attr[i*term->cols + j] = tattr;
+#endif
 
 	    if (d->cc_next) {
 		termchar *dd = d;
@@ -5356,13 +5381,19 @@ static void clipme(Terminal *term, pos top, pos bottom, int rect, int desel)
 			if (is_dbcs_leadbyte(term->ucsdata->font_codepage, (BYTE) c)) {
 			    buf[0] = c;
 			    buf[1] = (char) (0xFF & ldata->chars[top.x + 1].chr);
-                rv = mb_to_wc(term->ucsdata->font_codepage, 0, buf, 2, wbuf, 4,
-                              term->ucsdata);
+			    rv = mb_to_wc(term->ucsdata->font_codepage, 0, buf, 2, wbuf, 4
+#ifdef IS_QUTTY
+                              , term->ucsdata
+#endif
+                              );
 			    top.x++;
 			} else {
 			    buf[0] = c;
-                rv = mb_to_wc(term->ucsdata->font_codepage, 0, buf, 1, wbuf, 4,
-                              term->ucsdata);
+			    rv = mb_to_wc(term->ucsdata->font_codepage, 0, buf, 1, wbuf, 4
+#ifdef IS_QUTTY
+                              , term->ucsdata
+#endif
+                              );
 			}
 
 			if (rv > 0) {
@@ -6664,6 +6695,7 @@ int term_get_userpass_input(Terminal *term, prompts_t *p,
     }
 }
 
+#ifdef IS_QUTTY
 termline *get_next_termline (Terminal *term, termline *tline, int cur_line)
 {
     int i;
@@ -6682,3 +6714,4 @@ termline *get_next_termline (Terminal *term, termline *tline, int cur_line)
     }
     return index234(term->screen, term->rows-1);
 }
+#endif

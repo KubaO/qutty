@@ -10,22 +10,29 @@
 #ifndef NO_LIBDL
 #include <dlfcn.h>		       /* Dynamic library loading */
 #endif /*  NO_LIBDL */
-//#include "charset.h"
+#ifdef IS_QUTTY
 #include <time.h>
+#else
+#include "charset.h"
+#endif
 
-#if 0
+#ifndef IS_QUTTY
 struct Filename {
-    char path[];
+    char path[FILENAME_MAX];
 };
-FILE *f_open(const struct Filename *, char const *, int);
+FILE *f_open(struct Filename, char const *, int);
 
 struct FontSpec {
-    char *name;    /* may be "" to indicate no selected font at all */
+    char name[256];
 };
-struct FontSpec *fontspec_new(const char *name);
 #endif
 
 typedef void *Context;                 /* FIXME: probably needs changing */
+
+#ifndef IS_QUTTY
+typedef int OSSocket;
+#define OSSOCKET_DEFINED	       /* stop network.h using its default */
+#endif
 
 extern Backend pty_backend;
 
@@ -60,8 +67,15 @@ unsigned long getticks(void);	       /* based on gettimeofday(2) */
 #define GETTICKCOUNT getticks
 #define TICKSPERSEC    1000	       /* we choose to use milliseconds */
 #define CURSORBLINK     450	       /* no standard way to set this */
-
+#ifdef IS_QUTTY
 uint64_t GetTickCount();
+#else
+/* getticks() works using gettimeofday(), so it's vulnerable to system clock
+ * changes causing chaos. Therefore, we provide a compensation mechanism. */
+#define TIMING_SYNC
+#define TIMING_SYNC_ANOW
+extern long tickcount_offset;
+#endif
 
 #define WCHAR wchar_t
 #define BYTE unsigned char
@@ -82,14 +96,13 @@ uint64_t GetTickCount();
 char *get_x_display(void *frontend);
 int font_dimension(void *frontend, int which);/* 0 for width, 1 for height */
 long get_windowid(void *frontend);
-int frontend_is_utf8(void *frontend);
 
 /* Things gtkdlg.c needs from pterm.c */
 void *get_window(void *frontend);      /* void * to avoid depending on gtk.h */
 
 /* Things pterm.c needs from gtkdlg.c */
-/*int do_config_box(const char *title, Conf *conf,
-                  int midsession, int protcfginfo);*/
+int do_config_box(const char *title, Config *cfg,
+		  int midsession, int protcfginfo);
 void fatal_message_box(void *window, char *msg);
 void nonfatal_message_box(void *window, char *msg);
 void about_box(void *window);
@@ -104,7 +117,7 @@ int string_width(char *text);
 
 /* Things pterm.c needs from {ptermm,uxputty}.c */
 char *make_default_wintitle(char *hostname);
-//int process_nonoption_arg(char *arg, Conf *conf, int *allow_launch);
+int process_nonoption_arg(char *arg, Config *conf, int *allow_launch);
 
 /* pterm.c needs this special function in xkeysym.c */
 int keysym_to_unicode(int keysym);
@@ -149,7 +162,9 @@ void gtk_setup_config_box(struct controlbox *b, int midsession, void *window);
  * from the command line or config files is assumed to be encoded).
  */
 #define DEFAULT_CODEPAGE 0xFFFF
-//#define CP_UTF8 CS_UTF8		       /* from libcharset */
+#ifndef IS_QUTTY
+#define CP_UTF8 CS_UTF8		       /* from libcharset */
+#endif
 
 #define strnicmp strncasecmp
 #define stricmp strcasecmp
@@ -159,17 +174,16 @@ void (*putty_signal(int sig, void (*func)(int)))(int);
 void block_signal(int sig, int block_it);
 
 /* uxmisc.c */
-void cloexec(int);
-void noncloexec(int);
-int nonblock(int);
-int no_nonblock(int);
+int cloexec(int);
 
 /*
  * Exports from unicode.c.
  */
 struct unicode_data;
-//int init_ucs(struct unicode_data *ucsdata, char *line_codepage,
-//	     int utf8_override, int font_charset, int vtmode);
+#ifndef IS_QUTTY
+int init_ucs(struct unicode_data *ucsdata, char *line_codepage,
+	     int utf8_override, int font_charset, int vtmode);
+#endif
 
 /*
  * Spare function exported directly from uxnet.c.

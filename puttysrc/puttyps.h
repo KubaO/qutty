@@ -5,10 +5,13 @@
 #ifndef PUTTY_PUTTYPS_H
 #define PUTTY_PUTTYPS_H
 
-#if defined(_WINDOWS) || defined(WIN32)
+#if defined(IS_QUTTY)
 
-//#include "winstuff.h"
 #include "QtStuff.h"
+
+#elif defined(_WINDOWS)
+
+#include "winstuff.h"
 
 #elif defined(MACOSX)
 
@@ -16,7 +19,7 @@
 
 #else
 
-#include "QtStuff.h"
+#include "unix.h"
 
 #endif
 

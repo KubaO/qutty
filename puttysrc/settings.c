@@ -1,27 +1,12 @@
 /*
  * settings.c: read and write saved sessions. (platform-independent)
  */
-/*
- * In QuTTY this file is only used for loading saved sessions in
- * Windows registry by PuTTY
- * So this file is platform-dependent
- */
 
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "putty.h"
 #include "storage.h"
-
-int default_protocol = PROT_SSH;
-int default_port = 22;
-
-const struct keyvalwhere gsslibkeywords[] = {
-    { "gssapi32", 0, -1, -1 },
-    { "sspi", 1, -1, -1 },
-    { "custom", 2, -1, -1 },
-};
-
 
 /* The cipher order given here is the default order. */
 static const struct keyvalwhere ciphernames[] = {
@@ -85,7 +70,6 @@ Backend *backend_from_proto(int proto)
     return NULL;
 }
 
-#if 0
 int get_remote_username(Config *cfg, char *user, size_t len)
 {
     if (*cfg->username) {
@@ -108,8 +92,6 @@ int get_remote_username(Config *cfg, char *user, size_t len)
     }
     return (*user != '\0');
 }
-
-#endif // #if 0
 
 static void gpps(void *handle, const char *name, const char *def,
 		 char *val, int len)
@@ -180,7 +162,6 @@ static void gppmap(void *handle, char *name, char *def, char *val, int len)
     sfree(buf);
 }
 
-#if 0
 /*
  * Write a set of name/value pairs in the above format.
  */
@@ -206,7 +187,6 @@ static void wmap(void *handle, char const *key, char const *value, int len)
     write_setting_s(handle, key, buf);
     sfree(buf);
 }
-#endif
 
 static int key2val(const struct keyvalwhere *mapping,
                    int nmaps, char *key)
@@ -217,7 +197,6 @@ static int key2val(const struct keyvalwhere *mapping,
     return -1;
 }
 
-#if 0
 static const char *val2key(const struct keyvalwhere *mapping,
                            int nmaps, int val)
 {
@@ -226,7 +205,6 @@ static const char *val2key(const struct keyvalwhere *mapping,
 	if (mapping[i].v == val) return mapping[i].s;
     return NULL;
 }
-#endif
 
 /*
  * Helper function to parse a comma-separated list of strings into
@@ -311,8 +289,6 @@ static void gprefs(void *sesskey, char *name, char *def,
         }
     }
 }
-
-#if 0
 
 /* 
  * Write out a preference list.
@@ -589,8 +565,6 @@ void load_settings(char *section, Config * cfg)
     if (cfg_launchable(cfg))
         add_session_to_jumplist(section);
 }
-
-#endif // #if 0
 
 void load_open_settings(void *sesskey, Config *cfg)
 {
@@ -940,12 +914,10 @@ void load_open_settings(void *sesskey, Config *cfg)
     gpps(sesskey, "WindowClass", "", cfg->winclass, sizeof(cfg->winclass));
 }
 
-#if 0
 void do_defaults(char *session, Config * cfg)
 {
     load_settings(session, cfg);
 }
-#endif // #if 0
 
 static int sessioncmp(const void *av, const void *bv)
 {

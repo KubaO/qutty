@@ -159,7 +159,11 @@ void logfopen(void *handle)
     ctx->lgfp = f_open(ctx->currlogfilename, "r", FALSE);  /* file already present? */
     if (ctx->lgfp) {
 	fclose(ctx->lgfp);
-    if (ctx->cfg.logxfovr != LGXF_ASK && ctx->cfg.logxfovr != LGXF_ASK__) {
+	if (ctx->cfg.logxfovr != LGXF_ASK
+#ifdef IS_QUTTY
+        && ctx->cfg.logxfovr != LGXF_ASK__
+#endif
+        ) {
 	    mode = ((ctx->cfg.logxfovr == LGXF_OVR) ? 2 : 1);
 	} else
 	    mode = askappend(ctx->frontend, ctx->currlogfilename,
