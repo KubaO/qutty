@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-# Using putty 0.62 source code in puttysrc
+# Using putty 0.63 source code in puttysrc
 #
 # settings.c:
 # In QuTTY this file is only used for loading saved sessions in
@@ -58,6 +58,8 @@ set(PROJECT_SOURCES
     GuiTextFilterWindow.cpp
     QtSessionTreeModel.cpp
     QtCompleterWithAdvancedCompletion.cpp
+
+    puttysrc/conf.c
     puttysrc/pgssapi.c
     puttysrc/int64.c
     puttysrc/ssh.c
@@ -129,6 +131,7 @@ set(PROJECT_SOURCES
     QtSessionTreeItem.hpp
     QtComboBoxWithTreeView.hpp
     QtCompleterWithAdvancedCompletion.hpp
+
     puttysrc/ssh.h
     puttysrc/putty.h
     puttysrc/QtStuff.h
@@ -207,11 +210,6 @@ if (WIN32)
     link_libraries(user32 advapi32)
 endif()
 
-set_property(SOURCE
-    puttysrc/settings.c PROPERTY COMPILE_DEFINITIONS
-    get_remote_username=get_remote_username_disabled
-)
-
 if (LINUX)
     list(APPEND PROJECT_SOURCES
         puttysrc/unix/gtkwin.c
@@ -225,6 +223,7 @@ include_directories(./ puttysrc/)
 
 if (MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    add_compile_options(/Zc:preprocessor)
     add_link_options($<$<CONFIG:Release>:/MANIFEST:EMBED>)
 
     # enable google-breakpad support for release mode in MSVC

@@ -438,9 +438,9 @@ int TmuxGateway::createNewWindowPane(int id, const char *name, const TmuxLayout 
         newtermwnd->setSessionTitle(name);
         wchar_t cmd_state[2000], cmd_hist[256], cmd_hist_alt[256];
         wsprintf(cmd_hist, L"capture-pane -peqJ -t %%%d -S -%d\n", layout.paneid,
-                 termGatewayWnd->cfg.savelines);
+                 conf_get_int(termGatewayWnd->cfg, CONF_savelines));
         wsprintf(cmd_hist_alt, L"capture-pane -peqJ -a -t %%%d -S -%d\n", layout.paneid,
-                 termGatewayWnd->cfg.savelines);
+                 conf_get_int(termGatewayWnd->cfg, CONF_savelines));
         wsprintf(
             cmd_state,
             L"list-panes -t %%%d -F \""
@@ -464,7 +464,7 @@ int TmuxGateway::createNewWindowPane(int id, const char *name, const TmuxLayout 
         break;
       } else {
         term_size(_mapPanes[layout.paneid]->termWnd()->term, layout.height, layout.width,
-                  _mapPanes[layout.paneid]->termWnd()->cfg.savelines);
+                  conf_get_int(_mapPanes[layout.paneid]->termWnd()->cfg, CONF_savelines));
       }
       break;
     case TmuxLayout::TMUX_LAYOUT_TYPE_HORIZONTAL:

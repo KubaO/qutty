@@ -69,7 +69,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   QString temp_title;
 
  public:
-  Config cfg = {};
+  Conf *cfg = nullptr;
   Terminal *term = nullptr;
   Backend *backend = nullptr;
   void *backhandle = nullptr;
@@ -93,7 +93,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
    */
   int initTerminal();
   int restartTerminal();
-  int reconfigureTerminal(const Config &new_cfg);
+  int reconfigureTerminal(Conf *new_cfg);
 
   void createSplitLayout(GuiBase::SplitType split, GuiTerminalWindow *newTerm);
 
@@ -104,8 +104,8 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void drawTerm();
   void drawText(int row, int col, wchar_t *ch, int len, unsigned long attr, int lattr);
 
-  void setTermFont(const Config &cfg);
-  void cfgtopalette(const Config &cfg);
+  void setTermFont(Conf *cfg);
+  void cfgtopalette(Conf *cfg);
   void requestPaste();
   void getClip(wchar_t **p, int *len);
   void writeClip(wchar_t *data, int *attr, int len, int must_deselect);

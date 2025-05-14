@@ -201,7 +201,8 @@ void GuiTerminalWindow::dropEvent(QDropEvent *e) {
     // TODO
     goto cu0;
   }
-  qDebug() << __FUNCTION__ << dropped->cfg.host << dst->cfg.host << split;
+  qDebug() << __FUNCTION__ << conf_get_str(dropped->cfg, CONF_host)
+           << conf_get_str(dst->cfg, CONF_host) << split;
 
   if (dropped->parentSplit) {
     dropped->parentSplit->removeSplitLayout(dropped);
@@ -263,7 +264,7 @@ void GuiTabBar::dropEvent(QDropEvent *e) {
     goto cu0;
   }
 
-  qDebug() << __FUNCTION__ << dropped->cfg.host << tabind << split;
+  qDebug() << __FUNCTION__ << conf_get_str(dropped->cfg, CONF_host) << tabind << split;
 
   if (dropped->parentSplit) {
     dropped->parentSplit->removeSplitLayout(dropped);

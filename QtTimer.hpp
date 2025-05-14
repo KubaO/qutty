@@ -25,7 +25,7 @@ class QtTimer : public QObject {
 
  protected:
   void timerEvent(QTimerEvent *event) override {
-    long next;
+    unsigned long next;
     killTimer(timerId);
 
     // only one timer is active at any point of time

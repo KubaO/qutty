@@ -10,7 +10,7 @@
 class QtSessionTreeModel : public QAbstractItemModel {
   Q_OBJECT
  public:
-  explicit QtSessionTreeModel(QObject *parent, const std::map<QString, Config> &config_list);
+  explicit QtSessionTreeModel(QObject *parent, const std::map<QString, Conf *> &config_list);
 
   QVariant data(const QModelIndex &index, int role) const override;
   Qt::ItemFlags flags(const QModelIndex &index) const override;

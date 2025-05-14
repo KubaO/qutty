@@ -6,9 +6,7 @@ extern "C" {
 #endif
 #include "putty.h"
 
-struct config_tag
-{
-
+struct config_tag_x {
 #define QUTTY_SERIALIZE_STRUCT_CONFIG_ELEMENT_LIST \
     QUTTY_SERIALIZE_ELEMENT_ARRAY(char, config_name, 100) \
     /* Basic options */ \
@@ -203,7 +201,7 @@ struct config_tag
     char *remote_cmd_ptr;	       /* might point(to a larger command \
                         * but never for loading/saving */ \
     char *remote_cmd_ptr2;	       /* might point(to a larger command \
-                        * but never for loading/saving */ \
+                        * but never for loading/saving */
 };
 
 #ifdef __cplusplus

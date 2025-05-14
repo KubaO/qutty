@@ -41,33 +41,34 @@ GuiImportExportFile::GuiImportExportFile(GuiMainWindow *parent, QFile *file, boo
 }
 
 void GuiImportExportFile::setSessions(void) {
-  Config *cfg;
+  Conf *cfg;
 
-  for (map<QString, Config>::iterator it = config.config_list.begin();
+  for (map<QString, Conf *>::iterator it = config.config_list.begin();
        it != config.config_list.end(); it++) {
     QListWidgetItem *item = new QListWidgetItem(content);
-    cfg = &(it->second);
-    if (qutty_config.config_list.find(QString(cfg->config_name)) !=
-        qutty_config.config_list.end()) {
-      item->setData(Qt::UserRole + 1, QString(cfg->config_name));
-      item->setText(QString(cfg->config_name) + tr(" (will be replaced)"));
+    cfg = it->second;
+    QString config_name = QString(conf_get_str(cfg, CONF_config_name));
+    if (qutty_config.config_list.find(config_name) != qutty_config.config_list.end()) {
+      item->setData(Qt::UserRole + 1, config_name);
+      item->setText(config_name + tr(" (will be replaced)"));
       item->setCheckState(Qt::Unchecked);
     } else {
-      item->setData(Qt::UserRole + 1, QString(cfg->config_name));
-      item->setText(QString(cfg->config_name));
+      item->setData(Qt::UserRole + 1, config_name);
+      item->setText(config_name);
       item->setCheckState(Qt::Checked);
     }
   }
 }
 
 void GuiImportExportFile::getSessionsFromQutty(void) {
-  Config *cfg;
-  for (map<QString, Config>::iterator it = qutty_config.config_list.begin();
+  Conf *cfg;
+  for (map<QString, Conf *>::iterator it = qutty_config.config_list.begin();
        it != qutty_config.config_list.end(); it++) {
     QListWidgetItem *item = new QListWidgetItem(content);
-    cfg = &(it->second);
-    item->setData(Qt::UserRole + 1, QString(cfg->config_name));
-    item->setText(QString(cfg->config_name));
+    cfg = it->second;
+    QString config_name = QString(conf_get_str(cfg, CONF_config_name));
+    item->setData(Qt::UserRole + 1, config_name);
+    item->setText(config_name);
     item->setCheckState(Qt::Checked);
   }
 }
@@ -79,14 +80,15 @@ void GuiImportExportFile::on_close_clicked() {
 
 void GuiImportExportFile::on_import_clicked() {
   int i = 0;
-  Config *cfg;
+  Conf *cfg;
   for (i = 0; i < content->count(); i++) {
     if (content->item(i)->checkState() == Qt::Checked) {
       QString str = content->item(i)->data(Qt::UserRole + 1).toString();
-      map<QString, Config>::iterator it = config.config_list.find(str);
+      map<QString, Conf *>::iterator it = config.config_list.find(str);
       if (it != config.config_list.end()) {
-        cfg = &(it->second);
-        qutty_config.config_list[QString(cfg->config_name)] = *cfg;
+        cfg = it->second;
+        QString config_name = QString(conf_get_str(cfg, CONF_config_name));
+        qutty_config.config_list[config_name] = cfg;
       }
     }
   }
@@ -98,13 +100,14 @@ void GuiImportExportFile::on_import_clicked() {
 
 void GuiImportExportFile::on_export_clicked() {
   int i = 0;
-  Config *cfg;
+  Conf *cfg;
   for (i = 0; i < content->count(); i++) {
     if (content->item(i)->checkState() == Qt::Checked) {
       QString str = content->item(i)->data(Qt::UserRole + 1).toString();
-      map<QString, Config>::iterator it = qutty_config.config_list.find(str);
-      cfg = &(it->second);
-      config.config_list[QString(cfg->config_name)] = *cfg;
+      map<QString, Conf *>::iterator it = qutty_config.config_list.find(str);
+      cfg = it->second;
+      QString config_name = QString(conf_get_str(cfg, CONF_config_name));
+      config.config_list[config_name] = cfg;
     }
   }
   QString fileName =

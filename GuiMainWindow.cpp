@@ -74,17 +74,17 @@ GuiMainWindow::~GuiMainWindow() {
   }
 }
 
-void GuiMainWindow::on_createNewSession(const Config &cfg, GuiBase::SplitType splittype) {
+void GuiMainWindow::on_createNewSession(Conf *cfg, GuiBase::SplitType splittype) {
   // User has selected a session
   this->createNewTab(cfg, splittype);
 }
 
-void GuiMainWindow::createNewTab(const Config &cfg, GuiBase::SplitType splittype) {
+void GuiMainWindow::createNewTab(Conf *cfg, GuiBase::SplitType splittype) {
   int rc;
   GuiTerminalWindow *newWnd = new GuiTerminalWindow(tabArea, this);
   newWnd->cfg = cfg;
-  auto config_name = QString(cfg.config_name);
-  auto hostname = QString(cfg.host);
+  QString config_name = conf_get_str(cfg, CONF_config_name);
+  QString hostname = conf_get_str(cfg, CONF_host);
 
   if ((rc = newWnd->initTerminal())) goto err_exit;
 
@@ -156,7 +156,7 @@ void GuiMainWindow::tabCloseRequested(int index) {
   }
 }
 
-void GuiMainWindow::on_openNewSession(const Config &cfg, GuiBase::SplitType splittype) {
+void GuiMainWindow::on_openNewSession(Conf *cfg, GuiBase::SplitType splittype) {
   /*
    * 1. Context menu -> New Tab
    * 2. Main Menu -> New tab
@@ -169,8 +169,8 @@ void GuiMainWindow::on_openNewSession(const Config &cfg, GuiBase::SplitType spli
   }
   settingsWindow = new GuiSettingsWindow(this, splittype);
   // clang-format off
-  connect(settingsWindow, SIGNAL(signal_session_open(Config,GuiBase::SplitType)),
-          SLOT(on_createNewSession(Config,GuiBase::SplitType)));
+  connect(settingsWindow, SIGNAL(signal_session_open(Conf*,GuiBase::SplitType)),
+          SLOT(on_createNewSession(Conf*,GuiBase::SplitType)));
   connect(settingsWindow, SIGNAL(signal_session_close()), SLOT(on_settingsWindowClose()));
   // clang-format on
   settingsWindow->loadInitialSettings(cfg);
@@ -190,11 +190,11 @@ void GuiMainWindow::on_openNewCompactSession(GuiBase::SplitType splittype) {
   }
   compactSettingsWindow = new GuiCompactSettingsWindow(this, splittype);
   // clang-format off
-  connect(compactSettingsWindow, SIGNAL(signal_on_open(Config,GuiBase::SplitType)),
-          SLOT(on_createNewSession(Config,GuiBase::SplitType)));
+  connect(compactSettingsWindow, SIGNAL(signal_on_open(Conf*,GuiBase::SplitType)),
+          SLOT(on_createNewSession(Conf*,GuiBase::SplitType)));
   connect(compactSettingsWindow, SIGNAL(signal_on_close()), SLOT(on_settingsWindowClose()));
-  connect(compactSettingsWindow, SIGNAL(signal_on_detail(Config,GuiBase::SplitType)),
-          SLOT(on_openNewSession(Config,GuiBase::SplitType)));
+  connect(compactSettingsWindow, SIGNAL(signal_on_detail(Conf*,GuiBase::SplitType)),
+          SLOT(on_openNewSession(Conf*,GuiBase::SplitType)));
   // clang-format on
   compactSettingsWindow->show();
 }
@@ -219,14 +219,14 @@ void GuiMainWindow::on_changeSettingsTab(GuiTerminalWindow *termWnd) {
   settingsWindow = new GuiSettingsWindow(this);
   settingsWindow->enableModeChangeSettings(termWnd->cfg, termWnd);
   // clang-format off
-  connect(settingsWindow, SIGNAL(signal_session_change(Config,GuiTerminalWindow*)),
-          SLOT(on_changeSettingsTabComplete(Config,GuiTerminalWindow*)));
+  connect(settingsWindow, SIGNAL(signal_session_change(Conf*,GuiTerminalWindow*)),
+          SLOT(on_changeSettingsTabComplete(Conf*,GuiTerminalWindow*)));
   connect(settingsWindow, SIGNAL(signal_session_close()), SLOT(on_settingsWindowClose()));
   // clang-format on
   settingsWindow->show();
 }
 
-void GuiMainWindow::on_changeSettingsTabComplete(const Config &cfg, GuiTerminalWindow *termWnd) {
+void GuiMainWindow::on_changeSettingsTabComplete(Conf *cfg, GuiTerminalWindow *termWnd) {
   settingsWindow = NULL;
   assert(terminalList.indexOf(termWnd) != -1);
   termWnd->reconfigureTerminal(cfg);
@@ -257,120 +257,122 @@ void GuiMainWindow::currentChanged(int index) {
   }
 }
 
-int initConfigDefaults(Config *cfg) {
-  memset(cfg, 0, sizeof(Config));
-  cfg->protocol = PROT_SSH;
-  cfg->port = 22;
-  cfg->width = 80;
-  cfg->height = 30;
-  // cfg->savelines = 1000;
-  cfg->passive_telnet = 0;
-  strcpy(cfg->termtype, "xterm");
-  strcpy(cfg->termspeed, "38400,38400");
-  // strcpy(cfg->username, "user");
-  strcpy(cfg->environmt, "");
-  // strcpy(cfg->line_codepage, "ISO-8859-1:1998 (Latin-1, West Europe)");
-  strcpy(cfg->line_codepage, "ISO 8859-1");
-  cfg->vtmode = VT_UNICODE;
+int initConfigDefaults(Conf *cfg) {
+  if (0) memset(cfg, 0, 8);  // FIXME this is WRONG
+  conf_set_int(cfg, CONF_protocol, PROT_SSH);
+  conf_set_int(cfg, CONF_port, 22);
+  conf_set_int(cfg, CONF_width, 80);
+  conf_set_int(cfg, CONF_height, 30);
+  // conf_set_int(cfg, CONF_savelines, 1000);
+  conf_set_int(cfg, CONF_passive_telnet, 0);
+  conf_set_str(cfg, CONF_termtype, "xterm");
+  conf_set_str(cfg, CONF_termspeed, "38400,38400");
+  // conf_set_str(cfg, CONF_username, "user");
+  conf_set_str(cfg, CONF_environmt, "");
+  // conf_set_str(cfg, CONF_line_codepage, "ISO-8859-1:1998 (Latin-1, West Europe)");
+  conf_set_str(cfg, CONF_line_codepage, "ISO 8859-1");
+  conf_set_int(cfg, CONF_vtmode, VT_UNICODE);
   // char *ip_addr = /*"192.168.230.129";*/ "192.168.1.103";
 
   // font
-  strcpy(cfg->font.name, "Courier New");
-  cfg->font.height = 11;
-  cfg->font.isbold = 0;
-  cfg->font.charset = 0;
+  FontSpec font;
+  strcpy(font.name, "Courier New");
+  font.height = 11;
+  font.isbold = 0;
+  font.charset = 0;
+  conf_set_fontspec(cfg, CONF_font, &font);
 
   // colors
-  cfg->ansi_colour = 1;
-  cfg->xterm_256_colour = 1;
-  cfg->bold_colour = 1;
-  cfg->try_palette = 0;
-  cfg->system_colour = 0;
+  conf_set_int(cfg, CONF_ansi_colour, 1);
+  conf_set_int(cfg, CONF_xterm_256_colour, 1);
+#if 0
+  conf_set_int(cfg, CONF_bold_colour, 1);
+#endif
+  conf_set_int(cfg, CONF_try_palette, 0);
+  conf_set_int(cfg, CONF_system_colour, 0);
   static const char *const default_colors[] = {
       "187,187,187", "255,255,255", "0,0,0",       "85,85,85",   "0,0,0",     "0,255,0",
       "0,0,0",       "85,85,85",    "187,0,0",     "255,85,85",  "0,187,0",   "85,255,85",
       "187,187,0",   "255,255,85",  "0,0,187",     "85,85,255",  "187,0,187", "255,85,255",
       "0,187,187",   "85,255,255",  "187,187,187", "255,255,255"};
-  for (uint i = 0; i < lenof(cfg->colours); i++) {
+  for (uint i = 0; i < NCFGCOLOURS; i++) {
     int c0, c1, c2;
     if (sscanf(default_colors[i], "%d,%d,%d", &c0, &c1, &c2) == 3) {
-      cfg->colours[i][0] = c0;
-      cfg->colours[i][1] = c1;
-      cfg->colours[i][2] = c2;
+      conf_set_int_int(cfg, CONF_colours, i, qRgba(c0, c1, c2, 0XFF));
     }
   }
 
   // blink cursor
-  cfg->blink_cur = 0;
+  conf_set_int(cfg, CONF_blink_cur, 0);
 
-  cfg->funky_type = FUNKY_TILDE;
-  cfg->ctrlaltkeys = 1;
-  cfg->compose_key = 0;
-  cfg->no_applic_k = 0;
-  cfg->nethack_keypad = 0;
-  cfg->bksp_is_delete = 1;
-  cfg->rxvt_homeend = 0;
-  cfg->localedit = AUTO;
-  cfg->localecho = AUTO;
-  cfg->bidi = 0;
-  cfg->arabicshaping = 0;
-  cfg->ansi_colour = 1;
-  cfg->xterm_256_colour = 1;
+  conf_set_int(cfg, CONF_funky_type, FUNKY_TILDE);
+  conf_set_int(cfg, CONF_ctrlaltkeys, 1);
+  conf_set_int(cfg, CONF_compose_key, 0);
+  conf_set_int(cfg, CONF_no_applic_k, 0);
+  conf_set_int(cfg, CONF_nethack_keypad, 0);
+  conf_set_int(cfg, CONF_bksp_is_delete, 1);
+  conf_set_int(cfg, CONF_rxvt_homeend, 0);
+  conf_set_int(cfg, CONF_localedit, AUTO);
+  conf_set_int(cfg, CONF_localecho, AUTO);
+  conf_set_int(cfg, CONF_bidi, 0);
+  conf_set_int(cfg, CONF_arabicshaping, 0);
+  conf_set_int(cfg, CONF_ansi_colour, 1);
+  conf_set_int(cfg, CONF_xterm_256_colour, 1);
 
   // all cfg settings
-  cfg->warn_on_close = 1;
-  cfg->close_on_exit = 1;
-  cfg->tcp_nodelay = 1;
-  cfg->proxy_dns = 2;
+  conf_set_int(cfg, CONF_warn_on_close, 1);
+  conf_set_int(cfg, CONF_close_on_exit, 1);
+  conf_set_int(cfg, CONF_tcp_nodelay, 1);
+  conf_set_int(cfg, CONF_proxy_dns, 2);
 
   // strcpy(cfg->ttymodes, "INTR", 6);
 
-  cfg->remote_qtitle_action = 1;
-  cfg->telnet_newline = 1;
-  cfg->alt_f4 = 1;
-  cfg->scroll_on_disp = 1;
-  cfg->erase_to_scrollback = 1;
-  cfg->savelines = 20000;
-  cfg->wrap_mode = 1;
-  cfg->scrollbar = 1;
-  cfg->bce = 1;
-  cfg->window_border = 1;
-  strcpy(cfg->answerback, "PuTTY");
-  cfg->mouse_is_xterm = 0;
-  cfg->mouse_override = 1;
-  cfg->utf8_override = 1;
-  cfg->x11_forward = 1;
-  cfg->x11_auth = 1;
+  conf_set_int(cfg, CONF_remote_qtitle_action, 1);
+  conf_set_int(cfg, CONF_telnet_newline, 1);
+  conf_set_int(cfg, CONF_alt_f4, 1);
+  conf_set_int(cfg, CONF_scroll_on_disp, 1);
+  conf_set_int(cfg, CONF_erase_to_scrollback, 1);
+  conf_set_int(cfg, CONF_savelines, 20000);
+  conf_set_int(cfg, CONF_wrap_mode, 1);
+  conf_set_int(cfg, CONF_scrollbar, 1);
+  conf_set_int(cfg, CONF_bce, 1);
+  conf_set_int(cfg, CONF_window_border, 1);
+  conf_set_str(cfg, CONF_answerback, "PuTTY");
+  conf_set_int(cfg, CONF_mouse_is_xterm, 0);
+  conf_set_int(cfg, CONF_mouse_override, 1);
+  conf_set_int(cfg, CONF_utf8_override, 1);
+  conf_set_int(cfg, CONF_x11_forward, 1);
+  conf_set_int(cfg, CONF_x11_auth, 1);
 
   // ssh options
-  cfg->ssh_cipherlist[0] = 3;
-  cfg->ssh_cipherlist[1] = 2;
-  cfg->ssh_cipherlist[2] = 1;
-  cfg->ssh_cipherlist[3] = 0;
-  cfg->ssh_cipherlist[4] = 5;
-  cfg->ssh_cipherlist[5] = 4;
-  cfg->ssh_kexlist[0] = 3;
-  cfg->ssh_kexlist[1] = 2;
-  cfg->ssh_kexlist[2] = 1;
-  cfg->ssh_kexlist[3] = 4;
-  cfg->ssh_kexlist[4] = 0;
-  cfg->ssh_rekey_time = 60;
-  strcpy(cfg->ssh_rekey_data, "1G");
-  cfg->sshprot = 2;
-  cfg->ssh_show_banner = 1;
-  cfg->try_ki_auth = 1;
-  cfg->try_gssapi_auth = 0;  // TODO dont enable
-  cfg->sshbug_ignore1 = 2;
-  cfg->sshbug_plainpw1 = 2;
-  cfg->sshbug_rsa1 = 2;
-  cfg->sshbug_hmac2 = 2;
-  cfg->sshbug_derivekey2 = 2;
-  cfg->sshbug_rsapad2 = 2;
-  cfg->sshbug_pksessid2 = 2;
-  cfg->sshbug_rekey2 = 2;
-  cfg->sshbug_maxpkt2 = 2;
-  cfg->sshbug_ignore2 = 2;
-  cfg->ssh_simple = 0;
+  conf_set_int_int(cfg, CONF_ssh_cipherlist, 0, 3);
+  conf_set_int_int(cfg, CONF_ssh_cipherlist, 1, 2);
+  conf_set_int_int(cfg, CONF_ssh_cipherlist, 2, 1);
+  conf_set_int_int(cfg, CONF_ssh_cipherlist, 3, 0);
+  conf_set_int_int(cfg, CONF_ssh_cipherlist, 4, 5);
+  conf_set_int_int(cfg, CONF_ssh_cipherlist, 5, 4);
+  conf_set_int_int(cfg, CONF_ssh_kexlist, 0, 3);
+  conf_set_int_int(cfg, CONF_ssh_kexlist, 1, 2);
+  conf_set_int_int(cfg, CONF_ssh_kexlist, 2, 1);
+  conf_set_int_int(cfg, CONF_ssh_kexlist, 3, 4);
+  conf_set_int_int(cfg, CONF_ssh_kexlist, 4, 0);
+  conf_set_int(cfg, CONF_ssh_rekey_time, 60);
+  conf_set_str(cfg, CONF_ssh_rekey_data, "1G");
+  conf_set_int(cfg, CONF_sshprot, 2);
+  conf_set_int(cfg, CONF_ssh_show_banner, 1);
+  conf_set_int(cfg, CONF_try_ki_auth, 1);
+  conf_set_int(cfg, CONF_try_gssapi_auth, 0);  // TODO dont enable
+  conf_set_int(cfg, CONF_sshbug_ignore1, 2);
+  conf_set_int(cfg, CONF_sshbug_plainpw1, 2);
+  conf_set_int(cfg, CONF_sshbug_rsa1, 2);
+  conf_set_int(cfg, CONF_sshbug_hmac2, 2);
+  conf_set_int(cfg, CONF_sshbug_derivekey2, 2);
+  conf_set_int(cfg, CONF_sshbug_rsapad2, 2);
+  conf_set_int(cfg, CONF_sshbug_pksessid2, 2);
+  conf_set_int(cfg, CONF_sshbug_rekey2, 2);
+  conf_set_int(cfg, CONF_sshbug_maxpkt2, 2);
+  conf_set_int(cfg, CONF_sshbug_ignore2, 2);
+  conf_set_int(cfg, CONF_ssh_simple, 0);
 
   static const int cfg_wordness_defaults[] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -382,8 +384,7 @@ int initConfigDefaults(Config *cfg) {
       1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
       2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2, 2, 2};
-  for (uint i = 0; i < sizeof(cfg->wordness) / sizeof(cfg->wordness[0]); i++)
-    cfg->wordness[i] = cfg_wordness_defaults[i];
+  for (int i = 0; i < 256; i++) conf_set_int_int(cfg, CONF_wordness, i, cfg_wordness_defaults[i]);
 
   return 0;
 }
@@ -502,13 +503,17 @@ err_exit:
 
 void GuiMainWindow::setupTerminalSize(GuiTerminalWindow *newTerm) {
   // resize according to config if window is smaller
+  int newTerm_width = conf_get_int(newTerm->cfg, CONF_width);
+  int newTerm_height = conf_get_int(newTerm->cfg, CONF_height);
+
   if (!(windowState() & Qt::WindowMaximized) && (tabArea->count() == 1) /* only for 1st window */ &&
-      (newTerm->viewport()->width() < newTerm->cfg.width * newTerm->getFontWidth() ||
-       newTerm->viewport()->height() < newTerm->cfg.height * newTerm->getFontHeight())) {
+      (newTerm->viewport()->width() < newTerm_width * newTerm->getFontWidth() ||
+       newTerm->viewport()->height() < newTerm_height * newTerm->getFontHeight())) {
     this->resize(
-        newTerm->cfg.width * newTerm->getFontWidth() + width() - newTerm->viewport()->width(),
-        newTerm->cfg.height * newTerm->getFontHeight() + height() - newTerm->viewport()->height());
-    term_size(newTerm->term, newTerm->cfg.height, newTerm->cfg.width, newTerm->cfg.savelines);
+        newTerm_width * newTerm->getFontWidth() + width() - newTerm->viewport()->width(),
+        newTerm_height * newTerm->getFontHeight() + height() - newTerm->viewport()->height());
+    term_size(newTerm->term, newTerm_height, newTerm_width,
+              conf_get_int(newTerm->cfg, CONF_savelines));
   }
 }
 

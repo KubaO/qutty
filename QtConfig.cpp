@@ -1,15 +1,18 @@
 #define QUTTY_XMLIZE_STRUCTS
 
 #include "QtConfig.hpp"
-#include <QXmlStreamReader>
-#include <QXmlStreamWriter>
+
+#include <QDebug>
 #include <QDir>
 #include <QFile>
-#include <QObject>
-#include <QMessageBox>
-#include <QDebug>
 #include <QFileDialog>
+#include <QMessageBox>
+#include <QObject>
 #include <QString>
+#include <QXmlStreamReader>
+#include <QXmlStreamWriter>
+
+#include "QtConfigTag.h"
 #include "serialize/QtMRUSessionList.hpp"
 #include "serialize/QtWebPluginMap.hpp"
 
@@ -43,8 +46,7 @@ int QtConfig::readFromXML(QIODevice *device) {
   }
   while (xml.readNextStartElement()) {
     if (xml.name() == "config" && xml.attributes().value("version") == "1.0") {
-      Config cfg;
-      memset(&cfg, 0, sizeof(Config));
+      Conf *cfg = conf_new();
       while (xml.readNextStartElement()) {
         if (xml.name() == "dataelement") {
           QStringView tmptype = xml.attributes().value("datatype");
@@ -77,15 +79,16 @@ int QtConfig::readFromXML(QIODevice *device) {
   }
 #define QUTTY_SERIALIZE_ELEMENT_ARRAY(t, n, a) QUTTY_SERIALIZE_ELEMENT_ARRAY_##t(n, a);
 
+#if 0  // FIXME
           QUTTY_SERIALIZE_STRUCT_CONFIG_ELEMENT_LIST
+#endif
 
           if (tmptype == "unsigned char" && tmpname == "colours")
             for (i = 0; i < 22; i++) {
               int a, b, c;
               sscanf(tmpbuf + i * 9, "%X %X %X ", &a, &b, &c);
-              cfg.colours[i][0] = (uchar)a;
-              cfg.colours[i][1] = (uchar)b;
-              cfg.colours[i][2] = (uchar)c;
+              QRgb color = qRgb(a, b, c);
+              conf_set_int_int(cfg, CONF_colours, i, color);
             }
 #undef QUTTY_SERIALIZE_ELEMENT_ARRAY_short
 #undef QUTTY_SERIALIZE_ELEMENT_ARRAY_int
@@ -99,7 +102,7 @@ int QtConfig::readFromXML(QIODevice *device) {
           xml.skipCurrentElement();
         }
       }
-      config_list[QString(cfg.config_name)] = cfg;
+      config_list[QString(conf_get_str(cfg, CONF_config_name))] = cfg;
     } else if (xml.name() == "sshhostkeys" && xml.attributes().value("version") == "1.0") {
       while (xml.readNextStartElement()) {
         if (xml.name() == "entry") {
@@ -164,9 +167,9 @@ int QtConfig::writeToXML(QIODevice *device) {
     xml.writeEndElement();
   }
 
-  for (map<QString, Config>::iterator it = config_list.begin(); it != config_list.end(); it++) {
+  for (map<QString, Conf *>::iterator it = config_list.begin(); it != config_list.end(); it++) {
     int i;
-    Config *cfg = &(it->second);
+    Conf *cfg = it->second;
     xml.writeStartElement("config");
     xml.writeAttribute("version", "1.0");
 
@@ -196,11 +199,15 @@ int QtConfig::writeToXML(QIODevice *device) {
   XMLIZE(#type, #name, tmpbuf);
 #define QUTTY_SERIALIZE_ELEMENT_ARRAY(t, n, a) QUTTY_SERIALIZE_ELEMENT_ARRAY_##t(t, n, a);
 
+#if 0  // FIXME
     QUTTY_SERIALIZE_STRUCT_CONFIG_ELEMENT_LIST;
+#endif
 
-    for (i = 0, tmplen = 0; i < 22; i++)
-      tmplen += _snprintf(tmpbuf + tmplen, sizeof(tmpbuf) - tmplen, "%02X %02X %02X ",
-                          cfg->colours[i][0], cfg->colours[i][1], cfg->colours[i][2]);
+    for (i = 0, tmplen = 0; i < 22; i++) {
+      QColor color = QColor::fromRgb(conf_get_int_int(cfg, CONF_colours, i));
+      tmplen += _snprintf(tmpbuf + tmplen, sizeof(tmpbuf) - tmplen, "%02X %02X %02X ", color.red(),
+                          color.green(), color.blue());
+    }
     XMLIZE("unsigned char", "colours", tmpbuf);
 #undef QUTTY_SERIALIZE_ELEMENT_ARRAY_short
 #undef QUTTY_SERIALIZE_ELEMENT_ARRAY_int
@@ -248,9 +255,9 @@ bool QtConfig::restoreConfig() {
   }
 
   if (!file.exists()) {
-    Config cfg;
-    initConfigDefaults(&cfg);
-    strcpy(cfg.config_name, QUTTY_DEFAULT_CONFIG_SETTINGS);
+    Conf *cfg = conf_new();
+    initConfigDefaults(cfg);
+    conf_set_str(cfg, CONF_config_name, QUTTY_DEFAULT_CONFIG_SETTINGS);
     qutty_config.config_list[QUTTY_DEFAULT_CONFIG_SETTINGS] = cfg;
     saveConfig();
   }
@@ -277,23 +284,22 @@ bool QtConfig::restoreFromPuttyWinRegistry() {
 #ifdef _MSC_VER
   bool rc = true;
   struct sesslist savedSess;
-  void *sesskey;
-  Config cfg;
 
   get_sesslist(&savedSess, TRUE);
   qDebug() << "putty nsessions " << savedSess.nsessions;
   for (int i = 0; i < savedSess.nsessions; i++) {
-    memset(&cfg, 0, sizeof(cfg));
+    Conf *cfg = conf_new();
+    char *config_name = savedSess.sessions[i];
 
-    sesskey = open_settings_r(savedSess.sessions[i]);
-    load_open_settings(sesskey, &cfg);
+    void *sesskey = open_settings_r(config_name);
+    load_open_settings(sesskey, cfg);
     close_settings_r(sesskey);
 
-    strncpy(cfg.config_name, savedSess.sessions[i], sizeof(cfg.config_name));
-    this->config_list[QString(cfg.config_name)] = cfg;
+    conf_set_str(cfg, CONF_config_name, config_name);
+    this->config_list[QString(config_name)] = cfg;
 
-    qDebug() << "putty session " << i << " name " << savedSess.sessions[i] << " host " << cfg.host
-             << " port " << cfg.port;
+    qDebug() << "putty session " << i << " name " << savedSess.sessions[i] << " host "
+             << conf_get_str(cfg, CONF_host) << " port " << conf_get_int(cfg, CONF_port);
   }
 
   // load ssh hostkey list from registry

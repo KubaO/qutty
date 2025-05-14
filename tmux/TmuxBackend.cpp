@@ -41,7 +41,7 @@ extern "C" void tmux_sent(Plug /*plug*/, int /*bufsize*/) { qDebug() << __FUNCTI
  * Returns an error message, or NULL on success.
  */
 extern "C" const char *tmux_client_init(void *frontend_handle, void **backend_handle,
-                                        Config * /*cfg*/, char * /*host*/, int port,
+                                        Conf * /*cfg*/, char * /*host*/, int port,
                                         char ** /*realhost*/, int /*nodelay*/, int /*keepalive*/) {
   static const struct plug_function_table fn_table = {tmux_log, tmux_closing, tmux_receive,
                                                       tmux_sent, NULL};
@@ -63,7 +63,7 @@ extern "C" void tmux_free(void *plug) {
   delete handle;
 }
 
-extern "C" void tmux_reconfig(void * /*handle*/, Config * /*cfg*/) {}
+extern "C" void tmux_reconfig(void * /*handle*/, Conf * /*cfg*/) {}
 
 /*
  * Called to send data down the backend connection.

@@ -84,7 +84,7 @@ typedef struct telnet_tag {
   int sb_size;
   int state;
 
-  Config cfg;
+  Conf *cfg;
 
   Pinger pinger;
 } * Telnet;

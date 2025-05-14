@@ -161,7 +161,7 @@ void GuiSettingsWindow::on_rb_contype_ssh_clicked() { ui->le_port->setText("22")
 
 void GuiSettingsWindow::on_buttonBox_accepted() {
   if (isChangeSettingsMode) {
-    emit signal_session_change(*getConfig(), termWnd);
+    emit signal_session_change(getConfig(), termWnd);
     goto cu0;
   }
 
@@ -176,9 +176,9 @@ void GuiSettingsWindow::on_buttonBox_accepted() {
     setConfig(qutty_config.config_list[config_name]);
   }
   // check for NOT_YET_SUPPORTED configs
-  chkUnsupportedConfigs(*getConfig());
+  chkUnsupportedConfigs(getConfig());
 
-  emit signal_session_open(*getConfig(), openMode);
+  emit signal_session_open(getConfig(), openMode);
 
 cu0:
   this->close();
@@ -199,217 +199,414 @@ void GuiSettingsWindow::saveConfigChanges() {
   qutty_config.saveConfig();
 }
 
-void GuiSettingsWindow::setConfig(const Config &_cfg) {
+#define UI_MAPPING(X)                                         \
+  /* control name, keyword, value (opt) */                    \
+  X("le_hostname", host)                                      \
+  X("le_port", port)                                          \
+  /* we could also use gb_contype etc. */                     \
+  X("rb_contype_ssh", protocol, PROT_SSH)                     \
+  X("rb_contype_telnet", protocol, PROT_TELNET)               \
+  X("gp_exit_close", close_on_exit)                           \
+  /* Session Logging */                                       \
+  X("gp_seslog", logtype)                                     \
+  X("le_sessionlog_filename", logfilename)                    \
+  X("chb_sessionlog_flush", logflush)                         \
+  X("chb_sessionlog_omitpasswd", logomitpass)                 \
+  X("chb_sessionlog_omitdata", logomitdata)                   \
+  /* Terminal Emulation */                                    \
+  X("chb_terminaloption_autowrap", wrap_mode)                 \
+  X("chb_terminaloption_decorigin", dec_om)                   \
+  X("chb_terminaloption_lf", lfhascr)                         \
+  X("chb_terminaloption_bgcolor", bce)                        \
+  X("chb_terminaloption_blinktext", blinktext)                \
+  X("le_termopt_ansback", answerback)                         \
+  X("gp_termopt_echo", localecho)                             \
+  X("gp_termopt_edit", localedit)                             \
+  /* Keyboard Options */                                      \
+  X("rb_backspacekey_ctrlh", bksp_is_delete, true)            \
+  X("rb_backspace_ctrl127", bksp_is_delete, false)            \
+  X("rb_homeendkeys_rxvt", rxvt_homeend, true)                \
+  X("rb_homeendkeys_std", rxvt_homeend, false)                \
+  X("gp_fnkeys", funky_type)                                  \
+  X("rb_inicursorkeys_app", app_cursor, true)                 \
+  X("rb_inicursorkeys_normal", app_cursor, false)             \
+  /* nethack_keypad and app_keypad are mutually exclusive! */ \
+  X("rb_ininumkeys_app", app_keypad, true)                    \
+  X("rb_ininumkeys_normal", app_keypad, false)                \
+  X("rb_ininumerickeys_nethack", nethack_keypad, true)        \
+  X("chb_altgrkey", compose_key)                              \
+  X("chb_ctrl_alt", ctrlaltkeys)                              \
+  /* Terminal Features */                                     \
+  X("chb_no_applic_c", no_applic_c)                           \
+  X("chb_no_applic_k", no_applic_k)                           \
+  X("chb_no_mouse_rep", no_mouse_rep)                         \
+  X("chb_no_remote_resize", no_remote_resize)                 \
+  X("chb_no_alt_screen", no_alt_screen)                       \
+  X("chb_no_remote_wintitle", no_remote_wintitle)             \
+  X("chb_no_dbackspace", no_dbackspace)                       \
+  X("chb_no_remote_charset", no_remote_charset)               \
+  X("chb_no_arabic", arabicshaping)                           \
+  X("chb_no_bidi", bidi)                                      \
+  X("gp_remote_qtitle_action", remote_qtitle_action)          \
+  /* Window  */                                               \
+  X("le_window_column", width)                                \
+  X("le_window_row", height)                                  \
+  X("le_wndscroll_lines", savelines)                          \
+  X("chb_wndscroll_display", scrollbar)                       \
+  X("chb_wndscroll_fullscreen", scrollbar_in_fullscreen)      \
+  X("chb_wndscroll_resetdisply", scroll_on_disp)              \
+  X("chb_wndscroll_resetkeypress", scroll_on_key)             \
+  X("chb_wndscroll_pusherasedtext", erase_to_scrollback)      \
+  X("gp_resize_action", resize_action)                        \
+  X("gp_curappear", cursor_type)                              \
+  X("chb_curblink", blink_cur)                                \
+  X("gp_fontquality", font_quality)                           \
+  X("chb_behaviour_warn", warn_on_close)                      \
+  /* Connection  */                                           \
+  X("le_ping_interval", ping_interval)                        \
+  X("chb_tcp_keepalive", tcp_keepalives)                      \
+  X("chb_tcp_nodelay", tcp_nodelay)                           \
+  X("gp_addressfamily", addressfamily)                        \
+  X("le_loghost", loghost)                                    \
+  /* Connection Data  */                                      \
+  X("le_datausername", username)                              \
+  X("rb_datausername_systemsuse", username_from_env, true)    \
+  X("rb_datausername_prompt", username_from_env, false)       \
+  /* Telnet */                                                \
+  X("le_termtype", termtype)                                  \
+  X("le_termspeed", termspeed)                                \
+  /* SSH Options */                                           \
+  X("le_remote_cmd", remote_cmd)                              \
+  /* SSH Auth  */                                             \
+  X("chb_ssh_no_userauth", ssh_no_userauth)                   \
+  X("chb_ssh_show_banner", ssh_show_banner)                   \
+  X("chb_ssh_tryagent", tryagent)                             \
+  X("chb_ssh_try_tis_auth", try_tis_auth)                     \
+  X("chb_ssh_try_ki_auth", try_ki_auth)                       \
+  X("chb_ssh_agentfwd", agentfwd)                             \
+  X("chb_ssh_change_username", change_username)               \
+  X("le_ssh_auth_keyfile", keyfile)
+
+/*
+ * These options are yet to be incorporated into the UI.
+ * They are here to ensure they are valid CONF_ keys,
+ * keeping the scope of work known.
+ */
+#define UI_MAPPING_TODO(X)                 \
+  /* control name, keyword, value (opt) */ \
+  /* Proxy options */                      \
+  X("", proxy_exclude_list)                \
+  X("", proxy_dns)                         \
+  X("", even_proxy_localhost)              \
+  X("", proxy_type)                        \
+  X("", proxy_host)                        \
+  X("", proxy_port)                        \
+  X("", proxy_username)                    \
+  X("", proxy_password)                    \
+  X("", proxy_telnet_command)              \
+  /* SSH options */                        \
+  X("", remote_cmd2)                       \
+  X("", nopty)                             \
+  X("", compression)                       \
+  X("", ssh_kexlist)                       \
+  X("", ssh_rekey_time)                    \
+  X("", ssh_rekey_data)                    \
+  X("", ssh_cipherlist)                    \
+  X("", sshprot)                           \
+  X("", ssh2_des_cbc)                      \
+  X("", try_gssapi_auth)                   \
+  X("", gssapifwd)                         \
+  X("", ssh_gsslist)                       \
+  X("", ssh_gss_custom)                    \
+  X("", ssh_subsys)                        \
+  X("", ssh_subsys2)                       \
+  X("", ssh_no_shell)                      \
+  X("", ssh_nc_host)                       \
+  X("", ssh_nc_port)                       \
+  /* Telnet */                             \
+  X("", ttymodes)                          \
+  X("", environmt)                         \
+  X("", localusername)                     \
+  X("", rfc_environ)                       \
+  X("", passive_telnet)                    \
+  /* Serial Port  */                       \
+  X("", serline)                           \
+  X("", serspeed)                          \
+  X("", serdatabits)                       \
+  X("", serstopbits)                       \
+  X("", serparity)                         \
+  X("", serflow)                           \
+  /* Keyboard */                           \
+  X("", telnet_keyboard)                   \
+  X("", telnet_newline)                    \
+  X("", alt_f4)                            \
+  X("", alt_space)                         \
+  X("", alt_only)                          \
+  X("", alwaysontop)                       \
+  X("", fullscreenonaltenter)              \
+  X("", wintitle)                          \
+  /* Terminal */                           \
+  X("", beep)                              \
+  X("", beep_ind)                          \
+  X("", bellovl)                           \
+  X("", bellovl_n)                         \
+  X("", bellovl_t)                         \
+  X("", bellovl_s)                         \
+  X("", bell_wavefile)                     \
+  X("", bce)                               \
+  X("", win_name_always)                   \
+  X("", hide_mouseptr)                     \
+  X("", sunken_edge)                       \
+  X("", window_border)                     \
+  X("", printer)                           \
+  /* Colour  */                            \
+  X("", ansi_colour)                       \
+  X("", xterm_256_colour)                  \
+  X("", system_colour)                     \
+  X("", try_palette)                       \
+  X("", bold_style)                        \
+  /* Selection  */                         \
+  X("", mouse_is_xterm)                    \
+  X("", rect_select)                       \
+  X("", rawcnp)                            \
+  X("", rtf_paste)                         \
+  X("", mouse_override)                    \
+  X("", wordness)                          \
+  /* translations */                       \
+  X("", vtmode)                            \
+  X("", cjk_ambig_wide)                    \
+  X("", utf8_override)                     \
+  X("", xlat_capslockcyr)                  \
+  /* X11 */                                \
+  X("", x11_forward)                       \
+  X("", x11_display)                       \
+  X("", x11_auth)                          \
+  X("", xauthfile)                         \
+  /* Port Forwarding */                    \
+  X("", lport_acceptall)                   \
+  X("", rport_acceptall)                   \
+  X("", portfwd)                           \
+  /* SSH Bug Compatibility Modes */        \
+  X("", sshbug_ignore1)                    \
+  X("", sshbug_plainpw1)                   \
+  X("", sshbug_rsa1)                       \
+  X("", sshbug_hmac2)                      \
+  X("", sshbug_derivekey2)                 \
+  X("", sshbug_rsapad2)                    \
+  X("", sshbug_pksessid2)                  \
+  X("", sshbug_rekey2)                     \
+  X("", sshbug_maxpkt2)                    \
+  X("", sshbug_ignore2)                    \
+  X("", sshbug_winadj)                     \
+  X("", ssh_simple)                        \
+  /* Pterm */                              \
+  X("", stamp_utmp)                        \
+  X("", login_shell)                       \
+  X("", scrollbar_on_left)                 \
+  X("", shadowbold)                        \
+  X("", boldfont)                          \
+  X("", widefont)                          \
+  X("", wideboldfont)                      \
+  X("", shadowboldoffset)                  \
+  X("", crhaslf)                           \
+  X("", winclass)
+
+#define CONF_VALIDATOR(name, key, ...) key = CONF_##key,
+enum class UI_MAPPING_TODO_VALID { UI_MAPPING_TODO(CONF_VALIDATOR) };
+
+#define UI_TO_KEY_ENTRY(ui, key, ...) {ui, {CONF_##key __VA_OPT__(, ) __VA_ARGS__}},
+struct KeyValue {
+  config_primary_key key;
+  int value = -1;
+  bool is_bool = false;
+
+  KeyValue(config_primary_key key, bool value) : key(key), value(int(value)), is_bool(true) {}
+  KeyValue(config_primary_key key, int value) : key(key), value(value) {}
+  KeyValue(config_primary_key key) : key(key) {}
+};
+
+static const std::unordered_map<std::string, KeyValue> UI_TO_KV = {UI_MAPPING(UI_TO_KEY_ENTRY)};
+
+enum Type {
+  TYPE_NONE,
+  TYPE_STR,
+  TYPE_INT,
+  TYPE_FILENAME,
+  TYPE_FONT,
+};
+
+#define KEY_TO_TYPE_ENTRY(value, subkey, key) {CONF_##key, TYPE_##value},
+static const std::unordered_map<config_primary_key, Type> KEY_TO_TYPE = {
+    CONFIG_OPTIONS(KEY_TO_TYPE_ENTRY)};
+
+void GuiSettingsWindow::setConfig(Conf *_cfg) {
   int ind;
 
   this->cfg = _cfg;
 
   // update the ui with the given settings
-  if (cfg.host[0] != '\0') ui->le_hostname->setText(cfg.host);
 
-  (cfg.protocol == PROT_SSH ? ui->rb_contype_ssh : ui->rb_contype_telnet)->click();
-  ui->le_port->setText(QString::number(cfg.port));
+  for (QWidget *widget : findChildren<QWidget *>()) {
+    auto ikv = UI_TO_KV.find(widget->objectName().toStdString());
+    if (ikv == UI_TO_KV.end()) continue;
 
-  auto cfg_name_split = qutty_string_split(string(cfg.config_name), QUTTY_SESSION_NAME_SPLIT);
+    const KeyValue &kv = ikv->second;
+    config_primary_key const key = kv.key;
+    int const value = kv.value;
+    Type const type = KEY_TO_TYPE.at(key);
+
+    QCheckBox *cb = qobject_cast<QCheckBox *>(widget);
+    if (cb) {
+      assert(type == TYPE_INT);
+      cb->setChecked(conf_get_int(cfg, key));
+      continue;
+    }
+    QLineEdit *le = qobject_cast<QLineEdit *>(widget);
+    if (le) {
+      if (type == TYPE_STR)
+        le->setText(conf_get_str(cfg, key));
+      else if (type == TYPE_INT)
+        le->setText(QString::number(conf_get_int(cfg, key)));
+      else if (type == TYPE_FILENAME)
+        le->setText(conf_get_filename(cfg, key)->path);
+      continue;
+    }
+    QButtonGroup *bg = qobject_cast<QButtonGroup *>(widget);
+    if (bg) {
+      assert(type == TYPE_INT);
+      bg->button(conf_get_int(cfg, key))->click();
+      continue;
+    }
+    QRadioButton *rb = qobject_cast<QRadioButton *>(widget);
+    if (rb) {
+      assert(type == TYPE_INT);
+      int cv = conf_get_int(cfg, key);
+      if (kv.is_bool) {
+        if (cv && value || !cb && !value) rb->click();
+      } else {
+        if (cv == value) rb->click();
+      }
+      continue;
+    }
+  }
+
+  if (0) {  // FIXME - does this matter?
+    char *host = conf_get_str(cfg, CONF_host);
+    if (host[0] != '\0') ui->le_hostname->setText(host);
+  }
+
+  char *config_name = conf_get_str(cfg, CONF_config_name);
+  auto cfg_name_split = qutty_string_split(string(config_name), QUTTY_SESSION_NAME_SPLIT);
   ui->le_saved_sess->setText(QString::fromStdString(cfg_name_split.back()));
 
   QList<QTreeWidgetItem *> sel_saved_sess =
-      ui->l_saved_sess->findItems(cfg.config_name, Qt::MatchExactly);
+      ui->l_saved_sess->findItems(config_name, Qt::MatchExactly);
   if (sel_saved_sess.size() > 0) ui->l_saved_sess->setCurrentItem(sel_saved_sess[0]);
 
-  ui->gp_exit_close->button(cfg.close_on_exit)->click();
-
   /* Options controlling session logging */
-  ui->gp_seslog->button(cfg.logtype)->click();
-  ui->le_sessionlog_filename->setText(cfg.logfilename.path);
-  if (cfg.logxfovr == LGXF_ASK)  // handle -ve value
+  if (conf_get_int(cfg, CONF_logxfovr) == LGXF_ASK)  // handle -ve value
     ui->gp_logfile->button(LGXF_ASK__)->click();
   else
-    ui->gp_logfile->button(cfg.logxfovr)->click();
-  ui->chb_sessionlog_flush->setChecked(cfg.logflush);
-  ui->chb_sessionlog_omitpasswd->setChecked(cfg.logomitpass);
-  ui->chb_sessionlog_omitdata->setChecked(cfg.logomitdata);
-
-  /* Options controlling the terminal emulation */
-  ui->chb_terminaloption_autowrap->setChecked(cfg.wrap_mode);
-  ui->chb_terminaloption_decorigin->setChecked(cfg.dec_om);
-  ui->chb_terminaloption_lf->setChecked(cfg.lfhascr);
-  ui->chb_terminaloption_bgcolor->setChecked(cfg.bce);
-  ui->chb_terminaloption_blinktext->setChecked(cfg.blinktext);
-  ui->le_termopt_ansback->setText(cfg.answerback);
-  ui->gp_termopt_echo->button(cfg.localecho)->click();
-  ui->gp_termopt_edit->button(cfg.localedit)->click();
-
-  /* keyboard options */
-  (cfg.bksp_is_delete ? ui->rb_backspacekey_ctrlh : ui->rb_backspace_ctrl127)->setChecked(true);
-  (cfg.rxvt_homeend ? ui->rb_homeendkeys_rxvt : ui->rb_homeendkeys_std)->setChecked(true);
-  ui->gp_fnkeys->button(cfg.funky_type)->click();
-  (cfg.app_cursor ? ui->rb_inicursorkeys_app : ui->rb_inicursorkeys_normal)->setChecked(true);
-  (cfg.nethack_keypad
-       ? ui->rb_ininumerickeys_nethack
-       : cfg.app_keypad ? ui->rb_ininumkeys_app : ui->rb_ininumkeys_normal)->setChecked(true);
-  ui->chb_altgrkey->setChecked(cfg.compose_key);
-  ui->chb_ctrl_alt->setChecked(cfg.ctrlaltkeys);
-
-  /* terminal features */
-  ui->chb_no_applic_c->setChecked(cfg.no_applic_c);
-  ui->chb_no_applic_k->setChecked(cfg.no_applic_k);
-  ui->chb_no_mouse_rep->setChecked(cfg.no_mouse_rep);
-  ui->chb_no_remote_resize->setChecked(cfg.no_remote_resize);
-  ui->chb_no_alt_screen->setChecked(cfg.no_alt_screen);
-  ui->chb_no_remote_wintitle->setChecked(cfg.no_remote_wintitle);
-  ui->chb_no_dbackspace->setChecked(cfg.no_dbackspace);
-  ui->chb_no_remote_charset->setChecked(cfg.no_remote_charset);
-  ui->chb_no_arabic->setChecked(cfg.arabicshaping);
-  ui->chb_no_bidi->setChecked(cfg.bidi);
-  ui->gp_remote_qtitle_action->button(cfg.remote_qtitle_action)->click();
+    ui->gp_logfile->button(conf_get_int(cfg, CONF_logxfovr))->click();
+  ui->chb_sessionlog_flush->setChecked(true);
 
   /* window options */
-  ui->le_window_column->setText(QString::number(cfg.width));
-  ui->le_window_row->setText(QString::number(cfg.height));
-  ui->le_wndscroll_lines->setText(QString::number(cfg.savelines));
-  ui->chb_wndscroll_display->setChecked(cfg.scrollbar);
-  ui->chb_wndscroll_fullscreen->setChecked(cfg.scrollbar_in_fullscreen);
-  ui->chb_wndscroll_resetdisply->setChecked(cfg.scroll_on_disp);
-  ui->chb_wndscroll_resetkeypress->setChecked(cfg.scroll_on_key);
-  ui->chb_wndscroll_pusherasedtext->setChecked(cfg.erase_to_scrollback);
-  ui->gp_resize_action->button(cfg.resize_action)->click();
-  ui->gp_curappear->button(cfg.cursor_type)->click();
-  ui->chb_curblink->setChecked(cfg.blink_cur);
-  ui->gp_fontquality->button(cfg.font_quality)->click();
+  FontSpec &font = *conf_get_fontspec(cfg, CONF_font);
   ui->lbl_fontsel->setText(
       QString("%1, %2%3-point")
-          .arg(cfg.font.name, cfg.font.isbold ? "Bold, " : "", QString::number(cfg.font.height)));
-  ui->chb_behaviour_warn->setChecked(cfg.warn_on_close);
-  ind = ui->cb_codepage->findText(cfg.line_codepage);
+          .arg(font.name, font.isbold ? "Bold, " : "", QString::number(font.height)));
+  ind = ui->cb_codepage->findText(conf_get_str(cfg, CONF_line_codepage));
   if (ind == -1) ind = 0;
   ui->cb_codepage->setCurrentIndex(ind);
-
-  /* connection options */
-  ui->le_ping_interval->setText(QString::number(cfg.ping_interval));
-  ui->chb_tcp_keepalive->setChecked(cfg.tcp_keepalives);
-  ui->chb_tcp_nodelay->setChecked(cfg.tcp_nodelay);
-  ui->gp_addressfamily->button(cfg.addressfamily)->click();
-  ui->le_loghost->setText(cfg.loghost);
-
-  /* connection data options */
-  ui->le_datausername->setText(cfg.username);
-  (cfg.username_from_env ? ui->rb_datausername_systemsuse : ui->rb_datausername_prompt)
-      ->setChecked(true);
-  ui->le_termtype->setText(cfg.termtype);
-  ui->le_termspeed->setText(cfg.termspeed);
-
-  /* ssh options */
-  ui->le_remote_cmd->setText(cfg.remote_cmd);
-
-  /* ssh auth options */
-  ui->chb_ssh_no_userauth->setChecked(cfg.ssh_no_userauth);
-  ui->chb_ssh_show_banner->setChecked(cfg.ssh_show_banner);
-  ui->chb_ssh_tryagent->setChecked(cfg.tryagent);
-  ui->chb_ssh_try_tis_auth->setChecked(cfg.try_tis_auth);
-  ui->chb_ssh_try_ki_auth->setChecked(cfg.try_ki_auth);
-  ui->chb_ssh_agentfwd->setChecked(cfg.agentfwd);
-  ui->chb_ssh_change_username->setChecked(cfg.change_username);
-  ui->le_ssh_auth_keyfile->setText(cfg.keyfile.path);
 }
 
-Config *GuiSettingsWindow::getConfig() {
-  Config *cfg = &this->cfg;
+static void getChecked(Conf *conf, config_primary_key key, QAbstractButton *src) {
+  conf_set_int(conf, key, src->isChecked() ? 1 : 0);
+}
+
+static void getCheckedId(Conf *conf, config_primary_key key, QButtonGroup *src) {
+  conf_set_int(conf, key, src->checkedId());
+}
+
+static void getText(Conf *conf, config_primary_key key, QLineEdit *src) {
+  QByteArray text = src->text().toUtf8();
+  conf_set_str(conf, key, text.data());
+}
+
+static void getTextVariant(Conf *conf, config_primary_key key, const QVariant &var) {
+  QByteArray text = var.toString().toUtf8();
+  conf_set_str(conf, key, text);
+}
+
+static void getTextPath(Conf *conf, config_primary_key key, QLineEdit *src) {
+  Filename *fn = conf_get_filename(conf, key);
+  qstring_to_char(fn->path, src->text(), sizeof(fn->path));
+  conf_set_filename(conf, key, fn);
+}
+
+static void getTextAsNumber(Conf *conf, config_primary_key key, QLineEdit *src) {
+  QByteArray text = src->text().toUtf8();
+  conf_set_int(conf, key, text.toInt());
+}
+
+Conf *GuiSettingsWindow::getConfig() {
+  Conf *cfg = this->cfg;
 
   // update the config with current ui selection and return it
-  qstring_to_char(cfg->host, ui->le_hostname->text(), sizeof(cfg->host));
-  cfg->port = ui->le_port->text().toInt();
-  cfg->protocol = ui->gp_contype->checkedButton() == ui->rb_contype_ssh ? PROT_SSH : PROT_TELNET;
+
+  for (QWidget *const widget : findChildren<QWidget *>()) {
+    auto ikv = UI_TO_KV.find(widget->objectName().toStdString());
+    if (ikv == UI_TO_KV.end()) continue;
+
+    const KeyValue &kv = ikv->second;
+    config_primary_key const key = kv.key;
+    int const value = kv.value;
+    Type const type = KEY_TO_TYPE.at(key);
+
+    QCheckBox *cb = qobject_cast<QCheckBox *>(widget);
+    if (cb) {
+      assert(type == TYPE_INT);
+      conf_set_int(cfg, key, cb->isChecked());
+      continue;
+    }
+    QLineEdit *le = qobject_cast<QLineEdit *>(widget);
+    if (le) {
+      if (type == TYPE_STR)
+        conf_set_str(cfg, key, le->text().toUtf8());
+      else if (type == TYPE_INT) {
+        bool ok;
+        int i = le->text().toInt(&ok);
+        if (ok) conf_set_int(cfg, key, i);
+      } else if (type == TYPE_FILENAME) {
+        Filename fn = *conf_get_filename(cfg, key);
+        qstring_to_char(fn.path, le->text(), sizeof(fn.path));
+        conf_set_filename(cfg, key, &fn);
+      }
+      continue;
+    }
+    QButtonGroup *bg = qobject_cast<QButtonGroup *>(widget);
+    if (bg) {
+      assert(type == TYPE_INT);
+      conf_set_int(cfg, key, bg->checkedId());
+      continue;
+    }
+    QRadioButton *rb = qobject_cast<QRadioButton *>(widget);
+    if (rb) {
+      assert(type == TYPE_INT);
+      if (rb->isChecked()) conf_set_int(cfg, key, value);
+      continue;
+    }
+  }
+
   if (ui->l_saved_sess->currentItem())
-    qstring_to_char(cfg->config_name,
-                    ui->l_saved_sess->currentItem()->data(0, QUTTY_ROLE_FULL_SESSNAME).toString(),
-                    sizeof(cfg->config_name));
+    getTextVariant(cfg, CONF_config_name,
+                   ui->l_saved_sess->currentItem()->data(0, QUTTY_ROLE_FULL_SESSNAME));
 
-  cfg->close_on_exit = ui->gp_exit_close->checkedId();
+  /* Session Logging */
+  getCheckedId(cfg, CONF_logxfovr, ui->gp_logfile);
 
-  /* Options controlling session logging */
-  cfg->logtype = ui->gp_seslog->checkedId();
-  qstring_to_char(cfg->logfilename.path, ui->le_sessionlog_filename->text(),
-                  sizeof(cfg->logfilename.path));
-  cfg->logxfovr = ui->gp_logfile->checkedId();
-  cfg->logflush = ui->chb_sessionlog_flush->isChecked() ? 1 : 0;
-  cfg->logomitpass = ui->chb_sessionlog_omitpasswd->isChecked() ? 1 : 0;
-  cfg->logomitdata = ui->chb_sessionlog_omitdata->isChecked() ? 1 : 0;
-
-  /* Options controlling the terminal emulation */
-  cfg->wrap_mode = ui->chb_terminaloption_autowrap->isChecked() ? 1 : 0;
-  cfg->dec_om = ui->chb_terminaloption_decorigin->isChecked() ? 1 : 0;
-  cfg->lfhascr = ui->chb_terminaloption_lf->isChecked() ? 1 : 0;
-  cfg->bce = ui->chb_terminaloption_bgcolor->isChecked() ? 1 : 0;
-  cfg->blinktext = ui->chb_terminaloption_blinktext->isChecked() ? 1 : 0;
-  qstring_to_char(cfg->answerback, ui->le_termopt_ansback->text(), sizeof(cfg->answerback));
-  cfg->localecho = ui->gp_termopt_echo->checkedId();
-  cfg->localedit = ui->gp_termopt_edit->checkedId();
-
-  /* keyboard options */
-  cfg->bksp_is_delete = ui->rb_backspacekey_ctrlh->isChecked() ? 1 : 0;
-  cfg->rxvt_homeend = ui->rb_homeendkeys_rxvt->isChecked() ? 1 : 0;
-  cfg->funky_type = ui->gp_fnkeys->checkedId();
-  cfg->app_cursor = ui->rb_inicursorkeys_app->isChecked();
-  cfg->nethack_keypad = ui->rb_ininumerickeys_nethack->isChecked();
-  cfg->app_keypad = ui->rb_ininumkeys_app->isChecked();
-  cfg->compose_key = ui->chb_altgrkey->isChecked();
-  cfg->ctrlaltkeys = ui->chb_ctrl_alt->isChecked();
-
-  /* terminal features */
-  cfg->no_applic_c = ui->chb_no_applic_c->isChecked();
-  cfg->no_applic_k = ui->chb_no_applic_k->isChecked();
-  cfg->no_mouse_rep = ui->chb_no_mouse_rep->isChecked();
-  cfg->no_remote_resize = ui->chb_no_remote_resize->isChecked();
-  cfg->no_alt_screen = ui->chb_no_alt_screen->isChecked();
-  cfg->no_remote_wintitle = ui->chb_no_remote_wintitle->isChecked();
-  cfg->no_dbackspace = ui->chb_no_dbackspace->isChecked();
-  cfg->no_remote_charset = ui->chb_no_remote_charset->isChecked();
-  cfg->arabicshaping = ui->chb_no_arabic->isChecked();
-  cfg->bidi = ui->chb_no_bidi->isChecked();
-  cfg->remote_qtitle_action = ui->gp_remote_qtitle_action->checkedId();
-
-  /* window options */
-  cfg->width = ui->le_window_column->text().toInt();
-  cfg->height = ui->le_window_row->text().toInt();
-  cfg->savelines = ui->le_wndscroll_lines->text().toInt();
-  cfg->scrollbar = ui->chb_wndscroll_display->isChecked();
-  cfg->scrollbar_in_fullscreen = ui->chb_wndscroll_fullscreen->isChecked();
-  cfg->scroll_on_disp = ui->chb_wndscroll_resetdisply->isChecked();
-  cfg->scroll_on_key = ui->chb_wndscroll_resetkeypress->isChecked();
-  cfg->erase_to_scrollback = ui->chb_wndscroll_pusherasedtext->isChecked();
-  cfg->resize_action = ui->gp_resize_action->checkedId();
-  cfg->cursor_type = ui->gp_curappear->checkedId();
-  cfg->blink_cur = ui->chb_curblink->isChecked();
-  cfg->font_quality = ui->gp_fontquality->checkedId();
-  cfg->warn_on_close = ui->chb_behaviour_warn->isChecked();
-  qstring_to_char(cfg->line_codepage, ui->cb_codepage->currentText(), sizeof(cfg->line_codepage));
-
-  /* connection options */
-  cfg->ping_interval = ui->le_ping_interval->text().toInt();
-  cfg->tcp_keepalives = ui->chb_tcp_keepalive->isChecked();
-  cfg->tcp_nodelay = ui->chb_tcp_nodelay->isChecked();
-  cfg->addressfamily = ui->gp_addressfamily->checkedId();
-  qstring_to_char(cfg->loghost, ui->le_loghost->text(), sizeof(cfg->loghost));
-
-  /* connection data options */
-  qstring_to_char(cfg->username, ui->le_datausername->text(), sizeof(cfg->username));
-  cfg->username_from_env = ui->rb_datausername_systemsuse->isChecked();
-  qstring_to_char(cfg->termtype, ui->le_termtype->text(), sizeof(cfg->termtype));
-  qstring_to_char(cfg->termspeed, ui->le_termspeed->text(), sizeof(cfg->termspeed));
-
-  /* ssh options */
-  qstring_to_char(cfg->remote_cmd, ui->le_remote_cmd->text(), sizeof(cfg->remote_cmd));
-
-  /* ssh auth options */
-  cfg->ssh_no_userauth = ui->chb_ssh_no_userauth->isChecked();
-  cfg->ssh_show_banner = ui->chb_ssh_show_banner->isChecked();
-  cfg->tryagent = ui->chb_ssh_tryagent->isChecked();
-  cfg->try_tis_auth = ui->chb_ssh_try_tis_auth->isChecked();
-  cfg->try_ki_auth = ui->chb_ssh_try_ki_auth->isChecked();
-  cfg->agentfwd = ui->chb_ssh_agentfwd->isChecked();
-  cfg->change_username = ui->chb_ssh_change_username->isChecked();
-  qstring_to_char(cfg->keyfile.path, ui->le_ssh_auth_keyfile->text(), sizeof(cfg->keyfile.path));
+  /* Window */
+  conf_set_str(cfg, CONF_line_codepage, ui->cb_codepage->currentText().toUtf8());
 
   return cfg;
 }
@@ -418,7 +615,7 @@ void GuiSettingsWindow::loadSessionNames() {
   map<QString, QTreeWidgetItem *> folders;
   folders[""] = ui->l_saved_sess->invisibleRootItem();
   ui->l_saved_sess->clear();
-  for (std::map<QString, Config>::iterator it = qutty_config.config_list.begin();
+  for (std::map<QString, Conf *>::iterator it = qutty_config.config_list.begin();
        it != qutty_config.config_list.end(); it++) {
     QString fullsessname = it->first;
     if (folders.find(fullsessname) != folders.end()) continue;
@@ -481,9 +678,9 @@ void GuiSettingsWindow::on_b_save_sess_clicked() {
   }
   oldfullname = item->data(0, QUTTY_ROLE_FULL_SESSNAME).toString();
   qutty_config.config_list.erase(oldfullname);
-  Config *cfg = this->getConfig();
-  qstring_to_char(cfg->config_name, fullname, sizeof(cfg->config_name));
-  qutty_config.config_list[fullname] = *cfg;
+  Conf *cfg = this->getConfig();
+  conf_set_str(cfg, CONF_config_name, fullname.toUtf8());
+  qutty_config.config_list[fullname] = cfg;
 
   item->setText(0, name);
   item->setData(0, QUTTY_ROLE_FULL_SESSNAME, fullname);
@@ -493,16 +690,17 @@ void GuiSettingsWindow::on_b_save_sess_clicked() {
   pending_session_changes = true;
 }
 
-void GuiSettingsWindow::loadInitialSettings(const Config &cfg) {
-  if (qutty_config.config_list.find(QString(cfg.config_name)) != qutty_config.config_list.end()) {
-    setConfig(qutty_config.config_list[QString(cfg.config_name)]);
-    vector<string> split = qutty_string_split(string(cfg.config_name), QUTTY_SESSION_NAME_SPLIT);
+void GuiSettingsWindow::loadInitialSettings(Conf *cfg) {
+  char *config_name = conf_get_str(cfg, CONF_config_name);
+  if (qutty_config.config_list.find(config_name) != qutty_config.config_list.end()) {
+    setConfig(qutty_config.config_list[config_name]);
+    vector<string> split = qutty_string_split(config_name, QUTTY_SESSION_NAME_SPLIT);
     string sessname = split.back();
     ui->le_saved_sess->setText(QString::fromStdString(sessname));
   }
 }
 
-void GuiSettingsWindow::enableModeChangeSettings(const Config &cfg, GuiTerminalWindow *termWnd) {
+void GuiSettingsWindow::enableModeChangeSettings(Conf *cfg, GuiTerminalWindow *termWnd) {
   isChangeSettingsMode = true;
   this->termWnd = termWnd;
   setConfig(cfg);
@@ -551,8 +749,9 @@ void adjust_sessname_hierarchy(QTreeWidgetItem *item) {
   oldfullname = item->data(0, QUTTY_ROLE_FULL_SESSNAME).toString();
   if (fullname == oldfullname) return;  // no change
   item->setData(0, QUTTY_ROLE_FULL_SESSNAME, fullname);
-  Config cfg = qutty_config.config_list[oldfullname];
-  qstring_to_char(cfg.config_name, fullname, sizeof(cfg.config_name));
+  Conf *cfg = qutty_config.config_list[oldfullname];
+  QByteArray _fullname = fullname.toUtf8();
+  conf_set_str(cfg, CONF_config_name, _fullname.data());
   qutty_config.config_list.erase(oldfullname);
   qutty_config.config_list[fullname] = cfg;
   for (int i = 0; i < item->childCount(); i++) adjust_sessname_hierarchy(item->child(i));
@@ -570,16 +769,17 @@ void GuiSettingsWindow::on_btn_ssh_auth_browse_keyfile_clicked() {
 }
 
 void GuiSettingsWindow::on_btn_fontsel_clicked() {
-  QFont oldfont = QFont(cfg.font.name, cfg.font.height);
-  oldfont.setBold(cfg.font.isbold);
+  FontSpec &font = *conf_get_fontspec(cfg, CONF_font);
+  QFont oldfont = QFont(font.name, font.height);
+  oldfont.setBold(font.isbold);
   QFont selfont = QFontDialog::getFont(NULL, oldfont);
 
-  qstring_to_char(cfg.font.name, selfont.family(), sizeof(cfg.font.name));
-  cfg.font.height = selfont.pointSize();
-  cfg.font.isbold = selfont.bold();
+  qstring_to_char(font.name, selfont.family(), sizeof(font.name));
+  font.height = selfont.pointSize();
+  font.isbold = selfont.bold();
   ui->lbl_fontsel->setText(
       QString("%1, %2%3-point")
-          .arg(cfg.font.name, cfg.font.isbold ? "Bold, " : "", QString::number(cfg.font.height)));
+          .arg(font.name, font.isbold ? "Bold, " : "", QString::number(font.height)));
   ui->lbl_fontsel_varpitch->setText(
       selfont.fixedPitch() ? "The selected font has variable-pitch. Doesn't have fixed-pitch" : "");
 }
@@ -604,9 +804,8 @@ void GuiSettingsWindow::on_btn_colour_modify_clicked() {
     ui->le_colour_b->setText(QString::number(newcol.blue()));
     int currind = ui->l_colour->currentIndex().row();
     if (currind >= 0 && currind < NCFGCOLOURS) {
-      cfg.colours[currind][0] = newcol.red();
-      cfg.colours[currind][1] = newcol.green();
-      cfg.colours[currind][2] = newcol.blue();
+      QRgb rgba = newcol.rgba();  // FIXME is this right?
+      conf_set_int_int(cfg, CONF_colours, currind, rgba);
     }
   }
 }
@@ -622,14 +821,18 @@ void GuiSettingsWindow::on_l_colour_currentItemChanged(QListWidgetItem *current,
   }
   qDebug() << prev << curr;
   if (prev >= 0 && prev < NCFGCOLOURS) {
-    cfg.colours[prev][0] = ui->le_colour_r->text().toInt();
-    cfg.colours[prev][1] = ui->le_colour_g->text().toInt();
-    cfg.colours[prev][2] = ui->le_colour_b->text().toInt();
+    int r = ui->le_colour_r->text().toInt();
+    int g = ui->le_colour_g->text().toInt();
+    int b = ui->le_colour_b->text().toInt();
+    int rgba = qRgba(r, g, b, 0xFF);
+    conf_set_int_int(cfg, CONF_colours, prev, rgba);
   }
   if (curr >= 0 && curr < NCFGCOLOURS) {
-    ui->le_colour_r->setText(QString::number(cfg.colours[curr][0]));
-    ui->le_colour_g->setText(QString::number(cfg.colours[curr][1]));
-    ui->le_colour_b->setText(QString::number(cfg.colours[curr][2]));
+    QRgb rgba = conf_get_int_int(cfg, CONF_colours, curr);
+    QColor col = QColor::fromRgba(rgba);
+    ui->le_colour_r->setText(QString::number(col.red()));
+    ui->le_colour_g->setText(QString::number(col.green()));
+    ui->le_colour_b->setText(QString::number(col.blue()));
   }
 }
 
@@ -666,26 +869,37 @@ void GuiSettingsWindow::on_b_sess_copy_clicked() {
   newitem->setText(0, foldername);
   newitem->setData(0, QUTTY_ROLE_FULL_SESSNAME, fullname);
   parent->insertChild(parent->indexOfChild(item) + 1, newitem);
-  Config cfg = qutty_config.config_list[fullPathName];
-  qstring_to_char(cfg.config_name, fullname, sizeof(cfg.config_name));
+  Conf *cfg = qutty_config.config_list[fullPathName];
+  conf_set_str(cfg, CONF_config_name, fullname.toUtf8());
   qutty_config.config_list[fullname] = cfg;
 
   pending_session_changes = true;
 }
 
-void chkUnsupportedConfigs(Config &cfg) {
-  QString opt_unsupp = "";
+static bool conf_del_str_all(Conf *cfg, config_primary_key key) {
+  std::vector<std::string> subkeys;
+  char *subkey = nullptr;
+  while (conf_get_str_strs(cfg, key, subkey, &subkey)) subkeys.push_back(subkey);
+  for (const std::string &sk : subkeys) conf_del_str_str(cfg, key, sk.c_str());
+  return !subkeys.empty();
+}
 
-  if (cfg.try_gssapi_auth) {
-    cfg.try_gssapi_auth = 0;
+void chkUnsupportedConfigs(Conf *cfg) {
+  QString opt_unsupp;
+
+  if (conf_get_int(cfg, CONF_try_gssapi_auth)) {
+    conf_set_int(cfg, CONF_try_gssapi_auth, 0);
   }
-  if (cfg.portfwd[0] != '\0') {
-    cfg.portfwd[0] = '\0';
+
+  if (conf_del_str_all(cfg, CONF_portfwd)) {
     opt_unsupp += " * SSH Tunnels/port forwarding\n";
   }
-  if (cfg.tryagent) cfg.tryagent = 0;
 
-  if (cfg.ttymodes[0] != '\0') strncpy(cfg.ttymodes, "", sizeof(cfg.ttymodes));
+  if (conf_get_int(cfg, CONF_tryagent)) {
+    conf_set_int(cfg, CONF_tryagent, 0);
+  }
+
+  conf_del_str_all(cfg, CONF_ttymodes);
 
   if (opt_unsupp.length() > 0)
     QMessageBox::warning(

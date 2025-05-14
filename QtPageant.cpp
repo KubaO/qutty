@@ -6,11 +6,7 @@
 
 extern "C" {
 #include "putty.h"
-#include "ssh.h"
 }
-
-#define FLAG_SYNCAGENT 0x1000
-int flags = FLAG_SYNCAGENT;
 
 int agent_exists(void) { return FALSE; }
 

@@ -29,7 +29,7 @@ void *get_text_codec(const char *line_codepage) {
   return codec;
 }
 
-void init_ucs(Config *cfg, struct unicode_data *ucsdata) {
+void init_ucs(Conf *cfg, struct unicode_data *ucsdata) {
   int i;
 
   /*
@@ -39,13 +39,14 @@ void init_ucs(Config *cfg, struct unicode_data *ucsdata) {
    * be used.
    */
   ucsdata->font_codepage = -1;
+  char *line_codepage = conf_get_str(cfg, CONF_line_codepage);
 
-  ucsdata->encoder = get_text_codec(cfg->line_codepage);
+  ucsdata->encoder = get_text_codec(line_codepage);
   if (!ucsdata->encoder) {
     assert(0);
   } else {
     ucsdata->line_codepage = CS_QTEXTCODEC;
-    if (!strcmp(cfg->line_codepage, "UTF-8")) ucsdata->line_codepage = CP_UTF8;
+    if (!strcmp(line_codepage, "UTF-8")) ucsdata->line_codepage = CP_UTF8;
   }
 
   /*
@@ -85,7 +86,7 @@ void init_ucs(Config *cfg, struct unicode_data *ucsdata) {
 
     const wchar_t *ptr;
 
-    if (cfg->vtmode == VT_POORMAN)
+    if (conf_get_int(cfg, CONF_vtmode) == VT_POORMAN)
       ptr = unitab_xterm_poorman;
     else
       ptr = unitab_xterm_std;

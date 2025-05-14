@@ -61,7 +61,7 @@ class GuiSettingsWindow : public QDialog {
   } gui_loglevel_t;
 
   // config that is loaded onto the settings window
-  Config cfg = {};
+  Conf *cfg = nullptr;
   bool isChangeSettingsMode = false;
   GuiTerminalWindow *termWnd = nullptr;  // terminal for which 'change settings' happens
   GuiBase::SplitType openMode = {};
@@ -72,16 +72,16 @@ class GuiSettingsWindow : public QDialog {
   ~GuiSettingsWindow() override;
 
   // getter/setter to config in the settings window
-  void setConfig(const Config &_cfg);
-  Config *getConfig();
+  void setConfig(Conf *_cfg);
+  Conf *getConfig();
 
   void loadSessionNames();
-  void loadInitialSettings(const Config &);
-  void enableModeChangeSettings(const Config &cfg, GuiTerminalWindow *termWnd);
+  void loadInitialSettings(Conf *);
+  void enableModeChangeSettings(Conf *cfg, GuiTerminalWindow *termWnd);
 
  signals:
-  void signal_session_open(const Config &cfg, GuiBase::SplitType splittype);
-  void signal_session_change(const Config &cfg, GuiTerminalWindow *termWnd);
+  void signal_session_open(Conf *cgg, GuiBase::SplitType splittype);
+  void signal_session_change(Conf *cfg, GuiTerminalWindow *termWnd);
   void signal_session_close();
 
  private slots:
@@ -127,6 +127,6 @@ class GuiSettingsWindow : public QDialog {
   void saveConfigChanges();
 };
 
-void chkUnsupportedConfigs(Config &cfg);
+void chkUnsupportedConfigs(Conf *cfg);
 
 #endif  // GUISETTINGSWINDOW_H

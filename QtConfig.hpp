@@ -42,7 +42,7 @@ class QtConfig : public QObject {
 
  public:
   std::map<std::string, std::string> ssh_host_keys;
-  std::map<QString, Config> config_list;
+  std::map<QString, Conf *> config_list;
   std::map<uint32_t, QtMenuActionConfig> menu_action_list;
   qutty_mainwindow_settings_t mainwindow;
 
@@ -69,6 +69,6 @@ extern std::vector<std::string> qutty_string_split(const std::string &str, char 
 #define QUTTY_DEFAULT_CONFIG_SETTINGS "Default Settings"
 #define QUTTY_SESSION_NAME_SPLIT '/'
 
-int initConfigDefaults(Config *cfg);
+int initConfigDefaults(Conf *cfg);
 
 #endif  // QTCONFIG_H

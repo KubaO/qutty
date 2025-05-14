@@ -123,15 +123,16 @@ int is_dbcs_leadbyte(int /*codepage*/, char /*byte*/) {
   qDebug() << "NOT_IMPL" << __FUNCTION__;
   return 0;
 }
-int mb_to_wc(int /*codepage*/, int /*flags*/, char *mbstr, int mblen, wchar_t *wcstr, int /*wclen*/,
-             struct unicode_data *ucsdata) {
+
+int mb_to_wc(int /*codepage*/, int /*flags*/, const char *mbstr, int mblen, wchar_t *wcstr,
+             int /*wclen*/, struct unicode_data *ucsdata) {
   if (!ucsdata->encoder) return 0;
   QTextCodec *codec = (QTextCodec *)ucsdata->encoder;
   return codec->toUnicode(mbstr, mblen).toWCharArray(wcstr);
 }
 
-int wc_to_mb(int /*codepage*/, int /*flags*/, wchar_t *wcstr, int wclen, char *mbstr, int mblen,
-             char * /*defchr*/, int * /*defused*/, struct unicode_data *ucsdata) {
+int wc_to_mb(int /*codepage*/, int /*flags*/, const wchar_t *wcstr, int wclen, char *mbstr,
+             int mblen, char * /*defchr*/, int * /*defused*/, struct unicode_data *ucsdata) {
   if (!ucsdata->encoder) return 0;
   QTextCodec *codec = (QTextCodec *)ucsdata->encoder;
   QByteArray mbarr = codec->fromUnicode(QString::fromWCharArray(wcstr, wclen));
