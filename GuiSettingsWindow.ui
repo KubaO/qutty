@@ -3,7 +3,7 @@
  <class>GuiSettingsWindow</class>
  <widget class="QDialog" name="GuiSettingsWindow">
   <property name="windowModality">
-   <enum>Qt::WindowModal</enum>
+   <enum>Qt::WindowModality::WindowModal</enum>
   </property>
   <property name="geometry">
    <rect>
@@ -35,10 +35,10 @@
      <item>
       <widget class="QDialogButtonBox" name="buttonBox">
        <property name="orientation">
-        <enum>Qt::Horizontal</enum>
+        <enum>Qt::Orientation::Horizontal</enum>
        </property>
        <property name="standardButtons">
-        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Open</set>
+        <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Open</set>
        </property>
       </widget>
      </item>
@@ -73,13 +73,13 @@
         <string/>
        </property>
        <property name="inputMethodHints">
-        <set>Qt::ImhNone</set>
+        <set>Qt::InputMethodHint::ImhNone</set>
        </property>
        <property name="verticalScrollBarPolicy">
-        <enum>Qt::ScrollBarAsNeeded</enum>
+        <enum>Qt::ScrollBarPolicy::ScrollBarAsNeeded</enum>
        </property>
        <property name="horizontalScrollBarPolicy">
-        <enum>Qt::ScrollBarAsNeeded</enum>
+        <enum>Qt::ScrollBarPolicy::ScrollBarAsNeeded</enum>
        </property>
        <property name="autoScroll">
         <bool>true</bool>
@@ -88,10 +88,10 @@
         <number>16</number>
        </property>
        <property name="verticalScrollMode">
-        <enum>QAbstractItemView::ScrollPerItem</enum>
+        <enum>QAbstractItemView::ScrollMode::ScrollPerItem</enum>
        </property>
        <property name="horizontalScrollMode">
-        <enum>QAbstractItemView::ScrollPerItem</enum>
+        <enum>QAbstractItemView::ScrollMode::ScrollPerItem</enum>
        </property>
        <property name="wordWrap">
         <bool>false</bool>
@@ -248,7 +248,7 @@
         </sizepolicy>
        </property>
        <property name="frameShape">
-        <enum>QFrame::NoFrame</enum>
+        <enum>QFrame::Shape::NoFrame</enum>
        </property>
        <property name="currentIndex">
         <number>0</number>
@@ -264,13 +264,13 @@
             </sizepolicy>
            </property>
            <property name="layoutDirection">
-            <enum>Qt::LeftToRight</enum>
+            <enum>Qt::LayoutDirection::LeftToRight</enum>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="frameShadow">
-            <enum>QFrame::Plain</enum>
+            <enum>QFrame::Shadow::Plain</enum>
            </property>
            <property name="lineWidth">
             <number>0</number>
@@ -279,7 +279,7 @@
             <string>Basic options for your QuTTY session</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -448,10 +448,10 @@
                  <bool>true</bool>
                 </property>
                 <property name="dragDropMode">
-                 <enum>QAbstractItemView::InternalMove</enum>
+                 <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
                 </property>
                 <property name="defaultDropAction">
-                 <enum>Qt::MoveAction</enum>
+                 <enum>Qt::DropAction::MoveAction</enum>
                 </property>
                 <property name="rootIsDecorated">
                  <bool>true</bool>
@@ -550,16 +550,16 @@
          <item>
           <widget class="QLabel" name="label_2">
            <property name="layoutDirection">
-            <enum>Qt::LeftToRight</enum>
+            <enum>Qt::LayoutDirection::LeftToRight</enum>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling session logging</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -660,7 +660,7 @@
                <string>(Log file name can contain &amp;Y, &amp;M, &amp;D for date, &amp;T for time, and &amp;H for host name)</string>
               </property>
               <property name="textFormat">
-               <enum>Qt::PlainText</enum>
+               <enum>Qt::TextFormat::PlainText</enum>
               </property>
               <property name="scaledContents">
                <bool>false</bool>
@@ -762,13 +762,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling the terminal emulsion</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -987,13 +987,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling the effects of keys</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -1261,13 +1261,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling the terminal bell</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -1466,13 +1466,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Enabling and disabling advanced terminal features</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -1672,13 +1672,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling PuTTY's window</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -1871,13 +1871,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Configure the appearance of PuTTY's window</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -2102,13 +2102,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Configure the behaviour of PuTTY's window</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -2210,7 +2210,7 @@
          <item>
           <spacer name="verticalSpacer_13">
            <property name="orientation">
-            <enum>Qt::Vertical</enum>
+            <enum>Qt::Orientation::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -2236,13 +2236,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling character set translation</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -2551,13 +2551,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling copy and paste</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -2703,13 +2703,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling use of colours</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -2967,13 +2967,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling the connectiion</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -3090,7 +3090,7 @@
          <item>
           <spacer name="verticalSpacer_14">
            <property name="orientation">
-            <enum>Qt::Vertical</enum>
+            <enum>Qt::Orientation::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -3113,13 +3113,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Data to send to the server</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -3274,13 +3274,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling proxy usage</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -3493,13 +3493,13 @@
             </sizepolicy>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling Telnet connections</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -3515,7 +3515,7 @@
                <string>Handling of OLD_ENVIRON ambiguity:</string>
               </property>
               <property name="textFormat">
-               <enum>Qt::AutoText</enum>
+               <enum>Qt::TextFormat::AutoText</enum>
               </property>
              </widget>
             </item>
@@ -3586,7 +3586,7 @@
             <item>
              <spacer name="verticalSpacer">
               <property name="orientation">
-               <enum>Qt::Vertical</enum>
+               <enum>Qt::Orientation::Vertical</enum>
               </property>
               <property name="sizeHint" stdset="0">
                <size>
@@ -3606,13 +3606,13 @@
          <item>
           <widget class="QLabel" name="label_87">
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling Rlogin connections</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -3638,7 +3638,7 @@
          <item>
           <spacer name="verticalSpacer_2">
            <property name="orientation">
-            <enum>Qt::Vertical</enum>
+            <enum>Qt::Orientation::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -3655,13 +3655,13 @@
          <item>
           <widget class="QLabel" name="label_89">
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling SSH connections</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -3792,7 +3792,7 @@
          <item>
           <spacer name="verticalSpacer_3">
            <property name="orientation">
-            <enum>Qt::Vertical</enum>
+            <enum>Qt::Orientation::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -3809,13 +3809,13 @@
          <item>
           <widget class="QLabel" name="label_93">
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling SSH key exchange</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -3899,7 +3899,7 @@
          <item>
           <spacer name="verticalSpacer_4">
            <property name="orientation">
-            <enum>Qt::Vertical</enum>
+            <enum>Qt::Orientation::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -3916,13 +3916,13 @@
          <item>
           <widget class="QLabel" name="label_98">
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling SSH authentication</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -4039,7 +4039,7 @@
          <item>
           <spacer name="verticalSpacer_5">
            <property name="orientation">
-            <enum>Qt::Vertical</enum>
+            <enum>Qt::Orientation::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -4056,13 +4056,13 @@
          <item>
           <widget class="QLabel" name="label_100">
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling GSSAPI authentication</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -4140,7 +4140,7 @@
          <item>
           <spacer name="verticalSpacer_6">
            <property name="orientation">
-            <enum>Qt::Vertical</enum>
+            <enum>Qt::Orientation::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -4157,13 +4157,13 @@
          <item>
           <widget class="QLabel" name="label_103">
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Remote terminal settings</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -4503,7 +4503,7 @@
          <item>
           <spacer name="verticalSpacer_7">
            <property name="orientation">
-            <enum>Qt::Vertical</enum>
+            <enum>Qt::Orientation::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -4520,13 +4520,13 @@
          <item>
           <widget class="QLabel" name="label_107">
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling SSH X11 forwarding</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -4600,7 +4600,7 @@
          <item>
           <spacer name="verticalSpacer_8">
            <property name="orientation">
-            <enum>Qt::Vertical</enum>
+            <enum>Qt::Orientation::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -4617,13 +4617,13 @@
          <item>
           <widget class="QLabel" name="label_111">
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling SSH port forwarding</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -4707,7 +4707,7 @@
                <bool>true</bool>
               </property>
               <property name="focusPolicy">
-               <enum>Qt::StrongFocus</enum>
+               <enum>Qt::FocusPolicy::StrongFocus</enum>
               </property>
               <property name="text">
                <string>Local</string>
@@ -4791,7 +4791,7 @@
          <item>
           <spacer name="verticalSpacer_9">
            <property name="orientation">
-            <enum>Qt::Vertical</enum>
+            <enum>Qt::Orientation::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -4808,13 +4808,13 @@
          <item>
           <widget class="QLabel" name="label_116">
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Workarounds for SSH server bugs</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -5094,7 +5094,7 @@
          <item>
           <spacer name="verticalSpacer_10">
            <property name="orientation">
-            <enum>Qt::Vertical</enum>
+            <enum>Qt::Orientation::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -5111,13 +5111,13 @@
          <item>
           <widget class="QLabel" name="label_127">
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::Shape::StyledPanel</enum>
            </property>
            <property name="text">
             <string>Options controlling local serial lines</string>
            </property>
            <property name="alignment">
-            <set>Qt::AlignCenter</set>
+            <set>Qt::AlignmentFlag::AlignCenter</set>
            </property>
           </widget>
          </item>
@@ -5268,7 +5268,7 @@
          <item>
           <spacer name="verticalSpacer_11">
            <property name="orientation">
-            <enum>Qt::Vertical</enum>
+            <enum>Qt::Orientation::Vertical</enum>
            </property>
            <property name="sizeHint" stdset="0">
             <size>
@@ -5559,24 +5559,24 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="gp_resize_action"/>
-  <buttongroup name="gp_termopt_echo"/>
-  <buttongroup name="buttonGroup_10"/>
-  <buttongroup name="gp_logfile"/>
-  <buttongroup name="buttonGroup_3"/>
-  <buttongroup name="buttonGroup_4"/>
-  <buttongroup name="buttonGroup_7"/>
-  <buttongroup name="buttonGroup_8"/>
-  <buttongroup name="buttonGroup_9"/>
-  <buttongroup name="gp_seslog"/>
-  <buttongroup name="buttonGroup"/>
-  <buttongroup name="gp_exit_close"/>
-  <buttongroup name="gp_addressfamily"/>
-  <buttongroup name="gp_curappear"/>
-  <buttongroup name="gp_fontquality"/>
   <buttongroup name="gp_remote_qtitle_action"/>
-  <buttongroup name="gp_fnkeys"/>
+  <buttongroup name="buttonGroup_9"/>
+  <buttongroup name="buttonGroup_8"/>
+  <buttongroup name="gp_fontquality"/>
+  <buttongroup name="gp_resize_action"/>
+  <buttongroup name="buttonGroup_3"/>
+  <buttongroup name="gp_addressfamily"/>
+  <buttongroup name="gp_termopt_echo"/>
+  <buttongroup name="buttonGroup_4"/>
+  <buttongroup name="buttonGroup"/>
+  <buttongroup name="gp_seslog"/>
   <buttongroup name="gp_termopt_edit"/>
+  <buttongroup name="gp_exit_close"/>
+  <buttongroup name="gp_fnkeys"/>
+  <buttongroup name="gp_logfile"/>
   <buttongroup name="gp_contype"/>
+  <buttongroup name="buttonGroup_10"/>
+  <buttongroup name="buttonGroup_7"/>
+  <buttongroup name="gp_curappear"/>
  </buttongroups>
 </ui>
