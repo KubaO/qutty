@@ -12,11 +12,11 @@
 #include <QXmlStreamReader>
 #include <QXmlStreamWriter>
 
-#include "QtConfigTag.h"
 #include "serialize/QtMRUSessionList.hpp"
 #include "serialize/QtWebPluginMap.hpp"
 
 extern "C" {
+#include "putty.h"
 #include "storage.h"
 }
 
@@ -256,7 +256,7 @@ bool QtConfig::restoreConfig() {
 
   if (!file.exists()) {
     Conf *cfg = conf_new();
-    initConfigDefaults(cfg);
+    load_open_settings(nullptr, cfg);
     conf_set_str(cfg, CONF_config_name, QUTTY_DEFAULT_CONFIG_SETTINGS);
     qutty_config.config_list[QUTTY_DEFAULT_CONFIG_SETTINGS] = cfg;
     saveConfig();

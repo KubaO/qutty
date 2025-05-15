@@ -116,7 +116,6 @@ set(PROJECT_SOURCES
     QtCommon.hpp
     QtLogDbg.hpp
     QtConfig.hpp
-    QtConfigTag.h
     QtTimer.hpp
     GuiTabWidget.hpp
     GuiMenu.hpp

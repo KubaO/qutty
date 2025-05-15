@@ -69,6 +69,4 @@ extern std::vector<std::string> qutty_string_split(const std::string &str, char 
 #define QUTTY_DEFAULT_CONFIG_SETTINGS "Default Settings"
 #define QUTTY_SESSION_NAME_SPLIT '/'
 
-int initConfigDefaults(Conf *cfg);
-
 #endif  // QTCONFIG_H
