@@ -18,8 +18,6 @@ GuiCompactSettingsWindow::GuiCompactSettingsWindow(QWidget *parent, GuiBase::Spl
   setModal(true);
   openMode = openmode;
 
-  Conf *cfg;
-
   QPushButton *details = new QPushButton(tr("Details"));
   connect(details, SIGNAL(clicked()), this, SLOT(on_details_clicked()));
 
@@ -62,10 +60,10 @@ GuiCompactSettingsWindow::GuiCompactSettingsWindow(QWidget *parent, GuiBase::Spl
       !completions.isEmpty()) {
     QString sessname = qutty_mru_sesslist.mru_list[0].first;
     on_hostname_completion_activated(completions.at(0));
-    setConnectionType(conf_get_int(qutty_config.config_list[sessname], CONF_protocol));
+    setConnectionType(conf_get_int(qutty_config.config_list[sessname].get(), CONF_protocol));
   } else if (qutty_config.config_list.find(QUTTY_DEFAULT_CONFIG_SETTINGS) !=
              qutty_config.config_list.end()) {
-    cfg = qutty_config.config_list[QUTTY_DEFAULT_CONFIG_SETTINGS];
+    Conf *cfg = qutty_config.config_list[QUTTY_DEFAULT_CONFIG_SETTINGS].get();
     cb_session_list.setCurrentIndex(cb_session_list.findText(QUTTY_DEFAULT_CONFIG_SETTINGS));
     hostname_completer->setText(conf_get_str(cfg, CONF_host));
     setConnectionType(conf_get_int(cfg, CONF_protocol));
@@ -104,14 +102,13 @@ void GuiCompactSettingsWindow::on_close_clicked() {
 }
 
 void GuiCompactSettingsWindow::on_open_clicked() {
-  Conf *cfg;
-  QString configName;
   if (cb_hostname.currentText().isEmpty() &&
       cb_session_list.currentText() == QUTTY_DEFAULT_CONFIG_SETTINGS)
     return;
-  configName = cb_session_list.currentText();
+
+  QString configName = cb_session_list.currentText();
   if (qutty_config.config_list.find(configName) == qutty_config.config_list.end()) return;
-  cfg = qutty_config.config_list[configName];
+  Conf *cfg = qutty_config.config_list[configName].get();
   conf_set_str(cfg, CONF_host, cb_hostname.currentText().toUtf8());
 
   conf_set_int(cfg, CONF_protocol, getConnectionType());
@@ -124,25 +121,20 @@ void GuiCompactSettingsWindow::on_open_clicked() {
 }
 
 void GuiCompactSettingsWindow::on_details_clicked() {
-  Conf *cfg;
-  QString configName;
-
-  configName = cb_session_list.currentText();
+  QString configName = cb_session_list.currentText();
   if (qutty_config.config_list.find(configName) == qutty_config.config_list.end()) return;
-  cfg = qutty_config.config_list[configName];
+  Conf *cfg = qutty_config.config_list[configName].get();
   emit signal_on_detail(cfg, openMode);
   this->close();
   this->deleteLater();
 }
 
 void GuiCompactSettingsWindow::on_cb_session_list_activated(int n) {
-  QString configName;
-  Conf *cfg;
-  configName = cb_session_list.currentText();
-  map<QString, Conf *>::iterator it = qutty_config.config_list.find(configName);
+  QString configName = cb_session_list.currentText();
+  auto it = qutty_config.config_list.find(configName);
 
   if (it != qutty_config.config_list.end()) {
-    cfg = (it->second);
+    Conf *cfg = it->second.get();
     char *host = conf_get_str(cfg, CONF_host);
     if (host && host[0] != '\0') hostname_completer->setText(QString(host));
     setConnectionType(conf_get_int(cfg, CONF_protocol));

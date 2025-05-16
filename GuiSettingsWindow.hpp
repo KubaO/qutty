@@ -14,6 +14,7 @@
 #include <QTreeWidgetItem>
 
 #include "GuiBase.hpp"
+#include "QtConfig.hpp"
 extern "C" {
 #include "putty.h"
 }
@@ -61,7 +62,7 @@ class GuiSettingsWindow : public QDialog {
   } gui_loglevel_t;
 
   // config that is loaded onto the settings window
-  Conf *cfg = nullptr;
+  QtConfig::Pointer cfg;
   bool isChangeSettingsMode = false;
   GuiTerminalWindow *termWnd = nullptr;  // terminal for which 'change settings' happens
   GuiBase::SplitType openMode = {};
@@ -72,12 +73,12 @@ class GuiSettingsWindow : public QDialog {
   ~GuiSettingsWindow() override;
 
   // getter/setter to config in the settings window
-  void setConfig(Conf *_cfg);
+  void setConfig(QtConfig::Pointer &&_cfg);
   Conf *getConfig();
 
   void loadSessionNames();
   void loadInitialSettings(Conf *);
-  void enableModeChangeSettings(Conf *cfg, GuiTerminalWindow *termWnd);
+  void enableModeChangeSettings(QtConfig::Pointer &&cfg, GuiTerminalWindow *termWnd);
 
  signals:
   void signal_session_open(Conf *cgg, GuiBase::SplitType splittype);

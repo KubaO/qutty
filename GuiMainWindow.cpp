@@ -81,8 +81,7 @@ void GuiMainWindow::on_createNewSession(Conf *cfg, GuiBase::SplitType splittype)
 
 void GuiMainWindow::createNewTab(Conf *cfg, GuiBase::SplitType splittype) {
   int rc;
-  GuiTerminalWindow *newWnd = new GuiTerminalWindow(tabArea, this);
-  newWnd->cfg = cfg;
+  GuiTerminalWindow *newWnd = new GuiTerminalWindow(tabArea, this, cfg);
   QString config_name = conf_get_str(cfg, CONF_config_name);
   QString hostname = conf_get_str(cfg, CONF_host);
 
@@ -217,7 +216,7 @@ void GuiMainWindow::on_changeSettingsTab(GuiTerminalWindow *termWnd) {
   }
   assert(terminalList.indexOf(termWnd) != -1);
   settingsWindow = new GuiSettingsWindow(this);
-  settingsWindow->enableModeChangeSettings(termWnd->cfg, termWnd);
+  settingsWindow->enableModeChangeSettings(QtConfig::copy(termWnd->getCfg()), termWnd);
   // clang-format off
   connect(settingsWindow, SIGNAL(signal_session_change(Conf*,GuiTerminalWindow*)),
           SLOT(on_changeSettingsTabComplete(Conf*,GuiTerminalWindow*)));
@@ -371,8 +370,8 @@ err_exit:
 
 void GuiMainWindow::setupTerminalSize(GuiTerminalWindow *newTerm) {
   // resize according to config if window is smaller
-  int newTerm_width = conf_get_int(newTerm->cfg, CONF_width);
-  int newTerm_height = conf_get_int(newTerm->cfg, CONF_height);
+  int newTerm_width = conf_get_int(newTerm->getCfg(), CONF_width);
+  int newTerm_height = conf_get_int(newTerm->getCfg(), CONF_height);
 
   if (!(windowState() & Qt::WindowMaximized) && (tabArea->count() == 1) /* only for 1st window */ &&
       (newTerm->viewport()->width() < newTerm_width * newTerm->getFontWidth() ||
@@ -381,7 +380,7 @@ void GuiMainWindow::setupTerminalSize(GuiTerminalWindow *newTerm) {
         newTerm_width * newTerm->getFontWidth() + width() - newTerm->viewport()->width(),
         newTerm_height * newTerm->getFontHeight() + height() - newTerm->viewport()->height());
     term_size(newTerm->term, newTerm_height, newTerm_width,
-              conf_get_int(newTerm->cfg, CONF_savelines));
+              conf_get_int(newTerm->getCfg(), CONF_savelines));
   }
 }
 

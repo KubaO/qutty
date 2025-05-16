@@ -17,6 +17,7 @@
 #include "GuiBase.hpp"
 #include "GuiDrag.hpp"
 #include "QtCommon.hpp"
+#include "QtConfig.hpp"
 #include "tmux/TmuxGateway.hpp"
 #include "tmux/TmuxWindowPane.hpp"
 #include "tmux/tmux.h"
@@ -24,7 +25,6 @@ extern "C" {
 #include "putty.h"
 }
 
-#define NCFGCOLOURS 22
 #define NEXTCOLOURS 240
 #define NALLCOLOURS (NCFGCOLOURS + NEXTCOLOURS)
 
@@ -68,8 +68,10 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   QString custom_title;   // given by user
   QString temp_title;
 
+  QtConfig::Pointer cfgOwner;
+  Conf *cfg;
+
  public:
-  Conf *cfg = nullptr;
   Terminal *term = nullptr;
   Backend *backend = nullptr;
   void *backhandle = nullptr;
@@ -81,7 +83,9 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   // order-of-usage
   uint32_t mru_count = 0;
 
-  explicit GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow);
+  Conf *getCfg() const { return cfgOwner.get(); }
+
+  GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, Conf *cfg);
   ~GuiTerminalWindow() override;
 
   GuiMainWindow *getMainWindow() { return mainWindow; }

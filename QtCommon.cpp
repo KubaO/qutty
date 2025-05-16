@@ -450,7 +450,7 @@ void qutty_connection_fatal(void *frontend, char *msg) {
 
   qt_critical_msgbox(frontend, msg, NULL);
 
-  if (conf_get_int(f->cfg, CONF_close_on_exit) == FORCE_ON) f->closeTerminal();
+  if (conf_get_int(f->getCfg(), CONF_close_on_exit) == FORCE_ON) f->closeTerminal();
   f->setSessionTitle(f->getSessionTitle() + " (inactive)");
 }
 
@@ -461,7 +461,7 @@ void notify_remote_exit(void *frontend) {
   if (f->userClosingTab || f->isSockDisconnected) return;
 
   if (exitcode >= 0) {
-    int close_on_exit = conf_get_int(f->cfg, CONF_close_on_exit);
+    int close_on_exit = conf_get_int(f->getCfg(), CONF_close_on_exit);
     if (close_on_exit == FORCE_ON || (close_on_exit == AUTO && exitcode != INT_MAX)) {
       f->closeTerminal();
     } else {

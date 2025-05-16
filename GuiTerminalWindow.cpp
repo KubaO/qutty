@@ -23,8 +23,8 @@ extern "C" {
 #include "puttysrc/terminal.h"
 }
 
-GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow)
-    : QAbstractScrollArea(parent) {
+GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, Conf *cfg)
+    : QAbstractScrollArea(parent), cfgOwner(QtConfig::copy(cfg)), cfg(cfgOwner.get()) {
   this->mainWindow = mainWindow;
 
   setFrameShape(QFrame::NoFrame);
@@ -206,8 +206,9 @@ int GuiTerminalWindow::restartTerminal() {
 }
 
 int GuiTerminalWindow::reconfigureTerminal(Conf *new_cfg) {
-  Conf *prev_cfg = conf_copy(this->cfg);
-  conf_copy_into(this->cfg, new_cfg);
+  QtConfig::Pointer prev_cfg = std::move(this->cfgOwner);
+  this->cfgOwner = QtConfig::copy(new_cfg);
+  this->cfg = cfgOwner.get();
 
   /* Pass new config data to the logging module */
   log_reconfig(term->logctx, cfg);
@@ -227,22 +228,20 @@ int GuiTerminalWindow::reconfigureTerminal(Conf *new_cfg) {
   if (backend) backend->reconfig(backhandle, cfg);
 
   /* Screen size changed ? */
-  if (confSizeChanged(cfg, prev_cfg))
+  if (confSizeChanged(cfg, prev_cfg.get()))
     term_size(term, conf_get_int(cfg, CONF_height), conf_get_int(cfg, CONF_width),
               conf_get_int(cfg, CONF_savelines));
 
-  if (confUnequalInt(cfg, prev_cfg, CONF_alwaysontop)) {
+  if (confUnequalInt(cfg, prev_cfg.get(), CONF_alwaysontop)) {
     // TODO
   }
 
-  if (confFontChanged(cfg, prev_cfg)) {
+  if (confFontChanged(cfg, prev_cfg.get())) {
     init_ucs(cfg, &ucsdata);
     setTermFont(cfg);
   }
 
   repaint();
-
-  conf_free(prev_cfg);
   return 0;
 }
 
@@ -558,11 +557,14 @@ void GuiTerminalWindow::setTermFont(Conf *cfg) {
 
 void GuiTerminalWindow::cfgtopalette(Conf *cfg) {
   int i;
-  static const int ww[] = {256, 257, 258, 259, 260, 261, 0,  8, 1,  9, 2,
-                           10,  3,   11,  4,   12,  5,   13, 6, 14, 7, 15};
+  static const int ww[NCFGCOLOURS] = {256, 257, 258, 259, 260, 261, 0,  8, 1,  9, 2,
+                                      10,  3,   11,  4,   12,  5,   13, 6, 14, 7, 15};
 
-  for (i = 0; i < 22; i++) {
-    colours[ww[i]] = QColor::fromRgb(conf_get_int_int(cfg, CONF_colours, i));
+  for (i = 0; i < NCFGCOLOURS; i++) {
+    int r = conf_get_int_int(cfg, CONF_colours, i * 3 + 0);
+    int g = conf_get_int_int(cfg, CONF_colours, i * 3 + 1);
+    int b = conf_get_int_int(cfg, CONF_colours, i * 3 + 2);
+    colours[ww[i]] = QColor::fromRgb(r, g, b);
   }
   for (i = 0; i < NEXTCOLOURS; i++) {
     if (i < 216) {
@@ -579,7 +581,7 @@ void GuiTerminalWindow::cfgtopalette(Conf *cfg) {
   }
 
   /* Override with system colours if appropriate * /
-  if (cfg.system_colour)
+  if (conf_get_int(cfg, CONF_system_colour))
       systopalette();*/
 }
 

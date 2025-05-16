@@ -7,8 +7,10 @@
 extern "C" {
 #include "putty.h"
 }
-#include <QTextCodec>
 #include <QDebug>
+#include <QTextCodec>
+
+#include "QtConfig.hpp"
 
 #define CS_QTEXTCODEC 11111111
 
@@ -39,7 +41,8 @@ void init_ucs(Conf *cfg, struct unicode_data *ucsdata) {
    * be used.
    */
   ucsdata->font_codepage = -1;
-  char *line_codepage = conf_get_str(cfg, CONF_line_codepage);
+  const char *line_codepage = "";
+  if (confKeyExists(cfg, CONF_line_codepage)) line_codepage = conf_get_str(cfg, CONF_line_codepage);
 
   ucsdata->encoder = get_text_codec(line_codepage);
   if (!ucsdata->encoder) {

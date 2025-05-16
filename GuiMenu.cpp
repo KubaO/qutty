@@ -294,8 +294,8 @@ void GuiMainWindow::contextMenuSavedSessionTriggered() {
   if (!action) return;
   QString sessname = action->text();
 
-  if (qutty_config.config_list.find(sessname) == qutty_config.config_list.end()) return;
-  this->createNewTab(qutty_config.config_list[sessname]);
+  auto it = qutty_config.config_list.find(sessname);
+  if (it != qutty_config.config_list.end()) this->createNewTab(it->second.get());
 }
 
 void GuiMainWindow::contextMenuPaste() {
@@ -310,7 +310,7 @@ void GuiMainWindow::contextMenuDuplicateSessionTriggered() {
   if (!term) term = this->getCurrentTerminal();
   if (terminalList.indexOf(term) == -1) return;
   if (!term->tmuxGateway())
-    this->createNewTab(term->cfg);
+    this->createNewTab(term->getCfg());
   else
     term->tmuxGateway()->sendCommandNewWindowInSession();
 }
@@ -319,14 +319,14 @@ void GuiMainWindow::contextMenuOpenDuplicateHSplit() {
   GuiTerminalWindow *term = menuCookieTermWnd;
   if (!term) term = this->getCurrentTerminal();
   if (terminalList.indexOf(term) == -1) return;
-  this->on_createNewSession(term->cfg, GuiBase::TYPE_HORIZONTAL);
+  this->on_createNewSession(term->getCfg(), GuiBase::TYPE_HORIZONTAL);
 }
 
 void GuiMainWindow::contextMenuOpenDuplicateVSplit() {
   GuiTerminalWindow *term = menuCookieTermWnd;
   if (!term) term = this->getCurrentTerminal();
   if (terminalList.indexOf(term) == -1) return;
-  this->on_createNewSession(term->cfg, GuiBase::TYPE_VERTICAL);
+  this->on_createNewSession(term->getCfg(), GuiBase::TYPE_VERTICAL);
 }
 
 void GuiMainWindow::contextMenuRestartSessionTriggered() {
@@ -503,7 +503,7 @@ void GuiMainWindow::contextMenuCustomSavedSession(int ind) {
   QString sessname;
   auto it_cfg = qutty_config.config_list.find(sessname);
   if (it_cfg == qutty_config.config_list.end()) return;
-  this->on_createNewSession(it_cfg->second, GuiBase::SplitType(it->second.int_data));
+  this->on_createNewSession(it_cfg->second.get(), GuiBase::SplitType(it->second.int_data));
 }
 
 void GuiMainWindow::contextMenuImportFromFile() {

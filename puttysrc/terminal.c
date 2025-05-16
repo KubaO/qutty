@@ -1528,6 +1528,7 @@ Terminal *term_init(Conf *myconf, struct unicode_data *ucsdata,
      * that need it.
      */
     term = snew(Terminal);
+    memset(term, 0, sizeof(Terminal));
     term->frontend = frontend;
     term->ucsdata = ucsdata;
     term->conf = conf_copy(myconf);

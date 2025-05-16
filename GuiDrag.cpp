@@ -264,7 +264,7 @@ void GuiTabBar::dropEvent(QDropEvent *e) {
     goto cu0;
   }
 
-  qDebug() << __FUNCTION__ << conf_get_str(dropped->cfg, CONF_host) << tabind << split;
+  qDebug() << __FUNCTION__ << conf_get_str(dropped->getCfg(), CONF_host) << tabind << split;
 
   if (dropped->parentSplit) {
     dropped->parentSplit->removeSplitLayout(dropped);

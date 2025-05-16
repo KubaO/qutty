@@ -172,8 +172,8 @@ void GuiSettingsWindow::on_buttonBox_accepted() {
     return;
   } else if (ui->le_hostname->text() == "") {
     QString config_name = ui->l_saved_sess->currentItem()->text(0);
-    if (qutty_config.config_list.find(config_name) == qutty_config.config_list.end()) return;
-    setConfig(qutty_config.config_list[config_name]);
+    auto it = qutty_config.config_list.find(config_name);
+    if (it != qutty_config.config_list.end()) setConfig(QtConfig::copy(it->second.get()));
   }
   // check for NOT_YET_SUPPORTED configs
   chkUnsupportedConfigs(getConfig());
@@ -439,10 +439,10 @@ enum Type {
 static const std::unordered_map<config_primary_key, Type> KEY_TO_TYPE = {
     CONFIG_OPTIONS(KEY_TO_TYPE_ENTRY)};
 
-void GuiSettingsWindow::setConfig(Conf *_cfg) {
+void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
   int ind;
 
-  this->cfg = _cfg;
+  this->cfg = std::move(_cfg);
 
   // update the ui with the given settings
 
@@ -458,29 +458,29 @@ void GuiSettingsWindow::setConfig(Conf *_cfg) {
     QCheckBox *cb = qobject_cast<QCheckBox *>(widget);
     if (cb) {
       assert(type == TYPE_INT);
-      cb->setChecked(conf_get_int(cfg, key));
+      cb->setChecked(conf_get_int(cfg.get(), key));
       continue;
     }
     QLineEdit *le = qobject_cast<QLineEdit *>(widget);
     if (le) {
       if (type == TYPE_STR)
-        le->setText(conf_get_str(cfg, key));
+        le->setText(conf_get_str(cfg.get(), key));
       else if (type == TYPE_INT)
-        le->setText(QString::number(conf_get_int(cfg, key)));
+        le->setText(QString::number(conf_get_int(cfg.get(), key)));
       else if (type == TYPE_FILENAME)
-        le->setText(conf_get_filename(cfg, key)->path);
+        le->setText(conf_get_filename(cfg.get(), key)->path);
       continue;
     }
     QButtonGroup *bg = qobject_cast<QButtonGroup *>(widget);
     if (bg) {
       assert(type == TYPE_INT);
-      bg->button(conf_get_int(cfg, key))->click();
+      bg->button(conf_get_int(cfg.get(), key))->click();
       continue;
     }
     QRadioButton *rb = qobject_cast<QRadioButton *>(widget);
     if (rb) {
       assert(type == TYPE_INT);
-      int cv = conf_get_int(cfg, key);
+      int cv = conf_get_int(cfg.get(), key);
       if (kv.is_bool) {
         if (cv && value || !cb && !value) rb->click();
       } else {
@@ -491,11 +491,11 @@ void GuiSettingsWindow::setConfig(Conf *_cfg) {
   }
 
   if (0) {  // FIXME - does this matter?
-    char *host = conf_get_str(cfg, CONF_host);
+    char *host = conf_get_str(cfg.get(), CONF_host);
     if (host[0] != '\0') ui->le_hostname->setText(host);
   }
 
-  char *config_name = conf_get_str(cfg, CONF_config_name);
+  char *config_name = conf_get_str(cfg.get(), CONF_config_name);
   auto cfg_name_split = qutty_string_split(string(config_name), QUTTY_SESSION_NAME_SPLIT);
   ui->le_saved_sess->setText(QString::fromStdString(cfg_name_split.back()));
 
@@ -504,18 +504,18 @@ void GuiSettingsWindow::setConfig(Conf *_cfg) {
   if (sel_saved_sess.size() > 0) ui->l_saved_sess->setCurrentItem(sel_saved_sess[0]);
 
   /* Options controlling session logging */
-  if (conf_get_int(cfg, CONF_logxfovr) == LGXF_ASK)  // handle -ve value
+  if (conf_get_int(cfg.get(), CONF_logxfovr) == LGXF_ASK)  // handle -ve value
     ui->gp_logfile->button(LGXF_ASK__)->click();
   else
-    ui->gp_logfile->button(conf_get_int(cfg, CONF_logxfovr))->click();
+    ui->gp_logfile->button(conf_get_int(cfg.get(), CONF_logxfovr))->click();
   ui->chb_sessionlog_flush->setChecked(true);
 
   /* window options */
-  FontSpec &font = *conf_get_fontspec(cfg, CONF_font);
+  FontSpec &font = *conf_get_fontspec(cfg.get(), CONF_font);
   ui->lbl_fontsel->setText(
       QString("%1, %2%3-point")
           .arg(font.name, font.isbold ? "Bold, " : "", QString::number(font.height)));
-  ind = ui->cb_codepage->findText(conf_get_str(cfg, CONF_line_codepage));
+  ind = ui->cb_codepage->findText(conf_get_str(cfg.get(), CONF_line_codepage));
   if (ind == -1) ind = 0;
   ui->cb_codepage->setCurrentIndex(ind);
 }
@@ -550,7 +550,7 @@ static void getTextAsNumber(Conf *conf, config_primary_key key, QLineEdit *src) 
 }
 
 Conf *GuiSettingsWindow::getConfig() {
-  Conf *cfg = this->cfg;
+  Conf *cfg = this->cfg.get();
 
   // update the config with current ui selection and return it
 
@@ -615,8 +615,7 @@ void GuiSettingsWindow::loadSessionNames() {
   map<QString, QTreeWidgetItem *> folders;
   folders[""] = ui->l_saved_sess->invisibleRootItem();
   ui->l_saved_sess->clear();
-  for (std::map<QString, Conf *>::iterator it = qutty_config.config_list.begin();
-       it != qutty_config.config_list.end(); it++) {
+  for (auto it = qutty_config.config_list.begin(); it != qutty_config.config_list.end(); it++) {
     QString fullsessname = it->first;
     if (folders.find(fullsessname) != folders.end()) continue;
     if (fullsessname.endsWith(QUTTY_SESSION_NAME_SPLIT)) fullsessname.chop(1);
@@ -657,8 +656,8 @@ void GuiSettingsWindow::on_l_saved_sess_currentItemChanged(QTreeWidgetItem *curr
   if (!current) return;
   QString config_name;
   config_name = current->data(0, QUTTY_ROLE_FULL_SESSNAME).toString();
-  if (qutty_config.config_list.find(config_name) == qutty_config.config_list.end()) return;
-  setConfig(qutty_config.config_list[config_name]);
+  auto it = qutty_config.config_list.find(config_name);
+  if (it != qutty_config.config_list.end()) setConfig(QtConfig::copy(it->second.get()));
   ui->le_saved_sess->setText(current->text(0));
 }
 
@@ -678,9 +677,9 @@ void GuiSettingsWindow::on_b_save_sess_clicked() {
   }
   oldfullname = item->data(0, QUTTY_ROLE_FULL_SESSNAME).toString();
   qutty_config.config_list.erase(oldfullname);
-  Conf *cfg = this->getConfig();
-  conf_set_str(cfg, CONF_config_name, fullname.toUtf8());
-  qutty_config.config_list[fullname] = cfg;
+  QtConfig::Pointer cfg = QtConfig::copy(this->getConfig());
+  conf_set_str(cfg.get(), CONF_config_name, fullname.toUtf8());
+  qutty_config.config_list[fullname] = std::move(cfg);
 
   item->setText(0, name);
   item->setData(0, QUTTY_ROLE_FULL_SESSNAME, fullname);
@@ -693,17 +692,18 @@ void GuiSettingsWindow::on_b_save_sess_clicked() {
 void GuiSettingsWindow::loadInitialSettings(Conf *cfg) {
   char *config_name = conf_get_str(cfg, CONF_config_name);
   if (qutty_config.config_list.find(config_name) != qutty_config.config_list.end()) {
-    setConfig(qutty_config.config_list[config_name]);
+    setConfig(QtConfig::copy(qutty_config.config_list[config_name].get()));
     vector<string> split = qutty_string_split(config_name, QUTTY_SESSION_NAME_SPLIT);
     string sessname = split.back();
     ui->le_saved_sess->setText(QString::fromStdString(sessname));
   }
 }
 
-void GuiSettingsWindow::enableModeChangeSettings(Conf *cfg, GuiTerminalWindow *termWnd) {
+void GuiSettingsWindow::enableModeChangeSettings(QtConfig::Pointer &&cfg,
+                                                 GuiTerminalWindow *termWnd) {
   isChangeSettingsMode = true;
   this->termWnd = termWnd;
-  setConfig(cfg);
+  setConfig(std::move(cfg));
 
   ui->buttonBox->setStandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
   ui->gp_connection->setEnabled(false);
@@ -749,11 +749,11 @@ void adjust_sessname_hierarchy(QTreeWidgetItem *item) {
   oldfullname = item->data(0, QUTTY_ROLE_FULL_SESSNAME).toString();
   if (fullname == oldfullname) return;  // no change
   item->setData(0, QUTTY_ROLE_FULL_SESSNAME, fullname);
-  Conf *cfg = qutty_config.config_list[oldfullname];
+  QtConfig::Pointer cfg = std::move(qutty_config.config_list[oldfullname]);
   QByteArray _fullname = fullname.toUtf8();
-  conf_set_str(cfg, CONF_config_name, _fullname.data());
+  conf_set_str(cfg.get(), CONF_config_name, _fullname.data());
   qutty_config.config_list.erase(oldfullname);
-  qutty_config.config_list[fullname] = cfg;
+  qutty_config.config_list[fullname] = std::move(cfg);
   for (int i = 0; i < item->childCount(); i++) adjust_sessname_hierarchy(item->child(i));
 }
 
@@ -769,7 +769,7 @@ void GuiSettingsWindow::on_btn_ssh_auth_browse_keyfile_clicked() {
 }
 
 void GuiSettingsWindow::on_btn_fontsel_clicked() {
-  FontSpec &font = *conf_get_fontspec(cfg, CONF_font);
+  FontSpec &font = *conf_get_fontspec(cfg.get(), CONF_font);
   QFont oldfont = QFont(font.name, font.height);
   oldfont.setBold(font.isbold);
   QFont selfont = QFontDialog::getFont(NULL, oldfont);
@@ -805,7 +805,7 @@ void GuiSettingsWindow::on_btn_colour_modify_clicked() {
     int currind = ui->l_colour->currentIndex().row();
     if (currind >= 0 && currind < NCFGCOLOURS) {
       QRgb rgba = newcol.rgba();  // FIXME is this right?
-      conf_set_int_int(cfg, CONF_colours, currind, rgba);
+      conf_set_int_int(cfg.get(), CONF_colours, currind, rgba);
     }
   }
 }
@@ -825,10 +825,10 @@ void GuiSettingsWindow::on_l_colour_currentItemChanged(QListWidgetItem *current,
     int g = ui->le_colour_g->text().toInt();
     int b = ui->le_colour_b->text().toInt();
     int rgba = qRgba(r, g, b, 0xFF);
-    conf_set_int_int(cfg, CONF_colours, prev, rgba);
+    conf_set_int_int(cfg.get(), CONF_colours, prev, rgba);
   }
   if (curr >= 0 && curr < NCFGCOLOURS) {
-    QRgb rgba = conf_get_int_int(cfg, CONF_colours, curr);
+    QRgb rgba = conf_get_int_int(cfg.get(), CONF_colours, curr);
     QColor col = QColor::fromRgba(rgba);
     ui->le_colour_r->setText(QString::number(col.red()));
     ui->le_colour_g->setText(QString::number(col.green()));
@@ -869,9 +869,9 @@ void GuiSettingsWindow::on_b_sess_copy_clicked() {
   newitem->setText(0, foldername);
   newitem->setData(0, QUTTY_ROLE_FULL_SESSNAME, fullname);
   parent->insertChild(parent->indexOfChild(item) + 1, newitem);
-  Conf *cfg = qutty_config.config_list[fullPathName];
-  conf_set_str(cfg, CONF_config_name, fullname.toUtf8());
-  qutty_config.config_list[fullname] = cfg;
+  QtConfig::Pointer cfg = QtConfig::copy(qutty_config.config_list[fullPathName].get());
+  conf_set_str(cfg.get(), CONF_config_name, fullname.toUtf8());
+  qutty_config.config_list[fullname] = std::move(cfg);
 
   pending_session_changes = true;
 }
@@ -887,7 +887,7 @@ static bool conf_del_str_all(Conf *cfg, config_primary_key key) {
 void chkUnsupportedConfigs(Conf *cfg) {
   QString opt_unsupp;
 
-  if (conf_get_int(cfg, CONF_try_gssapi_auth)) {
+  if (confKeyExists(cfg, CONF_try_gssapi_auth)) {
     conf_set_int(cfg, CONF_try_gssapi_auth, 0);
   }
 
@@ -895,7 +895,7 @@ void chkUnsupportedConfigs(Conf *cfg) {
     opt_unsupp += " * SSH Tunnels/port forwarding\n";
   }
 
-  if (conf_get_int(cfg, CONF_tryagent)) {
+  if (confKeyExists(cfg, CONF_tryagent)) {
     conf_set_int(cfg, CONF_tryagent, 0);
   }
 
