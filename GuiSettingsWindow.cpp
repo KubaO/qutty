@@ -85,59 +85,6 @@ GuiSettingsWindow::GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmod
   ui->rb_contype_rlogin->setVisible(false);
   ui->rb_contype_serial->setVisible(false);
 
-  ui->gp_exit_close->setId(ui->rb_exit_always, FORCE_ON);
-  ui->gp_exit_close->setId(ui->rb_exit_never, FORCE_OFF);
-  ui->gp_exit_close->setId(ui->rb_exit_clean, AUTO);
-
-  /* Options controlling session logging */
-
-  ui->gp_seslog->setId(ui->rb_sessionlog_none, LGTYP_NONE);
-  ui->gp_seslog->setId(ui->rb_sessionlog_printout, LGTYP_ASCII);
-  ui->gp_seslog->setId(ui->rb_sessionlog_alloutput, LGTYP_DEBUG);
-  ui->gp_seslog->setId(ui->rb_sessionlog_sshpacket, LGTYP_PACKETS);
-  ui->gp_seslog->setId(ui->rb_sessionlog_rawdata, LGTYP_SSHRAW);
-
-  ui->gp_logfile->setId(ui->rb_sessionlog_overwrite, LGXF_OVR);
-  ui->gp_logfile->setId(ui->rb_sessionlog_append, LGXF_APN);
-  ui->gp_logfile->setId(ui->rb_sessionlog_askuser, LGXF_ASK__);
-
-  ui->gp_termopt_echo->setId(ui->rb_termopt_echoauto, AUTO);
-  ui->gp_termopt_echo->setId(ui->rb_termopt_echoon, FORCE_ON);
-  ui->gp_termopt_echo->setId(ui->rb_termopt_echooff, FORCE_OFF);
-
-  ui->gp_termopt_edit->setId(ui->rb_termopt_editauto, AUTO);
-  ui->gp_termopt_edit->setId(ui->rb_termopt_editon, FORCE_ON);
-  ui->gp_termopt_edit->setId(ui->rb_termopt_editoff, FORCE_OFF);
-
-  ui->gp_fnkeys->setId(ui->rb_fnkeys_esc, FUNKY_TILDE);
-  ui->gp_fnkeys->setId(ui->rb_fnkeys_linux, FUNKY_LINUX);
-  ui->gp_fnkeys->setId(ui->rb_fnkeys_xtermr6, FUNKY_XTERM);
-  ui->gp_fnkeys->setId(ui->rb_fnkeys_vt400, FUNKY_VT400);
-  ui->gp_fnkeys->setId(ui->rb_fnkeys_vt100, FUNKY_VT100P);
-  ui->gp_fnkeys->setId(ui->rb_fnkeys_sco, FUNKY_SCO);
-
-  ui->gp_remote_qtitle_action->setId(ui->rb_featqtitle_none, TITLE_NONE);
-  ui->gp_remote_qtitle_action->setId(ui->rb_featqtitle_empstring, TITLE_EMPTY);
-  ui->gp_remote_qtitle_action->setId(ui->rb_featqtitle_wndtitle, TITLE_REAL);
-
-  ui->gp_resize_action->setId(ui->rb_wndresz_rowcolno, RESIZE_TERM);
-  ui->gp_resize_action->setId(ui->rb_wndresz_fontsize, RESIZE_FONT);
-  ui->gp_resize_action->setId(ui->rb_wndresz_onlywhenmax, RESIZE_EITHER);
-  ui->gp_resize_action->setId(ui->rb_wndresz_forbid, RESIZE_DISABLED);
-
-  ui->gp_addressfamily->setId(ui->rb_connectprotocol_auto, ADDRTYPE_UNSPEC);
-  ui->gp_addressfamily->setId(ui->rb_connectprotocol_ipv4, ADDRTYPE_IPV4);
-  ui->gp_addressfamily->setId(ui->rb_connectprotocol_ipv6, ADDRTYPE_IPV6);
-
-  ui->gp_curappear->setId(ui->rb_curappear_block, 0);
-  ui->gp_curappear->setId(ui->rb_curappear_underline, 1);
-  ui->gp_curappear->setId(ui->rb_curappear_vertline, 2);
-
-  ui->gp_fontquality->setId(ui->rb_fontappear_antialiase, FQ_ANTIALIASED);
-  ui->gp_fontquality->setId(ui->rb_fontappear_nonantialiase, FQ_NONANTIALIASED);
-  ui->gp_fontquality->setId(ui->rb_fontappear_default, FQ_DEFAULT);
-  ui->gp_fontquality->setId(ui->rb_fontappear_clear, FQ_CLEARTYPE);
-
   this->loadSessionNames();
 
   // resize to minimum needed dimension
@@ -199,205 +146,284 @@ void GuiSettingsWindow::saveConfigChanges() {
   qutty_config.saveConfig();
 }
 
-#define UI_MAPPING(X)                                         \
-  /* control name, keyword, value (opt) */                    \
-  X("le_hostname", host)                                      \
-  X("le_port", port)                                          \
-  /* we could also use gb_contype etc. */                     \
-  X("rb_contype_ssh", protocol, PROT_SSH)                     \
-  X("rb_contype_telnet", protocol, PROT_TELNET)               \
-  X("gp_exit_close", close_on_exit)                           \
-  /* Session Logging */                                       \
-  X("gp_seslog", logtype)                                     \
-  X("le_sessionlog_filename", logfilename)                    \
-  X("chb_sessionlog_flush", logflush)                         \
-  X("chb_sessionlog_omitpasswd", logomitpass)                 \
-  X("chb_sessionlog_omitdata", logomitdata)                   \
-  /* Terminal Emulation */                                    \
-  X("chb_terminaloption_autowrap", wrap_mode)                 \
-  X("chb_terminaloption_decorigin", dec_om)                   \
-  X("chb_terminaloption_lf", lfhascr)                         \
-  X("chb_terminaloption_bgcolor", bce)                        \
-  X("chb_terminaloption_blinktext", blinktext)                \
-  X("le_termopt_ansback", answerback)                         \
-  X("gp_termopt_echo", localecho)                             \
-  X("gp_termopt_edit", localedit)                             \
-  /* Keyboard Options */                                      \
-  X("rb_backspacekey_ctrlh", bksp_is_delete, true)            \
-  X("rb_backspace_ctrl127", bksp_is_delete, false)            \
-  X("rb_homeendkeys_rxvt", rxvt_homeend, true)                \
-  X("rb_homeendkeys_std", rxvt_homeend, false)                \
-  X("gp_fnkeys", funky_type)                                  \
-  X("rb_inicursorkeys_app", app_cursor, true)                 \
-  X("rb_inicursorkeys_normal", app_cursor, false)             \
-  /* nethack_keypad and app_keypad are mutually exclusive! */ \
-  X("rb_ininumkeys_app", app_keypad, true)                    \
-  X("rb_ininumkeys_normal", app_keypad, false)                \
-  X("rb_ininumerickeys_nethack", nethack_keypad, true)        \
-  X("chb_altgrkey", compose_key)                              \
-  X("chb_ctrl_alt", ctrlaltkeys)                              \
-  /* Terminal Features */                                     \
-  X("chb_no_applic_c", no_applic_c)                           \
-  X("chb_no_applic_k", no_applic_k)                           \
-  X("chb_no_mouse_rep", no_mouse_rep)                         \
-  X("chb_no_remote_resize", no_remote_resize)                 \
-  X("chb_no_alt_screen", no_alt_screen)                       \
-  X("chb_no_remote_wintitle", no_remote_wintitle)             \
-  X("chb_no_dbackspace", no_dbackspace)                       \
-  X("chb_no_remote_charset", no_remote_charset)               \
-  X("chb_no_arabic", arabicshaping)                           \
-  X("chb_no_bidi", bidi)                                      \
-  X("gp_remote_qtitle_action", remote_qtitle_action)          \
-  /* Window  */                                               \
-  X("le_window_column", width)                                \
-  X("le_window_row", height)                                  \
-  X("le_wndscroll_lines", savelines)                          \
-  X("chb_wndscroll_display", scrollbar)                       \
-  X("chb_wndscroll_fullscreen", scrollbar_in_fullscreen)      \
-  X("chb_wndscroll_resetdisply", scroll_on_disp)              \
-  X("chb_wndscroll_resetkeypress", scroll_on_key)             \
-  X("chb_wndscroll_pusherasedtext", erase_to_scrollback)      \
-  X("gp_resize_action", resize_action)                        \
-  X("gp_curappear", cursor_type)                              \
-  X("chb_curblink", blink_cur)                                \
-  X("gp_fontquality", font_quality)                           \
-  X("chb_behaviour_warn", warn_on_close)                      \
-  /* Connection  */                                           \
-  X("le_ping_interval", ping_interval)                        \
-  X("chb_tcp_keepalive", tcp_keepalives)                      \
-  X("chb_tcp_nodelay", tcp_nodelay)                           \
-  X("gp_addressfamily", addressfamily)                        \
-  X("le_loghost", loghost)                                    \
-  /* Connection Data  */                                      \
-  X("le_datausername", username)                              \
-  X("rb_datausername_systemsuse", username_from_env, true)    \
-  X("rb_datausername_prompt", username_from_env, false)       \
-  /* Telnet */                                                \
-  X("le_termtype", termtype)                                  \
-  X("le_termspeed", termspeed)                                \
-  /* SSH Options */                                           \
-  X("le_remote_cmd", remote_cmd)                              \
-  /* SSH Auth  */                                             \
-  X("chb_ssh_no_userauth", ssh_no_userauth)                   \
-  X("chb_ssh_show_banner", ssh_show_banner)                   \
-  X("chb_ssh_tryagent", tryagent)                             \
-  X("chb_ssh_try_tis_auth", try_tis_auth)                     \
-  X("chb_ssh_try_ki_auth", try_ki_auth)                       \
-  X("chb_ssh_agentfwd", agentfwd)                             \
-  X("chb_ssh_change_username", change_username)               \
-  X("le_ssh_auth_keyfile", keyfile)
+enum class UI {
+  None = 0,
+  Optional = 1,
+};
+
+Q_DECLARE_FLAGS(UIFlags, UI)
+Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
+
+#define UI_MAPPING(X)                                                \
+  /* control name, keyword, value (opt) */                           \
+                                                                     \
+  /* Session */                                                      \
+  X("le_hostname", host)                                             \
+  X("le_port", port)                                                 \
+  X("rb_contype_raw", protocol, PROT_RAW)                            \
+  X("rb_contype_telnet", protocol, PROT_TELNET)                      \
+  X("rb_contype_rlogin", protocol, PROT_RLOGIN)                      \
+  X("rb_contype_ssh", protocol, PROT_SSH)                            \
+  X("rb_contype_serial", protocol, PROT_SERIAL)                      \
+  X("rb_exit_always", close_on_exit, FORCE_ON)                       \
+  X("rb_exit_clean", close_on_exit, FORCE_OFF)                       \
+  X("rb_exit_never", close_on_exit, AUTO)                            \
+  /* Session Logging v*/                                             \
+  X("rb_sessionlog_none", logtype, LGTYP_NONE)                       \
+  X("rb_sessionlog_printout", logtype, LGTYP_ASCII)                  \
+  X("rb_sessionlog_alloutput", logtype, LGTYP_DEBUG)                 \
+  X("rb_sessionlog_sshpacket", logtype, LGTYP_PACKETS)               \
+  X("rb_sessionlog_rawdata", logtype, LGTYP_SSHRAW)                  \
+  X("le_sessionlog_filename", logfilename)                           \
+  X("rb_sessionlog_overwrite", logxfovr, LGXF_OVR)                   \
+  X("rb_sessionlog_append", logxfovr, LGXF_APN)                      \
+  X("rb_sessionlog_askuser", logxfovr, LGXF_ASK)                     \
+  X("chb_sessionlog_flush", logflush)                                \
+  X("chb_sessionlog_omitpasswd", logomitpass)                        \
+  X("chb_sessionlog_omitdata", logomitdata)                          \
+  /* Terminal Emulation */                                           \
+  X("chb_terminaloption_autowrap", wrap_mode)                        \
+  X("chb_terminaloption_decorigin", dec_om)                          \
+  X("chb_terminaloption_lf", lfhascr)                                \
+  X("chb_terminaloption_lf", crhaslf)                                \
+  X("chb_terminaloption_bgcolor", bce)                               \
+  X("chb_terminaloption_blinktext", blinktext)                       \
+  X("le_termopt_ansback", answerback)                                \
+  X("rb_termopt_echoauto", localecho, AUTO)                          \
+  X("rb_termopt_echoon", localecho, FORCE_ON)                        \
+  X("rb_termopt_echooff", localecho, FORCE_OFF)                      \
+  X("rb_termopt_editauto", localedit, AUTO)                          \
+  X("rb_termopt_editon", localedit, FORCE_ON)                        \
+  X("rb_termopt_editoff", localedit, FORCE_OFF)                      \
+  X("cb_termopt_printeroutput", printer)                             \
+  /* Keyboard */                                                     \
+  X("rb_backspacekey_ctrlh", bksp_is_delete, true)                   \
+  X("rb_backspace_ctrl127", bksp_is_delete, false)                   \
+  X("rb_homeendkeys_rxvt", rxvt_homeend, true)                       \
+  X("rb_homeendkeys_std", rxvt_homeend, false)                       \
+  X("rb_fnkeys_esc", funky_type, FUNKY_TILDE)                        \
+  X("rb_fnkeys_linux", funky_type, FUNKY_LINUX)                      \
+  X("rb_fnkeys_xtermr6", funky_type, FUNKY_XTERM)                    \
+  X("rb_fnkeys_vt400", funky_type, FUNKY_VT400)                      \
+  X("rb_fnkeys_vt100", funky_type, FUNKY_VT100P)                     \
+  X("rb_fnkeys_sco", funky_type, FUNKY_SCO)                          \
+  X("rb_inicursorkeys_normal", app_cursor, false)                    \
+  X("rb_inicursorkeys_app", app_cursor, true)                        \
+  X("rb_ininumkeys_normal", nethack_keypad, 0)                       \
+  X("rb_ininumkeys_app", nethack_keypad, 1)                          \
+  X("rb_ininumkeys_nethack", nethack_keypad, 2)                      \
+  X("chb_altgrkey", compose_key)                                     \
+  X("chb_ctrl_alt", ctrlaltkeys)                                     \
+  /* Bell */                                                         \
+  X("rb_bellaction_none", beep, BELL_DISABLED)                       \
+  X("rb_bellaction_alertsound", beep, BELL_DEFAULT)                  \
+  X("rb_bellaction_visual", beep, BELL_VISUAL)                       \
+  X("rb_bellaction_beep", beep, BELL_PCSPEAKER)                      \
+  X("rb_bellstyle_playcustomsound", beep, BELL_WAVEFILE)             \
+  X("le_bell_wavefile", bell_wavefile)                               \
+  X("rb_belltaskbar_disable", beep_ind, B_IND_DISABLED)              \
+  X("rb_belltaskbar_flash", beep_ind, B_IND_FLASH)                   \
+  X("rb_belltaskbar_steady", beep_ind, B_IND_STEADY)                 \
+  X("chb_bellcontrol_whenoverused", bellovl)                         \
+  X("le_bellcontrol_overuseno", bellovl_n)                           \
+  X("le_bellcontrol_overusesec", bellovl_t)                          \
+  X("le_bellcontrol_silencereq_secs", bellovl_s)                     \
+  /* Advanced Terminal Features */                                   \
+  X("chb_no_applic_c", no_applic_c)                                  \
+  X("chb_no_applic_k", no_applic_k)                                  \
+  X("chb_no_mouse_rep", no_mouse_rep)                                \
+  X("chb_no_remote_resize", no_remote_resize)                        \
+  X("chb_no_alt_screen", no_alt_screen)                              \
+  X("chb_no_remote_wintitle", no_remote_wintitle)                    \
+  X("rb_featqtitle_none", remote_qtitle_action, TITLE_NONE)          \
+  X("rb_featqtitle_empstring", remote_qtitle_action, TITLE_EMPTY)    \
+  X("rb_featqtitle_wndtitle", remote_qtitle_action, TITLE_REAL)      \
+  X("chb_no_dbackspace", no_dbackspace)                              \
+  X("chb_no_remote_charset", no_remote_charset)                      \
+  X("chb_no_arabic", arabicshaping)                                  \
+  X("chb_no_bidi", bidi)                                             \
+  /* Window */                                                       \
+  X("le_window_column", width)                                       \
+  X("le_window_row", height)                                         \
+  X("rb_wndresz_rowcolno", resize_action, RESIZE_TERM)               \
+  X("rb_wndresz_fontsize", resize_action, RESIZE_FONT)               \
+  X("rb_wndresz_onlywhenmax", resize_action, RESIZE_EITHER)          \
+  X("rb_wndresz_forbid", resize_action, RESIZE_DISABLED)             \
+  X("le_wndscroll_lines", savelines)                                 \
+  X("chb_wndscroll_display", scrollbar)                              \
+  X("chb_wndscroll_fullscreen", scrollbar_in_fullscreen)             \
+  X("chb_wndscroll_resetkeypress", scroll_on_key)                    \
+  X("chb_wndscroll_resetdisply", scroll_on_disp)                     \
+  X("chb_wndscroll_pusherasedtext", erase_to_scrollback)             \
+  /* Window Appearance */                                            \
+  X("rb_curappear_block", cursor_type, 0)                            \
+  X("rb_curappear_underline", cursor_type, 1)                        \
+  X("rb_curappear_vertline", cursor_type, 2)                         \
+  X("chb_curblink", blink_cur)                                       \
+  /* X("chb_fontsel_varpitch", 0) */                                 \
+  X("rb_fontappear_antialiase", font_quality, FQ_ANTIALIASED)        \
+  X("rb_fontappear_nonantialiase", font_quality, FQ_NONANTIALIASED)  \
+  X("rb_fontappear_clear", font_quality, FQ_CLEARTYPE)               \
+  X("rb_fontappear_default", font_quality, FQ_DEFAULT)               \
+  X("chb_hide_mouseptr", hide_mouseptr)                              \
+  X("le_borderappear_gap", window_border)                            \
+  X("chb_sunken_edge", sunken_edge)                                  \
+  /* Window Behaviour */                                             \
+  X("le_wintitle", wintitle)                                         \
+  X("chb_separate_titles", win_name_always)                          \
+  X("chb_behaviour_warn", warn_on_close)                             \
+  X("chb_behaviour_altf4", alt_f4)                                   \
+  X("chb_behaviour_alt_space", alt_space)                            \
+  X("chb_behaviour_altalone", alt_only)                              \
+  X("chb_behaviour_top", alwaysontop)                                \
+  X("chb_behaviour_alt_enter", fullscreenonaltenter)                 \
+  /* Character Set Translation */                                    \
+  X("cb_codepage", line_codepage)                                    \
+  X("chb_cjk_ambig_wide", cjk_ambig_wide)                            \
+  X("chb_xlat_capslockcyr", xlat_capslockcyr)                        \
+  X("rb_translation_useunicode", vtmode, VT_UNICODE)                 \
+  X("rb_translation_poorman", vtmode, VT_POORMAN)                    \
+  X("rb_translation_xwindows", vtmode, VT_XWINDOWS)                  \
+  X("rb_translation_ansi_oem", vtmode, VT_OEMANSI)                   \
+  X("rb_translation_oem", vtmode, VT_OEMONLY)                        \
+  X("chb_translation_copy_paste", rawcnp)                            \
+  /* Selection */                                                    \
+  X("rb_cpmouseaction_windows", mouse_is_xterm, 0)                   \
+  X("rb_cpmouseaction_compromise", mouse_is_xterm, 2) /* TODO chk */ \
+  X("rb_cpmouseaction_xterm", mouse_is_xterm, 1)                     \
+  X("chb_cpmouseaction_shift", mouse_override)                       \
+  X("rb_cpmouseaction_defaultnormal", rect_select, 0)                \
+  X("rb_cpmouseaction_defaultrect", rect_select, 1)                  \
+  X("l_char_classes", wordness)                                      \
+  X("chb_rtf_paste", rtf_paste)                                      \
+  /* Colour */                                                       \
+  X("chb_coloursoption_ansi", ansi_colour)                           \
+  X("chb_coloursoption_xterm", xterm_256_colour)                     \
+  X("rb_bold_font", bold_style, 1)                                   \
+  X("rb_bold_colour", bold_style, 2)                                 \
+  X("rb_bold_both", bold_style, 3)                                   \
+  X("chb_colouroption_palette", try_palette)                         \
+  X("chb_colouroption_usesystem", system_colour)                     \
+  X("l_colour", colours)                                             \
+  /* Connection  */                                                  \
+  X("le_ping_interval", ping_interval)                               \
+  X("chb_tcp_nodelay", tcp_nodelay)                                  \
+  X("chb_tcp_keepalive", tcp_keepalives)                             \
+  X("rb_connectprotocol_auto", addressfamily, ADDRTYPE_UNSPEC)       \
+  X("rb_connectprotocol_ipv4", addressfamily, ADDRTYPE_IPV4)         \
+  X("rb_connectprotocol_ipv6", addressfamily, ADDRTYPE_IPV6)         \
+  X("le_loghost", loghost)                                           \
+  /* Connection Data  */                                             \
+  X("le_datausername", username)                                     \
+  X("rb_datausername_systemsuse", username_from_env, true)           \
+  X("rb_datausername_prompt", username_from_env, false)              \
+  X("le_termtype", termtype)                                         \
+  X("le_termspeed", termspeed)                                       \
+  X("l_env_vars", environmt)                                         \
+  /* Proxy */                                                        \
+  X("rb_proxytype_none", proxy_type, PROXY_NONE)                     \
+  X("rb_proxy_socks4", proxy_type, PROXY_SOCKS4)                     \
+  X("rb_proxytype_socks5", proxy_type, PROXY_SOCKS5)                 \
+  X("rb_proxytype_http", proxy_type, PROXY_HTTP)                     \
+  X("rb_proxytype_telnet", proxy_type, PROXY_TELNET)                 \
+  X("rb_proxytype_local", proxy_type, PROXY_CMD)                     \
+  X("le_proxy_host", proxy_host)                                     \
+  X("le_proxy_port", proxy_port)                                     \
+  X("le_proxy_exclude_list", proxy_exclude_list)                     \
+  X("chb_even_proxy_localhost", even_proxy_localhost)                \
+  X("rb_proxydns_no", proxy_dns, FORCE_OFF)                          \
+  X("rb_proxydns_auto", proxy_dns, AUTO)                             \
+  X("rd_proxydns_yes", proxy_dns, FORCE_ON)                          \
+  X("le_proxy_username", proxy_username)                             \
+  X("le_proxy_password", proxy_password)                             \
+  X("le_proxy_telnet_command", proxy_telnet_command)                 \
+  /* Telnet */                                                       \
+  X("rb_telnetprotocol_bsd", rfc_environ, false)                     \
+  X("rb_telnetprotocol_rfc1408", rfc_environ, true)                  \
+  X("rb_telnetnegotiate_passsive", passive_telnet, true)             \
+  X("rb_telnetnegotiate_active", passive_telnet, false)              \
+  X("chb_telnet_keyboard", telnet_keyboard)                          \
+  X("chb_telnet_returnkey", telnet_newline)                          \
+  /* Rlogin */                                                       \
+  X("le_local_username", localusername)                              \
+  /* SSH Connections */                                              \
+  X("le_remote_cmd", remote_cmd)                                     \
+  X("chb_ssh_no_shell", ssh_no_shell)                                \
+  X("chb_compression", compression)                                  \
+  X("rb_sshprotocol_1only", sshprot, 0)                              \
+  X("rb_sshprotocol_1", sshprot, 1)                                  \
+  X("rb_sshprotocol_2", sshprot, 2)                                  \
+  X("rb_sshprotocol_2only", sshprot, 3)                              \
+  X("l_ssh_cipherlist", ssh_cipherlist)                              \
+  X("chb_ssh2_des_cbc", ssh2_des_cbc)                                \
+  /* SSH Key Exchange */                                             \
+  X("l_ssh_kexlist", ssh_kexlist)                                    \
+  X("le_ssh_rekey_time", ssh_rekey_time)                             \
+  X("le_ssh_rekey_time", ssh_rekey_data)                             \
+  /* SSH Authentication */                                           \
+  X("chb_ssh_no_userauth", ssh_no_userauth)                          \
+  X("chb_ssh_show_banner", ssh_show_banner)                          \
+  X("chb_ssh_tryagent", tryagent)                                    \
+  X("chb_ssh_try_tis_auth", try_tis_auth)                            \
+  X("chb_ssh_try_ki_auth", try_ki_auth)                              \
+  X("chb_ssh_agentfwd", agentfwd)                                    \
+  X("chb_ssh_change_username", change_username)                      \
+  X("le_ssh_auth_keyfile", keyfile)                                  \
+  /* GSSAPI authentication */                                        \
+  X("chb_gssapi_authen", try_gssapi_auth)                            \
+  X("chb_gssapi_credential", gssapifwd)                              \
+  X("l_ssh_gsslist", ssh_gsslist)                                    \
+  X("le_ssh_gss_custom", ssh_gss_custom, UI::Optional)               \
+  /* Remote Terminal */                                              \
+  X("chb_nopty", nopty)                                              \
+  X("l_ttymodes", ttymodes)                                          \
+  /* X11 */                                                          \
+  X("chb_x11_forward", x11_forward)                                  \
+  X("le_x11_display", x11_display)                                   \
+  X("rb_x11remote_mit", x11_auth, 0)                                 \
+  X("rb_x11remote_xdm", x11_auth, 1)                                 \
+  X("le_xauthfile", xauthfile)                                       \
+  /* SSH Port Forwarding */                                          \
+  X("chb_lport_acceptall", lport_acceptall)                          \
+  X("chb_rport_acceptall", rport_acceptall)                          \
+  X("l_portfwd", portfwd)                                            \
+  /* SSH Server Bug Workarounds */                                   \
+  X("cb_sshbug_ignore1", sshbug_ignore1)                             \
+  X("cb_sshbug_plainpw1", sshbug_plainpw1)                           \
+  X("cb_sshbug_rsa1", sshbug_rsa1)                                   \
+  X("cb_sshbug_ignore2", sshbug_ignore2)                             \
+  X("cb_sshbug_winadj", sshbug_winadj)                               \
+  X("cb_sshbug_hmac2", sshbug_hmac2)                                 \
+  X("cb_sshbug_derivekey2", sshbug_derivekey2)                       \
+  X("cb_sshbug_rsapad2", sshbug_rsapad2)                             \
+  X("cb_sshbug_pksessid2", sshbug_pksessid2)                         \
+  X("cb_sshbug_rekey2", sshbug_rekey2)                               \
+  X("cb_sshbug_maxpkt2", sshbug_maxpkt2)                             \
+  /* Serial Port  */                                                 \
+  X("le_serial_line", serline)                                       \
+  X("le_config_speed", serspeed)                                     \
+  X("le_config_data", serdatabits)                                   \
+  X("le_config_stop", serstopbits)                                   \
+  X("cb_config_parity", serparity)                                   \
+  X("cb_config_flow", serflow)                                       \
+  /* */                                                              \
+  X("rb_ininumkeys_app", app_keypad, true)
 
 /*
  * These options are yet to be incorporated into the UI.
- * They are here to ensure they are valid CONF_ keys,
- * keeping the scope of work known.
+ * They are here to ensure they are valid CONF_ keys.
  */
 #define UI_MAPPING_TODO(X)                 \
   /* control name, keyword, value (opt) */ \
-  /* Proxy options */                      \
-  X("", proxy_exclude_list)                \
-  X("", proxy_dns)                         \
-  X("", even_proxy_localhost)              \
-  X("", proxy_type)                        \
-  X("", proxy_host)                        \
-  X("", proxy_port)                        \
-  X("", proxy_username)                    \
-  X("", proxy_password)                    \
-  X("", proxy_telnet_command)              \
   /* SSH options */                        \
   X("", remote_cmd2)                       \
-  X("", nopty)                             \
-  X("", compression)                       \
-  X("", ssh_kexlist)                       \
-  X("", ssh_rekey_time)                    \
-  X("", ssh_rekey_data)                    \
-  X("", ssh_cipherlist)                    \
-  X("", sshprot)                           \
-  X("", ssh2_des_cbc)                      \
-  X("", try_gssapi_auth)                   \
-  X("", gssapifwd)                         \
-  X("", ssh_gsslist)                       \
-  X("", ssh_gss_custom)                    \
   X("", ssh_subsys)                        \
   X("", ssh_subsys2)                       \
-  X("", ssh_no_shell)                      \
   X("", ssh_nc_host)                       \
   X("", ssh_nc_port)                       \
-  /* Telnet */                             \
-  X("", ttymodes)                          \
-  X("", environmt)                         \
-  X("", localusername)                     \
-  X("", rfc_environ)                       \
-  X("", passive_telnet)                    \
-  /* Serial Port  */                       \
-  X("", serline)                           \
-  X("", serspeed)                          \
-  X("", serdatabits)                       \
-  X("", serstopbits)                       \
-  X("", serparity)                         \
-  X("", serflow)                           \
-  /* Keyboard */                           \
-  X("", telnet_keyboard)                   \
-  X("", telnet_newline)                    \
-  X("", alt_f4)                            \
-  X("", alt_space)                         \
-  X("", alt_only)                          \
-  X("", alwaysontop)                       \
-  X("", fullscreenonaltenter)              \
-  X("", wintitle)                          \
-  /* Terminal */                           \
-  X("", beep)                              \
-  X("", beep_ind)                          \
-  X("", bellovl)                           \
-  X("", bellovl_n)                         \
-  X("", bellovl_t)                         \
-  X("", bellovl_s)                         \
-  X("", bell_wavefile)                     \
-  X("", bce)                               \
-  X("", win_name_always)                   \
-  X("", hide_mouseptr)                     \
-  X("", sunken_edge)                       \
-  X("", window_border)                     \
-  X("", printer)                           \
-  /* Colour  */                            \
-  X("", ansi_colour)                       \
-  X("", xterm_256_colour)                  \
-  X("", system_colour)                     \
-  X("", try_palette)                       \
-  X("", bold_style)                        \
-  /* Selection  */                         \
-  X("", mouse_is_xterm)                    \
-  X("", rect_select)                       \
-  X("", rawcnp)                            \
-  X("", rtf_paste)                         \
-  X("", mouse_override)                    \
-  X("", wordness)                          \
   /* translations */                       \
-  X("", vtmode)                            \
-  X("", cjk_ambig_wide)                    \
   X("", utf8_override)                     \
-  X("", xlat_capslockcyr)                  \
-  /* X11 */                                \
-  X("", x11_forward)                       \
-  X("", x11_display)                       \
-  X("", x11_auth)                          \
-  X("", xauthfile)                         \
-  /* Port Forwarding */                    \
-  X("", lport_acceptall)                   \
-  X("", rport_acceptall)                   \
-  X("", portfwd)                           \
   /* SSH Bug Compatibility Modes */        \
-  X("", sshbug_ignore1)                    \
-  X("", sshbug_plainpw1)                   \
-  X("", sshbug_rsa1)                       \
-  X("", sshbug_hmac2)                      \
-  X("", sshbug_derivekey2)                 \
-  X("", sshbug_rsapad2)                    \
-  X("", sshbug_pksessid2)                  \
-  X("", sshbug_rekey2)                     \
-  X("", sshbug_maxpkt2)                    \
-  X("", sshbug_ignore2)                    \
-  X("", sshbug_winadj)                     \
   X("", ssh_simple)                        \
   /* Pterm */                              \
   X("", stamp_utmp)                        \
@@ -408,7 +434,6 @@ void GuiSettingsWindow::saveConfigChanges() {
   X("", widefont)                          \
   X("", wideboldfont)                      \
   X("", shadowboldoffset)                  \
-  X("", crhaslf)                           \
   X("", winclass)
 
 #define CONF_VALIDATOR(name, key, ...) key = CONF_##key,
@@ -419,10 +444,13 @@ struct KeyValue {
   config_primary_key key;
   int value = -1;
   bool is_bool = false;
+  UIFlags options = UI::None;
 
-  KeyValue(config_primary_key key, bool value) : key(key), value(int(value)), is_bool(true) {}
-  KeyValue(config_primary_key key, int value) : key(key), value(value) {}
-  KeyValue(config_primary_key key) : key(key) {}
+  KeyValue(config_primary_key key, bool value, UIFlags opt = UI::None)
+      : key(key), value(int(value)), is_bool(true), options(opt) {}
+  KeyValue(config_primary_key key, int value, UIFlags opt = UI::None)
+      : key(key), value(value), options(opt) {}
+  KeyValue(config_primary_key key, UIFlags opt = UI::None) : key(key), options(opt) {}
 };
 
 static const std::unordered_map<std::string, KeyValue> UI_TO_KV = {UI_MAPPING(UI_TO_KEY_ENTRY)};
@@ -454,7 +482,9 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
     config_primary_key const key = kv.key;
     int const value = kv.value;
     Type const type = KEY_TO_TYPE.at(key);
+    UIFlags opt = kv.options;
 
+    if (opt & UI::Optional && !confKeyExists(cfg.get(), key)) continue;
     QCheckBox *cb = qobject_cast<QCheckBox *>(widget);
     if (cb) {
       assert(type == TYPE_INT);
@@ -504,10 +534,6 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
   if (sel_saved_sess.size() > 0) ui->l_saved_sess->setCurrentItem(sel_saved_sess[0]);
 
   /* Options controlling session logging */
-  if (conf_get_int(cfg.get(), CONF_logxfovr) == LGXF_ASK)  // handle -ve value
-    ui->gp_logfile->button(LGXF_ASK__)->click();
-  else
-    ui->gp_logfile->button(conf_get_int(cfg.get(), CONF_logxfovr))->click();
   ui->chb_sessionlog_flush->setChecked(true);
 
   /* window options */
@@ -780,7 +806,7 @@ void GuiSettingsWindow::on_btn_fontsel_clicked() {
   ui->lbl_fontsel->setText(
       QString("%1, %2%3-point")
           .arg(font.name, font.isbold ? "Bold, " : "", QString::number(font.height)));
-  ui->lbl_fontsel_varpitch->setText(
+  ui->chb_fontsel_varpitch->setText(
       selfont.fixedPitch() ? "The selected font has variable-pitch. Doesn't have fixed-pitch" : "");
 }
 
