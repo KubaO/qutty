@@ -251,7 +251,7 @@
         <enum>QFrame::Shape::NoFrame</enum>
        </property>
        <property name="currentIndex">
-        <number>0</number>
+        <number>17</number>
        </property>
        <widget class="QWidget" name="page_1">
         <layout class="QVBoxLayout" name="verticalLayout_25" stretch="0,1,0,0">
@@ -298,14 +298,17 @@
             <item>
              <layout class="QGridLayout" name="gridLayout_10" columnstretch="10,0">
               <item row="0" column="0">
-               <widget class="QLabel" name="label_25">
+               <widget class="QLabel" name="lb_hostname">
                 <property name="text">
-                 <string>Host name or (IP address)</string>
+                 <string>Host &amp;Name or (IP address)</string>
+                </property>
+                <property name="buddy">
+                 <cstring>le_hostname</cstring>
                 </property>
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QLabel" name="label_26">
+               <widget class="QLabel" name="lb_port">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
                   <horstretch>0</horstretch>
@@ -313,7 +316,10 @@
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Port</string>
+                 <string>&amp;Port</string>
+                </property>
+                <property name="buddy">
+                 <cstring>le_port</cstring>
                 </property>
                </widget>
               </item>
@@ -350,7 +356,7 @@
                  <bool>false</bool>
                 </property>
                 <property name="text">
-                 <string>Raw</string>
+                 <string>Ra&amp;w</string>
                 </property>
                 <attribute name="buttonGroup">
                  <string notr="true">gp_contype</string>
@@ -360,7 +366,7 @@
               <item>
                <widget class="QRadioButton" name="rb_contype_telnet">
                 <property name="text">
-                 <string>Telnet</string>
+                 <string>&amp;Telnet</string>
                 </property>
                 <attribute name="buttonGroup">
                  <string notr="true">gp_contype</string>
@@ -373,7 +379,7 @@
                  <bool>false</bool>
                 </property>
                 <property name="text">
-                 <string>Rlogin</string>
+                 <string>Rlog&amp;in</string>
                 </property>
                 <attribute name="buttonGroup">
                  <string notr="true">gp_contype</string>
@@ -383,7 +389,7 @@
               <item>
                <widget class="QRadioButton" name="rb_contype_ssh">
                 <property name="text">
-                 <string>SSH</string>
+                 <string>&amp;SSH</string>
                 </property>
                 <property name="checked">
                  <bool>true</bool>
@@ -399,7 +405,7 @@
                  <bool>false</bool>
                 </property>
                 <property name="text">
-                 <string>Serial</string>
+                 <string>Se&amp;rial</string>
                 </property>
                 <attribute name="buttonGroup">
                  <string notr="true">gp_contype</string>
@@ -416,85 +422,110 @@
            <property name="title">
             <string>Save, delete and copy sessions in hierarchical manner</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_27">
-            <item>
-             <layout class="QGridLayout" name="gridLayout_5">
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_23">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
+           <layout class="QGridLayout" name="gridLayout_27">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_23">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Sav&amp;ed Sessions</string>
+              </property>
+              <property name="buddy">
+               <cstring>le_saved_sess</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <layout class="QVBoxLayout" name="verticalLayout_39">
+              <item>
+               <spacer name="verticalSpacer_21">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Vertical</enum>
                 </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>40</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+              <item>
+               <widget class="QPushButton" name="b_save_sess">
                 <property name="text">
-                 <string>Saved Session</string>
+                 <string>Sa&amp;ve</string>
                 </property>
                </widget>
               </item>
-              <item row="1" column="0">
-               <widget class="QLineEdit" name="le_saved_sess">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
+              <item>
+               <widget class="QPushButton" name="b_delete_sess">
+                <property name="text">
+                 <string>&amp;Delete</string>
                 </property>
                </widget>
               </item>
-              <item row="2" column="0">
-               <widget class="GuiTreeWidget" name="l_saved_sess">
-                <property name="dragEnabled">
-                 <bool>true</bool>
+              <item>
+               <widget class="QPushButton" name="b_sess_copy">
+                <property name="text">
+                 <string>&amp;Copy</string>
                 </property>
-                <property name="dragDropMode">
-                 <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
-                </property>
-                <property name="defaultDropAction">
-                 <enum>Qt::DropAction::MoveAction</enum>
-                </property>
-                <property name="rootIsDecorated">
-                 <bool>true</bool>
-                </property>
-                <property name="animated">
-                 <bool>true</bool>
-                </property>
-                <property name="headerHidden">
-                 <bool>true</bool>
-                </property>
-                <column>
-                 <property name="text">
-                  <string notr="true">1</string>
-                 </property>
-                </column>
                </widget>
               </item>
-              <item row="2" column="2">
-               <layout class="QVBoxLayout" name="verticalLayout_39">
-                <item>
-                 <widget class="QPushButton" name="b_save_sess">
-                  <property name="text">
-                   <string>Save</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="b_delete_sess">
-                  <property name="text">
-                   <string>Delete</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="b_sess_copy">
-                  <property name="text">
-                   <string>Copy</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
+              <item>
+               <spacer name="verticalSpacer_22">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Vertical</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>20</width>
+                  <height>40</height>
+                 </size>
+                </property>
+               </spacer>
               </item>
              </layout>
+            </item>
+            <item row="2" column="0">
+             <widget class="GuiTreeWidget" name="l_saved_sess">
+              <property name="dragEnabled">
+               <bool>true</bool>
+              </property>
+              <property name="dragDropMode">
+               <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
+              </property>
+              <property name="defaultDropAction">
+               <enum>Qt::DropAction::MoveAction</enum>
+              </property>
+              <property name="rootIsDecorated">
+               <bool>true</bool>
+              </property>
+              <property name="animated">
+               <bool>true</bool>
+              </property>
+              <property name="headerHidden">
+               <bool>true</bool>
+              </property>
+              <column>
+               <property name="text">
+                <string notr="true">1</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLineEdit" name="le_saved_sess">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -502,9 +533,12 @@
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_26">
            <item>
-            <widget class="QLabel" name="label_5">
+            <widget class="QLabel" name="lb_exit">
              <property name="text">
-              <string>Close window on exit</string>
+              <string>Close window on e&amp;xit</string>
+             </property>
+             <property name="buddy">
+              <cstring>rb_exit_always</cstring>
              </property>
             </widget>
            </item>
@@ -565,12 +599,25 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_4">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
-            <string>Session logging</string>
+            <string/>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_2">
             <item>
-             <layout class="QFormLayout" name="formLayout">
+             <widget class="QLabel" name="label_5">
+              <property name="text">
+               <string>Session logging:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QGridLayout" name="gridLayout_26">
               <item row="0" column="0">
                <widget class="QRadioButton" name="rb_sessionlog_none">
                 <property name="text">
@@ -587,7 +634,7 @@
               <item row="0" column="1">
                <widget class="QRadioButton" name="rb_sessionlog_printout">
                 <property name="text">
-                 <string>Printable output</string>
+                 <string>&amp;Printable output</string>
                 </property>
                 <attribute name="buttonGroup">
                  <string notr="true">gp_seslog</string>
@@ -597,7 +644,7 @@
               <item row="1" column="0">
                <widget class="QRadioButton" name="rb_sessionlog_alloutput">
                 <property name="text">
-                 <string>All session output</string>
+                 <string>A&amp;ll session output</string>
                 </property>
                 <attribute name="buttonGroup">
                  <string notr="true">gp_seslog</string>
@@ -607,7 +654,7 @@
               <item row="1" column="1">
                <widget class="QRadioButton" name="rb_sessionlog_sshpacket">
                 <property name="text">
-                 <string>SSH packets</string>
+                 <string>&amp;SSH packets</string>
                 </property>
                 <attribute name="buttonGroup">
                  <string notr="true">gp_seslog</string>
@@ -617,7 +664,7 @@
               <item row="2" column="0">
                <widget class="QRadioButton" name="rb_sessionlog_rawdata">
                 <property name="text">
-                 <string>SSH packets and raw data</string>
+                 <string>SSH packets and &amp;raw data</string>
                 </property>
                 <attribute name="buttonGroup">
                  <string notr="true">gp_seslog</string>
@@ -629,7 +676,10 @@
             <item>
              <widget class="QLabel" name="label_3">
               <property name="text">
-               <string>Log file name:</string>
+               <string>Log &amp;file name:</string>
+              </property>
+              <property name="buddy">
+               <cstring>le_sessionlog_filename</cstring>
               </property>
              </widget>
             </item>
@@ -645,7 +695,7 @@
               <item>
                <widget class="QPushButton" name="btn_sessionlog_filename_browse">
                 <property name="text">
-                 <string>Browse...</string>
+                 <string>Bro&amp;wse...</string>
                 </property>
                </widget>
               </item>
@@ -671,9 +721,12 @@
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="label_6">
+             <widget class="QLabel" name="lb_sessionlog">
               <property name="text">
-               <string>What to do if the log file already exists:</string>
+               <string>What to do if th&amp;e log file already exists:</string>
+              </property>
+              <property name="buddy">
+               <cstring>rb_sessionlog_overwrite</cstring>
               </property>
              </widget>
             </item>
@@ -713,7 +766,7 @@
             <item>
              <widget class="QCheckBox" name="chb_sessionlog_flush">
               <property name="text">
-               <string>Flush log file frequently</string>
+               <string>Fl&amp;ush log file frequently</string>
               </property>
               <property name="checked">
                <bool>false</bool>
@@ -725,6 +778,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_5">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Options specific to SSH packet logging</string>
            </property>
@@ -732,7 +791,7 @@
             <item>
              <widget class="QCheckBox" name="chb_sessionlog_omitpasswd">
               <property name="text">
-               <string>Omit known password fields</string>
+               <string>Omit &amp;known password fields</string>
               </property>
               <property name="checked">
                <bool>true</bool>
@@ -742,17 +801,30 @@
             <item>
              <widget class="QCheckBox" name="chb_sessionlog_omitdata">
               <property name="text">
-               <string>Omit session data</string>
+               <string>Omit session &amp;data</string>
               </property>
              </widget>
             </item>
            </layout>
           </widget>
          </item>
+         <item>
+          <spacer name="verticalSpacer_12">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="page_3">
-        <layout class="QVBoxLayout" name="verticalLayout_28" stretch="0,1,1,0">
+        <layout class="QVBoxLayout" name="verticalLayout_28" stretch="0,1,1,0,0">
          <item>
           <widget class="QLabel" name="label_7">
            <property name="sizePolicy">
@@ -774,6 +846,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_6">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Set various terminal options</string>
            </property>
@@ -781,7 +859,7 @@
             <item>
              <widget class="QCheckBox" name="chb_terminaloption_autowrap">
               <property name="text">
-               <string>Auto wrap mode initially on</string>
+               <string>Auto &amp;wrap mode initially on</string>
               </property>
               <property name="checked">
                <bool>true</bool>
@@ -791,28 +869,28 @@
             <item>
              <widget class="QCheckBox" name="chb_terminaloption_decorigin">
               <property name="text">
-               <string>DEC Origin Mode initially on </string>
+               <string>&amp;DEC Origin Mode initially on </string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="chb_terminaloption_cr">
               <property name="text">
-               <string>Implicit CR in every LF</string>
+               <string>Implicit C&amp;R in every LF</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="chb_terminaloption_lf">
               <property name="text">
-               <string>Implicit LF in every CR</string>
+               <string>Implicit L&amp;F in every CR</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="chb_terminaloption_bgcolor">
               <property name="text">
-               <string>Use background colour to erase screen</string>
+               <string>Us&amp;e background colour to erase screen</string>
               </property>
               <property name="checked">
                <bool>true</bool>
@@ -822,14 +900,17 @@
             <item>
              <widget class="QCheckBox" name="chb_terminaloption_blinktext">
               <property name="text">
-               <string>Enable blinking text</string>
+               <string>E&amp;nable blinking text</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QLabel" name="label_8">
               <property name="text">
-               <string>Answerback to ^E:</string>
+               <string>An&amp;swerback to ^E:</string>
+              </property>
+              <property name="buddy">
+               <cstring>le_termopt_ansback</cstring>
               </property>
              </widget>
             </item>
@@ -845,6 +926,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_7">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Line discipline options</string>
            </property>
@@ -853,25 +940,21 @@
              <layout class="QGridLayout" name="gridLayout_4">
               <item row="0" column="0">
                <widget class="QLabel" name="label_9">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text">
-                 <string>Local echo:</string>
+                 <string>&amp;Local echo:</string>
+                </property>
+                <property name="buddy">
+                 <cstring>rb_termopt_echoauto</cstring>
                 </property>
                </widget>
               </item>
-              <item row="0" column="1" colspan="2">
-               <widget class="QRadioButton" name="rb_termopt_echoauto">
-                <property name="text">
-                 <string>Auto</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-                <attribute name="buttonGroup">
-                 <string notr="true">gp_termopt_echo</string>
-                </attribute>
-               </widget>
-              </item>
-              <item row="0" column="3">
+              <item row="0" column="2">
                <widget class="QRadioButton" name="rb_termopt_echoon">
                 <property name="text">
                  <string>Force on</string>
@@ -881,7 +964,7 @@
                 </attribute>
                </widget>
               </item>
-              <item row="0" column="4">
+              <item row="0" column="3">
                <widget class="QRadioButton" name="rb_termopt_echooff">
                 <property name="text">
                  <string>Force off</string>
@@ -891,7 +974,23 @@
                 </attribute>
                </widget>
               </item>
-              <item row="2" column="1" colspan="2">
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_10">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>Local line edi&amp;ting:</string>
+                </property>
+                <property name="buddy">
+                 <cstring>rb_termopt_editauto</cstring>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
                <widget class="QRadioButton" name="rb_termopt_editauto">
                 <property name="text">
                  <string>Auto</string>
@@ -904,27 +1003,33 @@
                 </attribute>
                </widget>
               </item>
-              <item row="2" column="4">
-               <widget class="QRadioButton" name="rb_termopt_editoff">
+              <item row="0" column="1">
+               <widget class="QRadioButton" name="rb_termopt_echoauto">
                 <property name="text">
-                 <string>Force off</string>
+                 <string>Auto</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
+                </property>
+                <attribute name="buttonGroup">
+                 <string notr="true">gp_termopt_echo</string>
+                </attribute>
+               </widget>
+              </item>
+              <item row="1" column="2">
+               <widget class="QRadioButton" name="rb_termopt_editon">
+                <property name="text">
+                 <string>Force on</string>
                 </property>
                 <attribute name="buttonGroup">
                  <string notr="true">gp_termopt_edit</string>
                 </attribute>
                </widget>
               </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_10">
+              <item row="1" column="3">
+               <widget class="QRadioButton" name="rb_termopt_editoff">
                 <property name="text">
-                 <string>Local line editing:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="3">
-               <widget class="QRadioButton" name="rb_termopt_editon">
-                <property name="text">
-                 <string>Force on</string>
+                 <string>Force off</string>
                 </property>
                 <attribute name="buttonGroup">
                  <string notr="true">gp_termopt_edit</string>
@@ -938,6 +1043,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_8">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Remote-controlled printing</string>
            </property>
@@ -945,7 +1056,10 @@
             <item>
              <widget class="QLabel" name="label_11">
               <property name="text">
-               <string>Printer to send ANSI printer output to:</string>
+               <string>&amp;Printer to send ANSI printer output to:</string>
+              </property>
+              <property name="buddy">
+               <cstring>cb_termopt_printeroutput</cstring>
               </property>
              </widget>
             </item>
@@ -974,10 +1088,23 @@
            </layout>
           </widget>
          </item>
+         <item>
+          <spacer name="verticalSpacer_15">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="page_4">
-        <layout class="QVBoxLayout" name="verticalLayout_17" stretch="0,1,1,1">
+        <layout class="QVBoxLayout" name="verticalLayout_17" stretch="0,1,1,1,0">
          <item>
           <widget class="QLabel" name="label_12">
            <property name="sizePolicy">
@@ -999,6 +1126,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_9">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Change the sequences sent by</string>
            </property>
@@ -1008,7 +1141,10 @@
               <item>
                <widget class="QLabel" name="label_13">
                 <property name="text">
-                 <string>The Backspace key</string>
+                 <string>The &amp;Backspace key</string>
+                </property>
+                <property name="buddy">
+                 <cstring>rb_backspacekey_ctrlh</cstring>
                 </property>
                </widget>
               </item>
@@ -1042,7 +1178,10 @@
               <item>
                <widget class="QLabel" name="label_14">
                 <property name="text">
-                 <string>The Home and End keys</string>
+                 <string>Th&amp;e Home and End keys</string>
+                </property>
+                <property name="buddy">
+                 <cstring>rb_homeendkeys_std</cstring>
                 </property>
                </widget>
               </item>
@@ -1074,7 +1213,10 @@
             <item>
              <widget class="QLabel" name="label_15">
               <property name="text">
-               <string>The Function keys and keypad</string>
+               <string>The &amp;Function keys and keypad</string>
+              </property>
+              <property name="buddy">
+               <cstring>rb_fnkeys_esc</cstring>
               </property>
              </widget>
             </item>
@@ -1150,6 +1292,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_10">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Application keypad settings</string>
            </property>
@@ -1206,14 +1354,20 @@
               <item row="2" column="0" colspan="3">
                <widget class="QLabel" name="label_17">
                 <property name="text">
-                 <string>Initial state of numeric keypad:</string>
+                 <string>I&amp;nitial state of numeric keypad:</string>
+                </property>
+                <property name="buddy">
+                 <cstring>rb_ininumkeys_normal</cstring>
                 </property>
                </widget>
               </item>
               <item row="0" column="0" colspan="3">
                <widget class="QLabel" name="label_16">
                 <property name="text">
-                 <string>Initial state of cursor keys:</string>
+                 <string>Initial state of cu&amp;rsor keys:</string>
+                </property>
+                <property name="buddy">
+                 <cstring>rb_inicursorkeys_normal</cstring>
                 </property>
                </widget>
               </item>
@@ -1224,6 +1378,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_11">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Enable extra keyboard features:</string>
            </property>
@@ -1231,14 +1391,14 @@
             <item>
              <widget class="QCheckBox" name="chb_altgrkey">
               <property name="text">
-               <string>AltGr acts as Compose key</string>
+               <string>Al&amp;tGr acts as Compose key</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="chb_ctrl_alt">
               <property name="text">
-               <string>Control-Alt is different from AltGr</string>
+               <string>Control-Alt is &amp;different from AltGr</string>
               </property>
               <property name="checked">
                <bool>true</bool>
@@ -1248,10 +1408,23 @@
            </layout>
           </widget>
          </item>
+         <item>
+          <spacer name="verticalSpacer_16">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="page_5">
-        <layout class="QVBoxLayout" name="verticalLayout_18" stretch="0,1,0">
+        <layout class="QVBoxLayout" name="verticalLayout_18" stretch="0,1,0,0">
          <item>
           <widget class="QLabel" name="label_18">
            <property name="sizePolicy">
@@ -1273,26 +1446,18 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_12">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Set the style of bell</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
              <layout class="QGridLayout" name="gridLayout_25">
-              <item row="3" column="1">
-               <widget class="QRadioButton" name="rb_bellstyle_playcustomsound">
-                <property name="text">
-                 <string>Play a custom sound file</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
-               <widget class="QRadioButton" name="rb_bellaction_visual">
-                <property name="text">
-                 <string>Visual bell (flash window)</string>
-                </property>
-               </widget>
-              </item>
               <item row="1" column="1">
                <widget class="QRadioButton" name="rb_bellaction_alertsound">
                 <property name="text">
@@ -1310,17 +1475,34 @@
                 </property>
                </widget>
               </item>
-              <item row="4" column="0">
+              <item row="0" column="0" colspan="2">
+               <widget class="QLabel" name="label_19">
+                <property name="text">
+                 <string>Action to happen when a &amp;bell occurs</string>
+                </property>
+                <property name="buddy">
+                 <cstring>rb_bellaction_none</cstring>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QRadioButton" name="rb_bellaction_visual">
+                <property name="text">
+                 <string>Visual bell (flash window)</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
                <widget class="QRadioButton" name="rb_bellaction_beep">
                 <property name="text">
                  <string>Beep using the PC speaker</string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="0" colspan="2">
-               <widget class="QLabel" name="label_19">
+              <item row="3" column="0">
+               <widget class="QRadioButton" name="rb_bellstyle_playcustomsound">
                 <property name="text">
-                 <string>Action to happen when a bell occurs</string>
+                 <string>Play a custom sound file</string>
                 </property>
                </widget>
               </item>
@@ -1328,30 +1510,6 @@
             </item>
             <item>
              <layout class="QGridLayout" name="gridLayout_12">
-              <item row="3" column="0">
-               <widget class="QRadioButton" name="rb_belltaskbar_disable">
-                <property name="text">
-                 <string>Disabled</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <widget class="QRadioButton" name="rb_belltaskbar_steady">
-                <property name="text">
-                 <string>Steady</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="2">
-               <widget class="QRadioButton" name="rb_belltaskbar_flash">
-                <property name="text">
-                 <string>Flashing</string>
-                </property>
-               </widget>
-              </item>
               <item row="0" column="0" colspan="3">
                <widget class="QLabel" name="label_20">
                 <property name="text">
@@ -1362,19 +1520,46 @@
               <item row="2" column="0" colspan="3">
                <widget class="QLabel" name="label_21">
                 <property name="text">
-                 <string>Taskbar/caption indication on bell</string>
+                 <string>Taskbar/capt&amp;ion indication on bell</string>
+                </property>
+                <property name="buddy">
+                 <cstring>rb_belltaskbar_disable</cstring>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QRadioButton" name="rb_belltaskbar_disable">
+                <property name="text">
+                 <string>Disabled</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
               <item row="1" column="2">
                <widget class="QPushButton" name="pushButton_2">
                 <property name="text">
-                 <string>Browse</string>
+                 <string>Bro&amp;wse</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="0" colspan="2">
-               <widget class="QLineEdit" name="lineEdit_3"/>
+               <widget class="QLineEdit" name="le_bell_wavefile"/>
+              </item>
+              <item row="3" column="1">
+               <widget class="QRadioButton" name="rb_belltaskbar_flash">
+                <property name="text">
+                 <string>Flashing</string>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="2">
+               <widget class="QRadioButton" name="rb_belltaskbar_steady">
+                <property name="text">
+                 <string>Steady</string>
+                </property>
+               </widget>
               </item>
              </layout>
             </item>
@@ -1383,80 +1568,104 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_13">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Control the bell overload behaviour</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_38">
-            <item>
-             <layout class="QGridLayout" name="gridLayout_11">
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_22">
-                <property name="text">
-                 <string>Over-use means this many bells</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLineEdit" name="le_bellcontrol_overuseno">
-                <property name="text">
-                 <string>5</string>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="0">
-               <widget class="QLabel" name="label_30">
-                <property name="text">
-                 <string>Seconds of silence required</string>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="1">
-               <widget class="QLineEdit" name="le_bellcontrol_silencereq_secs">
-                <property name="text">
-                 <string>5</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="label_28">
-                <property name="text">
-                 <string>...in this many seconds</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QLineEdit" name="le_bellcontrol_overusesec">
-                <property name="text">
-                 <string>2</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0" colspan="2">
-               <widget class="QLabel" name="label_29">
-                <property name="text">
-                 <string>The bell is re-enabled after a few seconds of silence</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0" colspan="2">
-               <widget class="QCheckBox" name="chb_bellcontrol_whenoverused">
-                <property name="text">
-                 <string>Bell is temporarily disabled when over-used</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
+           <layout class="QGridLayout" name="gridLayout_5">
+            <item row="5" column="0">
+             <widget class="QLabel" name="label_30">
+              <property name="text">
+               <string>&amp;Seconds of silence required</string>
+              </property>
+              <property name="buddy">
+               <cstring>le_bellcontrol_silencereq_secs</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0" colspan="2">
+             <widget class="QCheckBox" name="chb_bellcontrol_whenoverused">
+              <property name="text">
+               <string>Bell is temporarily &amp;disabled when over-used</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_28">
+              <property name="text">
+               <string>...in &amp;this many seconds</string>
+              </property>
+              <property name="buddy">
+               <cstring>le_bellcontrol_overusesec</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_22">
+              <property name="text">
+               <string>Over-use &amp;means this many bells</string>
+              </property>
+              <property name="buddy">
+               <cstring>le_bellcontrol_overuseno</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="le_bellcontrol_overusesec">
+              <property name="text">
+               <string>2</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0" colspan="2">
+             <widget class="QLabel" name="label_29">
+              <property name="text">
+               <string>The bell is re-enabled after a few seconds of silence</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="le_bellcontrol_overuseno">
+              <property name="text">
+               <string>5</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1">
+             <widget class="QLineEdit" name="le_bellcontrol_silencereq_secs">
+              <property name="text">
+               <string>5</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
          </item>
+         <item>
+          <spacer name="verticalSpacer_17">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="page_6">
-        <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,1">
+        <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,1,0">
          <item>
           <widget class="QLabel" name="label_31">
            <property name="sizePolicy">
@@ -1478,6 +1687,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_14">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string/>
            </property>
@@ -1491,7 +1706,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Disable application cursor keys mode</string>
+               <string>Disable application c&amp;ursor keys mode</string>
               </property>
              </widget>
             </item>
@@ -1504,7 +1719,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Disable application keypad mode</string>
+               <string>Disable application &amp;keypad mode</string>
               </property>
              </widget>
             </item>
@@ -1517,7 +1732,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Disable xterm-style mouse reporting</string>
+               <string>Disable &amp;xterm-style mouse reporting</string>
               </property>
              </widget>
             </item>
@@ -1530,7 +1745,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Disable remote-controlled terminal resizing</string>
+               <string>Di&amp;sable remote-controlled terminal resizing</string>
               </property>
              </widget>
             </item>
@@ -1543,7 +1758,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Disable switching to alternate terminal session</string>
+               <string>Disable s&amp;witching to alternate terminal session</string>
               </property>
              </widget>
             </item>
@@ -1556,14 +1771,17 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Disable remote-controlled window title changing</string>
+               <string>Disable remot&amp;e-controlled window title changing</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QLabel" name="label_32">
               <property name="text">
-               <string>Response to remote title query (SECURITY)</string>
+               <string>Response to remote title &amp;query (SECURITY)</string>
+              </property>
+              <property name="buddy">
+               <cstring>rb_featqtitle_none</cstring>
               </property>
              </widget>
             </item>
@@ -1613,7 +1831,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Disable destructive backspace on server sending ^?</string>
+               <string>Disa&amp;ble destructive backspace on server sending ^?</string>
               </property>
              </widget>
             </item>
@@ -1626,7 +1844,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Disable remote-controlled character set configuration</string>
+               <string>Disable &amp;remote-controlled character set configuration</string>
               </property>
              </widget>
             </item>
@@ -1639,7 +1857,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Disable Arabic text shaping</string>
+               <string>Disab&amp;le Arabic text shaping</string>
               </property>
              </widget>
             </item>
@@ -1652,17 +1870,30 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Disable bidirectional text display</string>
+               <string>&amp;Disable bidirectional text display</string>
               </property>
              </widget>
             </item>
            </layout>
           </widget>
          </item>
+         <item>
+          <spacer name="verticalSpacer_18">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="page_7">
-        <layout class="QVBoxLayout" name="verticalLayout_22" stretch="0,1,1">
+        <layout class="QVBoxLayout" name="verticalLayout_22" stretch="0,1,1,0">
          <item>
           <widget class="QLabel" name="label_33">
            <property name="sizePolicy">
@@ -1684,6 +1915,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_15">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Set the size of the window</string>
            </property>
@@ -1693,14 +1930,20 @@
               <item row="0" column="0">
                <widget class="QLabel" name="label_34">
                 <property name="text">
-                 <string>Columns</string>
+                 <string>Colu&amp;mns</string>
+                </property>
+                <property name="buddy">
+                 <cstring>le_window_column</cstring>
                 </property>
                </widget>
               </item>
               <item row="0" column="1">
                <widget class="QLabel" name="label_35">
                 <property name="text">
-                 <string>Rows</string>
+                 <string>&amp;Rows</string>
+                </property>
+                <property name="buddy">
+                 <cstring>le_window_row</cstring>
                 </property>
                </widget>
               </item>
@@ -1725,7 +1968,10 @@
               <item>
                <widget class="QLabel" name="label_36">
                 <property name="text">
-                 <string>When Window is resized</string>
+                 <string>When Window is resi&amp;zed</string>
+                </property>
+                <property name="buddy">
+                 <cstring>rb_wndresz_rowcolno</cstring>
                 </property>
                </widget>
               </item>
@@ -1779,6 +2025,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_16">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Control the srollback in the window</string>
            </property>
@@ -1788,7 +2040,10 @@
               <item>
                <widget class="QLabel" name="label_37">
                 <property name="text">
-                 <string>Lines of scrollback</string>
+                 <string>Line&amp;s of scrollback</string>
+                </property>
+                <property name="buddy">
+                 <cstring>le_wndscroll_lines</cstring>
                 </property>
                </widget>
               </item>
@@ -1812,7 +2067,7 @@
               <item>
                <widget class="QCheckBox" name="chb_wndscroll_display">
                 <property name="text">
-                 <string>Display scrollbar</string>
+                 <string>&amp;Display scrollbar</string>
                 </property>
                 <property name="checked">
                  <bool>true</bool>
@@ -1822,21 +2077,21 @@
               <item>
                <widget class="QCheckBox" name="chb_wndscroll_fullscreen">
                 <property name="text">
-                 <string>Display scrollbar in full screen mode</string>
+                 <string>D&amp;isplay scrollbar in full screen mode</string>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QCheckBox" name="chb_wndscroll_resetkeypress">
                 <property name="text">
-                 <string>Reset scrollback on keypress</string>
+                 <string>Reset scrollbac&amp;k on keypress</string>
                 </property>
                </widget>
               </item>
               <item>
                <widget class="QCheckBox" name="chb_wndscroll_resetdisply">
                 <property name="text">
-                 <string>Reset scrollback on display activity</string>
+                 <string>Reset scrollback on dis&amp;play activity</string>
                 </property>
                 <property name="checked">
                  <bool>true</bool>
@@ -1846,7 +2101,7 @@
               <item>
                <widget class="QCheckBox" name="chb_wndscroll_pusherasedtext">
                 <property name="text">
-                 <string>Push erased text into scrollback</string>
+                 <string>Push &amp;erased text into scrollback</string>
                 </property>
                 <property name="checked">
                  <bool>true</bool>
@@ -1858,10 +2113,23 @@
            </layout>
           </widget>
          </item>
+         <item>
+          <spacer name="verticalSpacer_19">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="page_8">
-        <layout class="QVBoxLayout" name="verticalLayout_21" stretch="0,1,0,1,1">
+        <layout class="QVBoxLayout" name="verticalLayout_21" stretch="0,1,0,1,1,0">
          <item>
           <widget class="QLabel" name="label_38">
            <property name="sizePolicy">
@@ -1884,7 +2152,7 @@
          <item>
           <widget class="QGroupBox" name="groupBox_17">
            <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+            <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
@@ -1892,55 +2160,51 @@
            <property name="title">
             <string>Adjust the use of the cursor</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_29">
-            <item>
-             <widget class="QLabel" name="label_39">
+           <layout class="QGridLayout" name="gridLayout_11">
+            <item row="1" column="1">
+             <widget class="QRadioButton" name="rb_curappear_underline">
               <property name="text">
-               <string>Cursor appearance</string>
+               <string>&amp;Underline</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">gp_curappear</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QRadioButton" name="rb_curappear_block">
+              <property name="text">
+               <string>B&amp;lock</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">gp_curappear</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="1" column="2">
+             <widget class="QRadioButton" name="rb_curappear_vertline">
+              <property name="text">
+               <string>&amp;Vertical line</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">gp_curappear</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="2" column="0" colspan="3">
+             <widget class="QCheckBox" name="chb_curblink">
+              <property name="text">
+               <string>Cursor &amp;blinks</string>
               </property>
              </widget>
             </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_9">
-              <item>
-               <widget class="QRadioButton" name="rb_curappear_block">
-                <property name="text">
-                 <string>Block</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-                <attribute name="buttonGroup">
-                 <string notr="true">gp_curappear</string>
-                </attribute>
-               </widget>
-              </item>
-              <item>
-               <widget class="QRadioButton" name="rb_curappear_underline">
-                <property name="text">
-                 <string>Underline</string>
-                </property>
-                <attribute name="buttonGroup">
-                 <string notr="true">gp_curappear</string>
-                </attribute>
-               </widget>
-              </item>
-              <item>
-               <widget class="QRadioButton" name="rb_curappear_vertline">
-                <property name="text">
-                 <string>Vertical line</string>
-                </property>
-                <attribute name="buttonGroup">
-                 <string notr="true">gp_curappear</string>
-                </attribute>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="chb_curblink">
+            <item row="0" column="0" colspan="3">
+             <widget class="QLabel" name="label_39">
               <property name="text">
-               <string>Cursor blinks</string>
+               <string>Cursor appearance</string>
               </property>
              </widget>
             </item>
@@ -1952,103 +2216,119 @@
            <property name="title">
             <string>Font settings</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_30">
-            <item>
-             <layout class="QVBoxLayout" name="verticalLayout_19">
-              <item>
-               <layout class="QHBoxLayout" name="horizontalLayout_14">
-                <item>
-                 <widget class="QLabel" name="lbl_fontsel">
-                  <property name="text">
-                   <string>Font:Courier New, 10-point</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QPushButton" name="btn_fontsel">
-                  <property name="text">
-                   <string>Change...</string>
-                  </property>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-              <item>
-               <widget class="QLabel" name="lbl_fontsel_varpitch">
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <layout class="QGridLayout" name="gridLayout_9">
-                <item row="3" column="2">
-                 <widget class="QRadioButton" name="rb_fontappear_clear">
-                  <property name="text">
-                   <string>ClearType</string>
-                  </property>
-                  <attribute name="buttonGroup">
-                   <string notr="true">gp_fontquality</string>
-                  </attribute>
-                 </widget>
-                </item>
-                <item row="3" column="3">
-                 <widget class="QRadioButton" name="rb_fontappear_default">
-                  <property name="text">
-                   <string>Default</string>
-                  </property>
-                  <property name="checked">
-                   <bool>true</bool>
-                  </property>
-                  <attribute name="buttonGroup">
-                   <string notr="true">gp_fontquality</string>
-                  </attribute>
-                 </widget>
-                </item>
-                <item row="2" column="0" colspan="4">
-                 <widget class="QLabel" name="label_42">
-                  <property name="text">
-                   <string>Font quality</string>
-                  </property>
-                 </widget>
-                </item>
-                <item row="3" column="1">
-                 <widget class="QRadioButton" name="rb_fontappear_nonantialiase">
-                  <property name="text">
-                   <string>Non-Antialiased</string>
-                  </property>
-                  <attribute name="buttonGroup">
-                   <string notr="true">gp_fontquality</string>
-                  </attribute>
-                 </widget>
-                </item>
-                <item row="3" column="0">
-                 <widget class="QRadioButton" name="rb_fontappear_antialiase">
-                  <property name="text">
-                   <string>Antialiased</string>
-                  </property>
-                  <attribute name="buttonGroup">
-                   <string notr="true">gp_fontquality</string>
-                  </attribute>
-                 </widget>
-                </item>
-               </layout>
-              </item>
-             </layout>
+           <layout class="QGridLayout" name="gridLayout_28">
+            <item row="1" column="3">
+             <widget class="QPushButton" name="btn_fontsel">
+              <property name="text">
+               <string>Change...</string>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="3">
+             <widget class="QRadioButton" name="rb_fontappear_default">
+              <property name="text">
+               <string>Default</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">gp_fontquality</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="4" column="1">
+             <widget class="QRadioButton" name="rb_fontappear_nonantialiase">
+              <property name="text">
+               <string>Non-Antialiased</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">gp_fontquality</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QRadioButton" name="rb_fontappear_antialiase">
+              <property name="text">
+               <string>Antialiased</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">gp_fontquality</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="4" column="2">
+             <widget class="QRadioButton" name="rb_fontappear_clear">
+              <property name="text">
+               <string>ClearType</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">gp_fontquality</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="2" column="0" colspan="4">
+             <widget class="QCheckBox" name="chb_fontsel_varpitch">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Allow selection of variable-pitch fonts</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0" colspan="4">
+             <widget class="QLabel" name="label_42">
+              <property name="text">
+               <string>Font &amp;quality</string>
+              </property>
+              <property name="buddy">
+               <cstring>rb_fontappear_antialiase</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0" colspan="4">
+             <widget class="QLabel" name="label_6">
+              <property name="text">
+               <string>Fo&amp;nt used in the terminal window</string>
+              </property>
+              <property name="buddy">
+               <cstring>btn_fontsel</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0" colspan="3">
+             <widget class="QLabel" name="lbl_fontsel">
+              <property name="frameShape">
+               <enum>QFrame::Shape::Box</enum>
+              </property>
+              <property name="frameShadow">
+               <enum>QFrame::Shadow::Sunken</enum>
+              </property>
+              <property name="text">
+               <string>Font:Courier New, 10-point</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_19">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Adjust the use of the mouse pointer</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_31">
             <item>
-             <widget class="QCheckBox" name="checkBox_30">
+             <widget class="QCheckBox" name="chb_hide_mouseptr">
               <property name="text">
-               <string>Hide mouse pointer when typing in window</string>
+               <string>Hide mouse &amp;pointer when typing in window</string>
               </property>
              </widget>
             </item>
@@ -2057,37 +2337,67 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_20">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Adjust the window border</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_32">
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_18">
-              <item>
-               <widget class="QLabel" name="label_43">
-                <property name="text">
-                 <string>Gap between text and window edge</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="le_borderappear_gap">
-                <property name="text">
-                 <string>1</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="checkBox_31">
+           <layout class="QGridLayout" name="gridLayout_9">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_43">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>3</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="text">
-               <string>Sunken-edge border (slightly thicker)</string>
+               <string>Gap b&amp;etween text and window edge</string>
+              </property>
+              <property name="buddy">
+               <cstring>le_borderappear_gap</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="le_borderappear_gap">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>1</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>1</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0" colspan="2">
+             <widget class="QCheckBox" name="chb_sunken_edge">
+              <property name="text">
+               <string>&amp;Sunken-edge border (slightly thicker)</string>
               </property>
              </widget>
             </item>
            </layout>
           </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer_20">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </widget>
@@ -2114,6 +2424,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_21">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Adjust the behaviour of the window title</string>
            </property>
@@ -2127,15 +2443,18 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Window title:</string>
+               <string>Window &amp;title:</string>
+              </property>
+              <property name="buddy">
+               <cstring>le_wintitle</cstring>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_11"/>
+             <widget class="QLineEdit" name="le_wintitle"/>
             </item>
             <item>
-             <widget class="QCheckBox" name="checkBox_32">
+             <widget class="QCheckBox" name="chb_separate_titles">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
                 <horstretch>0</horstretch>
@@ -2143,7 +2462,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Separate window and icon titles</string>
+               <string>Separate w&amp;indow and icon titles</string>
               </property>
              </widget>
             </item>
@@ -2152,6 +2471,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_22">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string/>
            </property>
@@ -2159,7 +2484,7 @@
             <item>
              <widget class="QCheckBox" name="chb_behaviour_warn">
               <property name="text">
-               <string>Warn before closing window</string>
+               <string>&amp;Warn before closing window</string>
               </property>
               <property name="checked">
                <bool>true</bool>
@@ -2169,7 +2494,7 @@
             <item>
              <widget class="QCheckBox" name="chb_behaviour_altf4">
               <property name="text">
-               <string>Window closes on ALT-F4</string>
+               <string>Window closes on ALT-F&amp;4</string>
               </property>
               <property name="checked">
                <bool>true</bool>
@@ -2179,28 +2504,28 @@
             <item>
              <widget class="QCheckBox" name="chb_behaviour_alt_space">
               <property name="text">
-               <string>System menu appears on ALT-Space</string>
+               <string>S&amp;ystem menu appears on ALT-Space</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="chb_behaviour_altalone">
               <property name="text">
-               <string>System menu appears on ALT alone</string>
+               <string>System menu appears on A&amp;LT alone</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="chb_behaviour_top">
               <property name="text">
-               <string>Ensure window is always on top</string>
+               <string>&amp;Ensure window is always on top</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="chb_behaviour_alt_enter">
               <property name="text">
-               <string>Full screen on Alt-Enter</string>
+               <string>&amp;Full screen on Alt-Enter</string>
               </property>
              </widget>
             </item>
@@ -2226,7 +2551,7 @@
         <property name="windowTitle">
          <string>Page 10</string>
         </property>
-        <layout class="QVBoxLayout" name="verticalLayout_7" stretch="0,1,1,1">
+        <layout class="QVBoxLayout" name="verticalLayout_7" stretch="0,1,1,1,0">
          <item>
           <widget class="QLabel" name="label_46">
            <property name="sizePolicy">
@@ -2248,6 +2573,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_23">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Character set translation</string>
            </property>
@@ -2255,7 +2586,10 @@
             <item>
              <widget class="QLabel" name="label_47">
               <property name="text">
-               <string>Remote character set:</string>
+               <string>&amp;Remote character set:</string>
+              </property>
+              <property name="buddy">
+               <cstring>cb_codepage</cstring>
               </property>
              </widget>
             </item>
@@ -2456,21 +2790,27 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_24">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string/>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_43">
             <item>
-             <widget class="QCheckBox" name="checkBox_39">
+             <widget class="QCheckBox" name="chb_cjk_ambig_wide">
               <property name="text">
-               <string>Treat CJK ambiguous characters as wide</string>
+               <string>Treat CJK ambiguous characters as &amp;wide</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QCheckBox" name="checkBox_40">
+             <widget class="QCheckBox" name="chb_xlat_capslockcyr">
               <property name="text">
-               <string>Caps Lock acts as Cyrillic switch</string>
+               <string>Cap&amp;s Lock acts as Cyrillic switch</string>
               </property>
              </widget>
             </item>
@@ -2479,6 +2819,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_25">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Adjust how PuTTY handles line drawing characters</string>
            </property>
@@ -2493,7 +2839,7 @@
             <item>
              <widget class="QRadioButton" name="rb_translation_useunicode">
               <property name="text">
-               <string>Use Unicode line drawing code points</string>
+               <string>&amp;Use Unicode line drawing code points</string>
               </property>
               <property name="checked">
                <bool>true</bool>
@@ -2503,40 +2849,53 @@
             <item>
              <widget class="QRadioButton" name="rb_translation_poorman">
               <property name="text">
-               <string>Poor man's line drawing (+,- and |)</string>
+               <string>&amp;Poor man's line drawing (+,- and |)</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QRadioButton" name="rb_translation_xwindows">
               <property name="text">
-               <string>Font has XWindows encoding</string>
+               <string>Font has &amp;XWindows encoding</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QRadioButton" name="rb_translation_ansi_oem">
               <property name="text">
-               <string>Use font in both ANSI and OEM modes</string>
+               <string>Use font in &amp;both ANSI and OEM modes</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QRadioButton" name="rb_translation_oem">
               <property name="text">
-               <string>Use font in OEM mode only</string>
+               <string>Us&amp;e font in OEM mode only</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QCheckBox" name="chb_translation_copy_paste">
               <property name="text">
-               <string>Copy and paste line drawing characters as lqqqk</string>
+               <string>Copy an&amp;d paste line drawing characters as lqqqk</string>
               </property>
              </widget>
             </item>
            </layout>
           </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer_23">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </widget>
@@ -2566,15 +2925,45 @@
            <property name="title">
             <string>Control use of mouse</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_45">
-            <item>
+           <layout class="QGridLayout" name="gridLayout_29">
+            <item row="1" column="0" colspan="2">
              <widget class="QRadioButton" name="rb_cpmouseaction_windows">
               <property name="text">
                <string>Windows (Middle extends, Right brings up menu)</string>
               </property>
              </widget>
             </item>
-            <item>
+            <item row="0" column="0" colspan="2">
+             <widget class="QLabel" name="label_24">
+              <property name="text">
+               <string>Action of &amp;mouse buttons</string>
+              </property>
+              <property name="buddy">
+               <cstring>rb_cpmouseaction_windows</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0" colspan="2">
+             <widget class="QRadioButton" name="rb_cpmouseaction_xterm">
+              <property name="text">
+               <string>xterm (Right extends, Middle pastes)</string>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QRadioButton" name="rb_cpmouseaction_defaultnormal">
+              <property name="text">
+               <string>&amp;Normal</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_9</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="2" column="0" colspan="2">
              <widget class="QRadioButton" name="rb_cpmouseaction_compromise">
               <property name="text">
                <string>Compromise (Middle extends, Right pastes)</string>
@@ -2587,56 +2976,32 @@
               </property>
              </widget>
             </item>
-            <item>
-             <widget class="QRadioButton" name="rb_cpmouseaction_xterm">
+            <item row="6" column="1">
+             <widget class="QRadioButton" name="rb_cpmouseaction_defaultrect">
               <property name="text">
-               <string>xterm (Right extends, Middle pastes)</string>
+               <string>&amp;Rectangular block</string>
               </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_9</string>
+              </attribute>
              </widget>
             </item>
-            <item>
+            <item row="4" column="0" colspan="2">
              <widget class="QCheckBox" name="chb_cpmouseaction_shift">
               <property name="text">
-               <string>Shift overrides application's use of mouse</string>
+               <string>Shift overrides a&amp;pplication's use of mouse</string>
               </property>
               <property name="checked">
                <bool>true</bool>
               </property>
              </widget>
             </item>
-            <item>
+            <item row="5" column="0" colspan="2">
              <widget class="QLabel" name="label_54">
               <property name="text">
                <string>Default selection mode (Alt+drag does the other one):</string>
               </property>
              </widget>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_10">
-              <item>
-               <widget class="QRadioButton" name="rb_cpmouseaction_defaultnormal">
-                <property name="text">
-                 <string>Normal</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-                <attribute name="buttonGroup">
-                 <string notr="true">buttonGroup_9</string>
-                </attribute>
-               </widget>
-              </item>
-              <item>
-               <widget class="QRadioButton" name="rb_cpmouseaction_defaultrect">
-                <property name="text">
-                 <string>Rectangular block</string>
-                </property>
-                <attribute name="buttonGroup">
-                 <string notr="true">buttonGroup_9</string>
-                </attribute>
-               </widget>
-              </item>
-             </layout>
             </item>
            </layout>
           </widget>
@@ -2646,30 +3011,39 @@
            <property name="title">
             <string>Control the select-one-word-at-a-time mode</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_46">
-            <item>
-             <widget class="QListWidget" name="listWidget_4"/>
+           <layout class="QGridLayout" name="gridLayout_30">
+            <item row="2" column="2">
+             <widget class="QPushButton" name="pushButton_4">
+              <property name="text">
+               <string>&amp;Set</string>
+              </property>
+             </widget>
             </item>
-            <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_11">
-              <item>
-               <widget class="QLabel" name="label_56">
-                <property name="text">
-                 <string>Set to class</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="lineEdit_12"/>
-              </item>
-              <item>
-               <widget class="QPushButton" name="pushButton_4">
-                <property name="text">
-                 <string>Set</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
+            <item row="2" column="1">
+             <widget class="QLineEdit" name="lineEdit_12"/>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_56">
+              <property name="text">
+               <string>Se&amp;t to class</string>
+              </property>
+              <property name="buddy">
+               <cstring>lineEdit_12</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0" colspan="3">
+             <widget class="QListWidget" name="l_char_classes"/>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_25">
+              <property name="text">
+               <string>Charact&amp;er classes:</string>
+              </property>
+              <property name="buddy">
+               <cstring>l_char_classes</cstring>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -2681,9 +3055,9 @@
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_11">
             <item>
-             <widget class="QCheckBox" name="checkBox_43">
+             <widget class="QCheckBox" name="chb_rtf_paste">
               <property name="text">
-               <string>Paste to clipboard in RTF as well as plain text</string>
+               <string>Paste to clipboard in RT&amp;F as well as plain text</string>
               </property>
              </widget>
             </item>
@@ -2715,51 +3089,90 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_29">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>General options for colour usage</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_48">
-            <item>
-             <widget class="QCheckBox" name="chb_coloursoption_ansi">
-              <property name="text">
-               <string>Allow terminal to specify ANSI colours</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="chb_coloursoption_xterm">
-              <property name="text">
-               <string>Allow terminal to use xterm 256-colour mode</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="chb_coloursoption_boldtext">
-              <property name="text">
-               <string>Bolded text is a different colour</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="chb_colouroption_palette">
-              <property name="text">
-               <string>Attempt to use logical palettes</string>
-              </property>
-             </widget>
-            </item>
-            <item>
+           <layout class="QGridLayout" name="gridLayout_7">
+            <item row="5" column="0">
              <widget class="QCheckBox" name="chb_colouroption_usesystem">
               <property name="text">
-               <string>Use system colours</string>
+               <string>U&amp;se system colours</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="2">
+             <widget class="QRadioButton" name="rb_bold_both">
+              <property name="text">
+               <string>Both</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">gp_bold</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QCheckBox" name="chb_coloursoption_ansi">
+              <property name="text">
+               <string>Allow term&amp;inal to specify ANSI colours</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QRadioButton" name="rb_bold_font">
+              <property name="text">
+               <string>The Font</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">gp_bold</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QCheckBox" name="chb_coloursoption_xterm">
+              <property name="text">
+               <string>Allow terminal to use xterm &amp;256-colour mode</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QRadioButton" name="rb_bold_colour">
+              <property name="text">
+               <string>The Colour</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">gp_bold</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_26">
+              <property name="text">
+               <string>Indicate &amp;bolded text by changing:</string>
+              </property>
+              <property name="buddy">
+               <cstring>rb_bold_font</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="0">
+             <widget class="QCheckBox" name="chb_colouroption_palette">
+              <property name="text">
+               <string>Attempt to use &amp;logical palettes</string>
               </property>
              </widget>
             </item>
@@ -2771,9 +3184,25 @@
            <property name="title">
             <string>Adjust the precise colours PuTTY displays</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_12">
-            <item>
+           <layout class="QGridLayout" name="gridLayout_31">
+            <item row="4" column="1">
+             <widget class="QLabel" name="label_64">
+              <property name="text">
+               <string>Blu&amp;e</string>
+              </property>
+              <property name="buddy">
+               <cstring>le_colour_b</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0" colspan="3">
              <widget class="QLabel" name="label_58">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
               <property name="text">
                <string>Select a colour from the list, and then click the modify button to change its appearance</string>
               </property>
@@ -2782,174 +3211,197 @@
               </property>
              </widget>
             </item>
-            <item>
-             <layout class="QGridLayout" name="gridLayout_7">
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_60">
-                <property name="text">
-                 <string>Select a colour to adjust:</string>
-                </property>
-               </widget>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_60">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Select a colo&amp;ur to adjust:</string>
+              </property>
+              <property name="buddy">
+               <cstring>l_colour</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QLabel" name="label_63">
+              <property name="text">
+               <string>Gree&amp;n</string>
+              </property>
+              <property name="buddy">
+               <cstring>le_colour_g</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QLabel" name="label_62">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>1</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>&amp;Red</string>
+              </property>
+              <property name="buddy">
+               <cstring>le_colour_r</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="4" column="2">
+             <widget class="QLineEdit" name="le_colour_b"/>
+            </item>
+            <item row="2" column="2">
+             <widget class="QLineEdit" name="le_colour_r">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>2</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0" rowspan="5">
+             <widget class="QListWidget" name="l_colour">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
+                <horstretch>0</horstretch>
+                <verstretch>1</verstretch>
+               </sizepolicy>
+              </property>
+              <item>
+               <property name="text">
+                <string>Default Foreground</string>
+               </property>
               </item>
-              <item row="0" column="1" colspan="2">
-               <widget class="QLabel" name="label_61">
-                <property name="text">
-                 <string>RGB value:</string>
-                </property>
-               </widget>
+              <item>
+               <property name="text">
+                <string>Default Bold Foreground</string>
+               </property>
               </item>
-              <item row="1" column="0" rowspan="4">
-               <widget class="QListWidget" name="l_colour">
-                <item>
-                 <property name="text">
-                  <string>Default Foreground</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Default Bold Foreground</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Default Background</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Default Bold Background</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Cursor Text</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Cursor Colour</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Black</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Black Bold</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Red</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Red Bold</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Green</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Green Bold</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Yellow</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Yellow Bold</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Blue</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Blue Bold</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Magenta</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Magenta Bold</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Cyan</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI Cyan Bold</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI White</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>ANSI White Bold</string>
-                 </property>
-                </item>
-               </widget>
+              <item>
+               <property name="text">
+                <string>Default Background</string>
+               </property>
               </item>
-              <item row="1" column="1">
-               <widget class="QLabel" name="label_62">
-                <property name="text">
-                 <string>Red</string>
-                </property>
-               </widget>
+              <item>
+               <property name="text">
+                <string>Default Bold Background</string>
+               </property>
               </item>
-              <item row="1" column="2">
-               <widget class="QLineEdit" name="le_colour_r"/>
+              <item>
+               <property name="text">
+                <string>Cursor Text</string>
+               </property>
               </item>
-              <item row="2" column="1">
-               <widget class="QLabel" name="label_63">
-                <property name="text">
-                 <string>Green</string>
-                </property>
-               </widget>
+              <item>
+               <property name="text">
+                <string>Cursor Colour</string>
+               </property>
               </item>
-              <item row="2" column="2">
-               <widget class="QLineEdit" name="le_colour_g"/>
+              <item>
+               <property name="text">
+                <string>ANSI Black</string>
+               </property>
               </item>
-              <item row="3" column="1">
-               <widget class="QLabel" name="label_64">
-                <property name="text">
-                 <string>Blue</string>
-                </property>
-               </widget>
+              <item>
+               <property name="text">
+                <string>ANSI Black Bold</string>
+               </property>
               </item>
-              <item row="3" column="2">
-               <widget class="QLineEdit" name="le_colour_b"/>
+              <item>
+               <property name="text">
+                <string>ANSI Red</string>
+               </property>
               </item>
-              <item row="4" column="1" colspan="2">
-               <widget class="QPushButton" name="btn_colour_modify">
-                <property name="text">
-                 <string>Modify</string>
-                </property>
-               </widget>
+              <item>
+               <property name="text">
+                <string>ANSI Red Bold</string>
+               </property>
               </item>
-             </layout>
+              <item>
+               <property name="text">
+                <string>ANSI Green</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>ANSI Green Bold</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>ANSI Yellow</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>ANSI Yellow Bold</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>ANSI Blue</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>ANSI Blue Bold</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>ANSI Magenta</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>ANSI Magenta Bold</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>ANSI Cyan</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>ANSI Cyan Bold</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>ANSI White</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>ANSI White Bold</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+            <item row="3" column="2">
+             <widget class="QLineEdit" name="le_colour_g"/>
+            </item>
+            <item row="1" column="1" colspan="2">
+             <widget class="QLabel" name="label_61">
+              <property name="text">
+               <string>RGB value:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="5" column="1" colspan="2">
+             <widget class="QPushButton" name="btn_colour_modify">
+              <property name="text">
+               <string>&amp;Modify</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -2979,6 +3431,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_31">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Sending of null packets to keep session active</string>
            </property>
@@ -3002,6 +3460,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_32">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Low-level TCP connection options</string>
            </property>
@@ -3028,6 +3492,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_33">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Internet protocol version</string>
            </property>
@@ -3070,6 +3540,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_34">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Logical name of remote host</string>
            </property>
@@ -3125,24 +3601,26 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_35">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Login details</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_52">
-            <item>
-             <layout class="QGridLayout" name="gridLayout_3">
-              <item row="0" column="1">
-               <widget class="QLineEdit" name="le_datausername"/>
-              </item>
-              <item row="2" column="0" colspan="2">
-               <widget class="QLabel" name="label_70">
-                <property name="text">
-                 <string>When username is not specified:</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
+           <layout class="QGridLayout" name="gridLayout_32">
+            <item row="2" column="0" colspan="3">
+             <layout class="QHBoxLayout" name="horizontalLayout_9">
+              <item>
                <widget class="QRadioButton" name="rb_datausername_prompt">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                  <horstretch>1</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text">
                  <string>Prompt</string>
                 </property>
@@ -3151,62 +3629,80 @@
                 </property>
                </widget>
               </item>
-              <item row="3" column="1">
+              <item>
                <widget class="QRadioButton" name="rb_datausername_systemsuse">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+                  <horstretch>2</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text">
                  <string>Use systems username </string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_69">
-                <property name="text">
-                 <string>Auto-login username</string>
-                </property>
-               </widget>
-              </item>
              </layout>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_69">
+              <property name="text">
+               <string>Auto-login username</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QLineEdit" name="le_datausername"/>
+            </item>
+            <item row="1" column="0" colspan="3">
+             <widget class="QLabel" name="label_70">
+              <property name="text">
+               <string>When username is not specified:</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_36">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Terminal details</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_53">
-            <item>
-             <layout class="QFormLayout" name="formLayout_4">
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_71">
-                <property name="text">
-                 <string>Terminal-type string</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QLineEdit" name="le_termtype">
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_72">
-                <property name="text">
-                 <string>Terminal speeds</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLineEdit" name="le_termspeed">
-                <property name="text">
-                 <string/>
-                </property>
-               </widget>
-              </item>
-             </layout>
+           <layout class="QFormLayout" name="formLayout">
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_71">
+              <property name="text">
+               <string>Terminal-type string</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="le_termtype">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_72">
+              <property name="text">
+               <string>Terminal speeds</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="le_termspeed">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -3216,47 +3712,43 @@
            <property name="title">
             <string>Environment variables</string>
            </property>
-           <layout class="QVBoxLayout" name="verticalLayout_54">
-            <item>
-             <layout class="QGridLayout" name="gridLayout_2">
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_73">
-                <property name="text">
-                 <string>Variable</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QLineEdit" name="lineEdit_24"/>
-              </item>
-              <item row="0" column="2">
-               <widget class="QPushButton" name="pushButton_7">
-                <property name="text">
-                 <string>Add</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="label_74">
-                <property name="text">
-                 <string>Value</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLineEdit" name="lineEdit_25"/>
-              </item>
-              <item row="1" column="2">
-               <widget class="QPushButton" name="pushButton_8">
-                <property name="text">
-                 <string>Remove</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
+           <layout class="QGridLayout" name="gridLayout_3">
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_74">
+              <property name="text">
+               <string>Value</string>
+              </property>
+             </widget>
             </item>
-            <item>
-             <widget class="QListWidget" name="listWidget"/>
+            <item row="2" column="0" colspan="4">
+             <widget class="QListWidget" name="l_env_vars"/>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="le_env_value"/>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="le_env_var"/>
+            </item>
+            <item row="1" column="3">
+             <widget class="QPushButton" name="pb_env_remove">
+              <property name="text">
+               <string>Remove</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="3">
+             <widget class="QPushButton" name="pb_env_add">
+              <property name="text">
+               <string>Add</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_73">
+              <property name="text">
+               <string>Variable</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </widget>
@@ -3264,7 +3756,7 @@
         </layout>
        </widget>
        <widget class="QWidget" name="page_15">
-        <layout class="QVBoxLayout" name="verticalLayout_55" stretch="0,1">
+        <layout class="QVBoxLayout" name="verticalLayout_55" stretch="0,1,0">
          <item>
           <widget class="QLabel" name="label_75">
            <property name="sizePolicy">
@@ -3286,6 +3778,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_38">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string/>
            </property>
@@ -3363,14 +3861,26 @@
                </widget>
               </item>
               <item row="1" column="0">
-               <widget class="QLineEdit" name="lineEdit_26">
+               <widget class="QLineEdit" name="le_proxy_host">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>2</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text">
                  <string>proxy</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QLineEdit" name="lineEdit_27">
+               <widget class="QLineEdit" name="le_proxy_port">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>1</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text">
                  <string>80</string>
                 </property>
@@ -3386,10 +3896,10 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_28"/>
+             <widget class="QLineEdit" name="le_proxy_exclude_list"/>
             </item>
             <item>
-             <widget class="QCheckBox" name="checkBox_51">
+             <widget class="QCheckBox" name="chb_even_proxy_localhost">
               <property name="text">
                <string>Consider proxying local host connections</string>
               </property>
@@ -3443,13 +3953,26 @@
              <layout class="QGridLayout" name="gridLayout_15">
               <item row="0" column="0">
                <widget class="QLabel" name="label_81">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>1</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="text">
                  <string>Username</string>
                 </property>
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QLineEdit" name="lineEdit_29"/>
+               <widget class="QLineEdit" name="le_proxy_username">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>2</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+               </widget>
               </item>
               <item row="1" column="0">
                <widget class="QLabel" name="label_82">
@@ -3459,7 +3982,7 @@
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QLineEdit" name="lineEdit_30"/>
+               <widget class="QLineEdit" name="le_proxy_password"/>
               </item>
              </layout>
             </item>
@@ -3471,7 +3994,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_31">
+             <widget class="QLineEdit" name="le_proxy_telnet_command">
               <property name="text">
                <string>connect %host %port\n</string>
               </property>
@@ -3480,10 +4003,23 @@
            </layout>
           </widget>
          </item>
+         <item>
+          <spacer name="verticalSpacer_24">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
         </layout>
        </widget>
        <widget class="QWidget" name="page_16">
-        <layout class="QVBoxLayout" name="verticalLayout_57" stretch="0,1">
+        <layout class="QVBoxLayout" name="verticalLayout_57" stretch="0,1,0">
          <item>
           <widget class="QLabel" name="label_84">
            <property name="sizePolicy">
@@ -3505,6 +4041,12 @@
          </item>
          <item>
           <widget class="QGroupBox" name="groupBox_39">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
            <property name="title">
             <string>Telnet protocol adjustments</string>
            </property>
@@ -3567,7 +4109,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QCheckBox" name="checkBox_52">
+             <widget class="QCheckBox" name="chb_telnet_keyboard">
               <property name="text">
                <string>Keyboard sends Telnet special commands</string>
               </property>
@@ -3583,21 +4125,21 @@
               </property>
              </widget>
             </item>
-            <item>
-             <spacer name="verticalSpacer">
-              <property name="orientation">
-               <enum>Qt::Orientation::Vertical</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>20</width>
-                <height>40</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
            </layout>
           </widget>
+         </item>
+         <item>
+          <spacer name="verticalSpacer">
+           <property name="orientation">
+            <enum>Qt::Orientation::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </widget>
@@ -3630,7 +4172,7 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="lineEdit_32"/>
+             <widget class="QLineEdit" name="le_local_username"/>
             </item>
            </layout>
           </widget>
@@ -5297,8 +5839,6 @@
   <tabstop>le_hostname</tabstop>
   <tabstop>rb_contype_telnet</tabstop>
   <tabstop>rb_contype_ssh</tabstop>
-  <tabstop>le_saved_sess</tabstop>
-  <tabstop>l_saved_sess</tabstop>
   <tabstop>b_save_sess</tabstop>
   <tabstop>b_delete_sess</tabstop>
   <tabstop>treeWidget</tabstop>
@@ -5328,12 +5868,8 @@
   <tabstop>chb_terminaloption_bgcolor</tabstop>
   <tabstop>chb_terminaloption_blinktext</tabstop>
   <tabstop>le_termopt_ansback</tabstop>
-  <tabstop>rb_termopt_echoauto</tabstop>
   <tabstop>rb_termopt_echoon</tabstop>
   <tabstop>rb_termopt_echooff</tabstop>
-  <tabstop>rb_termopt_editauto</tabstop>
-  <tabstop>rb_termopt_editoff</tabstop>
-  <tabstop>rb_termopt_editon</tabstop>
   <tabstop>cb_termopt_printeroutput</tabstop>
   <tabstop>rb_backspacekey_ctrlh</tabstop>
   <tabstop>rb_backspace_ctrl127</tabstop>
@@ -5352,20 +5888,11 @@
   <tabstop>rb_inicursorkeys_normal</tabstop>
   <tabstop>chb_altgrkey</tabstop>
   <tabstop>chb_ctrl_alt</tabstop>
-  <tabstop>rb_bellstyle_playcustomsound</tabstop>
-  <tabstop>rb_bellaction_visual</tabstop>
   <tabstop>rb_bellaction_alertsound</tabstop>
   <tabstop>rb_bellaction_none</tabstop>
-  <tabstop>rb_bellaction_beep</tabstop>
   <tabstop>rb_belltaskbar_disable</tabstop>
-  <tabstop>rb_belltaskbar_steady</tabstop>
-  <tabstop>rb_belltaskbar_flash</tabstop>
   <tabstop>pushButton_2</tabstop>
-  <tabstop>lineEdit_3</tabstop>
-  <tabstop>le_bellcontrol_overuseno</tabstop>
-  <tabstop>le_bellcontrol_silencereq_secs</tabstop>
-  <tabstop>le_bellcontrol_overusesec</tabstop>
-  <tabstop>chb_bellcontrol_whenoverused</tabstop>
+  <tabstop>le_bell_wavefile</tabstop>
   <tabstop>chb_no_applic_c</tabstop>
   <tabstop>chb_no_applic_k</tabstop>
   <tabstop>chb_no_mouse_rep</tabstop>
@@ -5391,20 +5918,11 @@
   <tabstop>chb_wndscroll_resetkeypress</tabstop>
   <tabstop>chb_wndscroll_resetdisply</tabstop>
   <tabstop>chb_wndscroll_pusherasedtext</tabstop>
-  <tabstop>rb_curappear_block</tabstop>
-  <tabstop>rb_curappear_underline</tabstop>
-  <tabstop>rb_curappear_vertline</tabstop>
   <tabstop>chb_curblink</tabstop>
-  <tabstop>btn_fontsel</tabstop>
-  <tabstop>rb_fontappear_clear</tabstop>
-  <tabstop>rb_fontappear_default</tabstop>
-  <tabstop>rb_fontappear_nonantialiase</tabstop>
-  <tabstop>rb_fontappear_antialiase</tabstop>
-  <tabstop>checkBox_30</tabstop>
-  <tabstop>le_borderappear_gap</tabstop>
-  <tabstop>checkBox_31</tabstop>
-  <tabstop>lineEdit_11</tabstop>
-  <tabstop>checkBox_32</tabstop>
+  <tabstop>chb_hide_mouseptr</tabstop>
+  <tabstop>chb_sunken_edge</tabstop>
+  <tabstop>le_wintitle</tabstop>
+  <tabstop>chb_separate_titles</tabstop>
   <tabstop>chb_behaviour_warn</tabstop>
   <tabstop>chb_behaviour_altf4</tabstop>
   <tabstop>chb_behaviour_alt_space</tabstop>
@@ -5412,8 +5930,8 @@
   <tabstop>chb_behaviour_top</tabstop>
   <tabstop>chb_behaviour_alt_enter</tabstop>
   <tabstop>cb_codepage</tabstop>
-  <tabstop>checkBox_39</tabstop>
-  <tabstop>checkBox_40</tabstop>
+  <tabstop>chb_cjk_ambig_wide</tabstop>
+  <tabstop>chb_xlat_capslockcyr</tabstop>
   <tabstop>rb_translation_useunicode</tabstop>
   <tabstop>rb_translation_poorman</tabstop>
   <tabstop>rb_translation_xwindows</tabstop>
@@ -5424,22 +5942,12 @@
   <tabstop>rb_cpmouseaction_compromise</tabstop>
   <tabstop>rb_cpmouseaction_xterm</tabstop>
   <tabstop>chb_cpmouseaction_shift</tabstop>
-  <tabstop>rb_cpmouseaction_defaultnormal</tabstop>
-  <tabstop>rb_cpmouseaction_defaultrect</tabstop>
-  <tabstop>listWidget_4</tabstop>
-  <tabstop>lineEdit_12</tabstop>
-  <tabstop>pushButton_4</tabstop>
-  <tabstop>checkBox_43</tabstop>
+  <tabstop>l_char_classes</tabstop>
+  <tabstop>chb_rtf_paste</tabstop>
   <tabstop>chb_coloursoption_ansi</tabstop>
   <tabstop>chb_coloursoption_xterm</tabstop>
-  <tabstop>chb_coloursoption_boldtext</tabstop>
   <tabstop>chb_colouroption_palette</tabstop>
   <tabstop>chb_colouroption_usesystem</tabstop>
-  <tabstop>l_colour</tabstop>
-  <tabstop>le_colour_r</tabstop>
-  <tabstop>le_colour_g</tabstop>
-  <tabstop>le_colour_b</tabstop>
-  <tabstop>btn_colour_modify</tabstop>
   <tabstop>le_ping_interval</tabstop>
   <tabstop>chb_tcp_nodelay</tabstop>
   <tabstop>chb_tcp_keepalive</tabstop>
@@ -5447,39 +5955,30 @@
   <tabstop>rb_connectprotocol_ipv4</tabstop>
   <tabstop>rb_connectprotocol_ipv6</tabstop>
   <tabstop>le_loghost</tabstop>
-  <tabstop>le_datausername</tabstop>
-  <tabstop>rb_datausername_prompt</tabstop>
-  <tabstop>rb_datausername_systemsuse</tabstop>
-  <tabstop>le_termtype</tabstop>
-  <tabstop>le_termspeed</tabstop>
-  <tabstop>lineEdit_24</tabstop>
-  <tabstop>pushButton_7</tabstop>
-  <tabstop>lineEdit_25</tabstop>
-  <tabstop>pushButton_8</tabstop>
-  <tabstop>listWidget</tabstop>
+  <tabstop>l_env_vars</tabstop>
   <tabstop>rb_proxytype_none</tabstop>
   <tabstop>rb_proxy_socks4</tabstop>
   <tabstop>rb_proxytype_socks5</tabstop>
   <tabstop>rb_proxytype_http</tabstop>
   <tabstop>rb_proxytype_telnet</tabstop>
   <tabstop>rb_proxytype_local</tabstop>
-  <tabstop>lineEdit_26</tabstop>
-  <tabstop>lineEdit_27</tabstop>
-  <tabstop>lineEdit_28</tabstop>
-  <tabstop>checkBox_51</tabstop>
+  <tabstop>le_proxy_host</tabstop>
+  <tabstop>le_proxy_port</tabstop>
+  <tabstop>le_proxy_exclude_list</tabstop>
+  <tabstop>chb_even_proxy_localhost</tabstop>
   <tabstop>rb_proxydns_no</tabstop>
   <tabstop>rb_proxydns_auto</tabstop>
   <tabstop>rd_proxydns_yes</tabstop>
-  <tabstop>lineEdit_29</tabstop>
-  <tabstop>lineEdit_30</tabstop>
-  <tabstop>lineEdit_31</tabstop>
+  <tabstop>le_proxy_username</tabstop>
+  <tabstop>le_proxy_password</tabstop>
+  <tabstop>le_proxy_telnet_command</tabstop>
   <tabstop>rb_telnetprotocol_bsd</tabstop>
   <tabstop>rb_telnetprotocol_rfc1408</tabstop>
   <tabstop>rb_telnetnegotiate_passsive</tabstop>
   <tabstop>rb_telnetnegotiate_active</tabstop>
-  <tabstop>checkBox_52</tabstop>
+  <tabstop>chb_telnet_keyboard</tabstop>
   <tabstop>chb_telnet_returnkey</tabstop>
-  <tabstop>lineEdit_32</tabstop>
+  <tabstop>le_local_username</tabstop>
   <tabstop>le_remote_cmd</tabstop>
   <tabstop>checkBox_54</tabstop>
   <tabstop>checkBox_55</tabstop>
@@ -5559,24 +6058,25 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="gp_remote_qtitle_action"/>
   <buttongroup name="buttonGroup_9"/>
-  <buttongroup name="buttonGroup_8"/>
-  <buttongroup name="gp_fontquality"/>
-  <buttongroup name="gp_resize_action"/>
-  <buttongroup name="buttonGroup_3"/>
-  <buttongroup name="gp_addressfamily"/>
-  <buttongroup name="gp_termopt_echo"/>
-  <buttongroup name="buttonGroup_4"/>
-  <buttongroup name="buttonGroup"/>
-  <buttongroup name="gp_seslog"/>
-  <buttongroup name="gp_termopt_edit"/>
   <buttongroup name="gp_exit_close"/>
   <buttongroup name="gp_fnkeys"/>
-  <buttongroup name="gp_logfile"/>
-  <buttongroup name="gp_contype"/>
+  <buttongroup name="gp_termopt_echo"/>
+  <buttongroup name="buttonGroup_3"/>
   <buttongroup name="buttonGroup_10"/>
+  <buttongroup name="gp_termopt_edit"/>
+  <buttongroup name="buttonGroup_4"/>
+  <buttongroup name="gp_seslog"/>
+  <buttongroup name="gp_addressfamily"/>
   <buttongroup name="buttonGroup_7"/>
   <buttongroup name="gp_curappear"/>
+  <buttongroup name="buttonGroup"/>
+  <buttongroup name="gp_fontquality"/>
+  <buttongroup name="gp_logfile"/>
+  <buttongroup name="buttonGroup_8"/>
+  <buttongroup name="gp_resize_action"/>
+  <buttongroup name="gp_remote_qtitle_action"/>
+  <buttongroup name="gp_contype"/>
+  <buttongroup name="gp_bold"/>
  </buttongroups>
 </ui>
