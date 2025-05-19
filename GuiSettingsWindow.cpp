@@ -10,9 +10,12 @@
 #include <QColorDialog>
 #include <QDebug>
 #include <QFontDialog>
+#include <QListWidgetItem>
 #include <QMessageBox>
 #include <QRadioButton>
 #include <QString>
+#include <QTableWidgetItem>
+#include <QTreeWidgetItem>
 #include <QVariant>
 
 #include "GuiMainWindow.hpp"
@@ -544,6 +547,17 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
   ind = ui->cb_codepage->findText(conf_get_str(cfg.get(), CONF_line_codepage));
   if (ind == -1) ind = 0;
   ui->cb_codepage->setCurrentIndex(ind);
+
+  initWordness();
+  initColours();
+  initEnvVars();
+  initCipherList();
+  initKexList();
+  initTTYModes();
+  initPortFwds();
+#ifndef NO_GSSAPI
+  initGSSList();
+#endif
 }
 
 static void getChecked(Conf *conf, config_primary_key key, QAbstractButton *src) {
@@ -789,79 +803,6 @@ void GuiSettingsWindow::slot_sessname_hierarchy_changed(QTreeWidgetItem *item) {
   pending_session_changes = true;
 }
 
-void GuiSettingsWindow::on_btn_ssh_auth_browse_keyfile_clicked() {
-  ui->le_ssh_auth_keyfile->setText(QFileDialog::getOpenFileName(
-      this, tr("Select private key file"), ui->le_ssh_auth_keyfile->text(), tr("*.ppk")));
-}
-
-void GuiSettingsWindow::on_btn_fontsel_clicked() {
-  FontSpec &font = *conf_get_fontspec(cfg.get(), CONF_font);
-  QFont oldfont = QFont(font.name, font.height);
-  oldfont.setBold(font.isbold);
-  QFont selfont = QFontDialog::getFont(NULL, oldfont);
-
-  qstring_to_char(font.name, selfont.family(), sizeof(font.name));
-  font.height = selfont.pointSize();
-  font.isbold = selfont.bold();
-  ui->lbl_fontsel->setText(
-      QString("%1, %2%3-point")
-          .arg(font.name, font.isbold ? "Bold, " : "", QString::number(font.height)));
-  ui->chb_fontsel_varpitch->setText(
-      selfont.fixedPitch() ? "The selected font has variable-pitch. Doesn't have fixed-pitch" : "");
-}
-
-void GuiSettingsWindow::on_treeWidget_itemSelectionChanged() {
-  ui->stackedWidget->setCurrentIndex(
-      ui->treeWidget->selectedItems()[0]->data(0, Qt::UserRole).toInt());
-}
-
-void GuiSettingsWindow::on_btn_about_clicked() {
-  QMessageBox::about(this, "About " APPNAME, APPNAME "\nRelease " QUTTY_RELEASE_VERSION
-                                                     "\n\nhttp://code.google.com/p/qutty/");
-}
-
-void GuiSettingsWindow::on_btn_colour_modify_clicked() {
-  QColor oldcol = QColor(ui->le_colour_r->text().toInt(), ui->le_colour_g->text().toInt(),
-                         ui->le_colour_b->text().toInt());
-  QColor newcol = QColorDialog::getColor(oldcol);
-  if (newcol.isValid()) {
-    ui->le_colour_r->setText(QString::number(newcol.red()));
-    ui->le_colour_g->setText(QString::number(newcol.green()));
-    ui->le_colour_b->setText(QString::number(newcol.blue()));
-    int currind = ui->l_colour->currentIndex().row();
-    if (currind >= 0 && currind < NCFGCOLOURS) {
-      QRgb rgba = newcol.rgba();  // FIXME is this right?
-      conf_set_int_int(cfg.get(), CONF_colours, currind, rgba);
-    }
-  }
-}
-
-void GuiSettingsWindow::on_l_colour_currentItemChanged(QListWidgetItem *current,
-                                                       QListWidgetItem *previous) {
-  int prev = -1, curr = -1;
-  if (previous) {
-    prev = ui->l_colour->row(previous);
-  }
-  if (current) {
-    curr = ui->l_colour->row(current);
-  }
-  qDebug() << prev << curr;
-  if (prev >= 0 && prev < NCFGCOLOURS) {
-    int r = ui->le_colour_r->text().toInt();
-    int g = ui->le_colour_g->text().toInt();
-    int b = ui->le_colour_b->text().toInt();
-    int rgba = qRgba(r, g, b, 0xFF);
-    conf_set_int_int(cfg.get(), CONF_colours, prev, rgba);
-  }
-  if (curr >= 0 && curr < NCFGCOLOURS) {
-    QRgb rgba = conf_get_int_int(cfg.get(), CONF_colours, curr);
-    QColor col = QColor::fromRgba(rgba);
-    ui->le_colour_r->setText(QString::number(col.red()));
-    ui->le_colour_g->setText(QString::number(col.green()));
-    ui->le_colour_b->setText(QString::number(col.blue()));
-  }
-}
-
 void GuiSettingsWindow::on_b_sess_copy_clicked() {
   QTreeWidgetItem *item = ui->l_saved_sess->currentItem();
   QString fullPathName;
@@ -902,6 +843,543 @@ void GuiSettingsWindow::on_b_sess_copy_clicked() {
   pending_session_changes = true;
 }
 
+static Qt::ItemFlags const CONST_FLAGS =
+    Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable;
+
+void GuiSettingsWindow::initWordness() {
+  QTableWidget *table = ui->l_char_classes;
+  table->setRowCount(256);
+  table->setColumnCount(3);
+  table->horizontalHeader()->hide();
+  table->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
+  for (int ch = 0; ch < 256; ch++) {
+    int wordness = conf_get_int_int(cfg.get(), CONF_wordness, ch);
+    auto *col0 = new QTableWidgetItem(QString::asprintf("(0x%02X)", ch));
+    auto *col1 = new QTableWidgetItem((ch >= 32 && ch <= 127) ? QString(QChar(ch)) : QString());
+    auto *col2 = new QTableWidgetItem(QString::number(wordness));
+    col0->setFlags(CONST_FLAGS);
+    col1->setFlags(CONST_FLAGS);
+    table->setItem(ch, 0, col0);
+    table->setItem(ch, 1, col1);
+    table->setItem(ch, 2, col2);
+  }
+}
+
+void GuiSettingsWindow::on_l_char_classes_currentItemChanged(QTableWidgetItem *item) {
+  QTableWidget *table = ui->l_char_classes;
+  ui->le_char_class->setText(table->item(item->row(), 2)->text());
+}
+
+void GuiSettingsWindow::on_btn_char_class_set_clicked() {
+  bool ok;
+  int cclass = ui->le_char_class->text().toInt(&ok);
+  if (ok) {
+    QTableWidget *table = ui->l_char_classes;
+    int ch = table->currentRow();
+    table->item(ch, 2)->setText(QString::number(cclass));
+    conf_set_int_int(cfg.get(), CONF_wordness, ch, cclass);
+  }
+}
+
+static void setEnvRow(QTableWidget *table, int row, const QString &text0, const QString &text1) {
+  auto *col0 = new QTableWidgetItem(text0);
+  auto *col1 = new QTableWidgetItem(text1);
+  col0->setFlags(CONST_FLAGS);
+  table->setItem(row, 0, col0);
+  table->setItem(row, 1, col1);
+}
+
+static int conf_get_str_count(Conf *conf, config_primary_key key) {
+  int rows = 0;
+  char *subkey = nullptr;
+  while (conf_get_str_strs(conf, key, subkey, &subkey)) rows++;
+  return rows;
+}
+
+void GuiSettingsWindow::initEnvVars() {
+  QTableWidget *table = ui->l_env_vars;
+  int rows = conf_get_str_count(cfg.get(), CONF_environmt);
+  table->setColumnCount(2);
+  table->setRowCount(rows);
+  table->verticalHeader()->hide();
+  table->horizontalHeader()->hide();
+  table->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
+
+  char *value = nullptr;
+  char *subkey = nullptr;
+  int row = 0;
+  while ((value = conf_get_str_strs(cfg.get(), CONF_environmt, subkey, &subkey))) {
+    setEnvRow(table, row, subkey, value);
+    row++;
+  }
+}
+
+void GuiSettingsWindow::on_pb_env_add_clicked() {
+  QTableWidget *table = ui->l_env_vars;
+  auto name = ui->le_env_var->text();
+  auto value = ui->le_env_value->text();
+  if (name.isEmpty() || value.isEmpty()) return;
+  auto where = table->findItems(name, Qt::MatchExactly);
+  int row = table->rowCount();
+  bool newRow = true;
+  if (!where.isEmpty()) {
+    for (const auto *item : std::as_const(where)) {
+      if (item->column() == 0) {
+        row = item->row();
+        newRow = false;
+        break;
+      }
+    }
+  }
+  if (newRow) table->setRowCount(table->rowCount() + 1);
+  setEnvRow(table, row, name, value);
+  ui->le_env_var->clear();
+  ui->le_env_value->clear();
+  conf_set_str_str(cfg.get(), CONF_environmt, name.toUtf8(), value.toUtf8());
+}
+
+void GuiSettingsWindow::on_pb_env_remove_clicked() {
+  QTableWidget *table = ui->l_env_vars;
+  auto *item = table->currentItem();
+  if (!item) return;
+  int row = item->row();
+  auto name = item->text();
+  table->removeRow(row);
+  conf_del_str_str(cfg.get(), CONF_environmt, name.toUtf8());
+}
+
+static bool listMoveUp(QListWidget *list) {
+  int row = list->currentRow();
+  if (row < 1) return false;
+  auto *item = list->takeItem(row);
+  list->insertItem(row - 1, item);
+  list->setCurrentRow(row - 1);
+  return true;
+}
+
+static bool listMoveDown(QListWidget *list) {
+  int row = list->currentRow();
+  if (row < 0 || row >= list->count() - 1) return false;
+  auto *item = list->takeItem(row);
+  list->insertItem(row + 1, item);
+  list->setCurrentRow(row + 1);
+  return true;
+}
+
+struct DataItem {
+  const char *text;
+  int data;
+};
+
+struct DataList {
+  config_primary_key key;
+  int count;
+  const DataItem *items;
+
+  constexpr DataList(config_primary_key key, int count, const DataItem items[])
+      : key(key), count(count), items(items) {}
+
+  void initList(QListWidget *list, Conf *conf) const {
+    list->clear();
+    std::vector<QListWidgetItem *> listItems;
+    listItems.resize(count);
+    for (int i = 0; i < count; i++) {
+      auto *item = new QListWidgetItem(items[i].text);
+      item->setData(Qt::UserRole, items[i].data);
+      listItems[items[i].data] = item;
+    }
+    for (int i = 0; i < count; i++) {
+      int const data = conf_get_int_int(conf, key, i);
+      for (int j = 0; j < count; j++) {
+        auto &item = items[j];
+        if (item.data == data) {
+          list->addItem(listItems[item.data]);
+          break;
+        }
+      }
+    }
+  }
+
+  void updateConfig(QListWidget *list, Conf *conf) const {
+    for (int i = 0; i < count; i++) {
+      auto *item = list->item(i);
+      int value = item->data(Qt::UserRole).toInt();
+      conf_set_int_int(conf, key, i, value);
+    }
+  }
+};
+
+// From putty-0.63/config.c
+static const DataItem ciphers[] = {{"3DES", CIPHER_3DES},
+                                   {"Blowfish", CIPHER_BLOWFISH},
+                                   {"DES", CIPHER_DES},
+                                   {"AES (SSH-2 only)", CIPHER_AES},
+                                   {"Arcfour (SSH-2 only)", CIPHER_ARCFOUR},
+                                   {"-- warn below here --", CIPHER_WARN}};
+
+static const DataList cipherDataList(CONF_ssh_cipherlist, CIPHER_MAX, ciphers);
+
+void GuiSettingsWindow::initCipherList() {
+  cipherDataList.initList(ui->l_ssh_cipherlist, cfg.get());
+}
+
+void GuiSettingsWindow::on_pb_ssh_cipher_up_clicked() {
+  if (listMoveUp(ui->l_ssh_cipherlist))
+    cipherDataList.updateConfig(ui->l_ssh_cipherlist, cfg.get());
+}
+
+void GuiSettingsWindow::on_pb_ssh_cipher_down_clicked() {
+  if (listMoveDown(ui->l_ssh_cipherlist))
+    cipherDataList.updateConfig(ui->l_ssh_cipherlist, cfg.get());
+}
+
+// From putty-0.63/config.c
+static const DataItem kexes[] = {{"Diffie-Hellman group 1", KEX_DHGROUP1},
+                                 {"Diffie-Hellman group 14", KEX_DHGROUP14},
+                                 {"Diffie-Hellman group exchange", KEX_DHGEX},
+                                 {"RSA-based key exchange", KEX_RSA},
+                                 {"-- warn below here --", KEX_WARN}};
+
+static const DataList kexDataList(CONF_ssh_kexlist, KEX_MAX, kexes);
+
+void GuiSettingsWindow::initKexList() { kexDataList.initList(ui->l_ssh_kexlist, cfg.get()); }
+
+void GuiSettingsWindow::on_pb_ssh_kex_up_clicked() {
+  if (listMoveUp(ui->l_ssh_kexlist)) kexDataList.updateConfig(ui->l_ssh_kexlist, cfg.get());
+}
+
+void GuiSettingsWindow::on_pb_ssh_kex_down_clicked() {
+  if (listMoveDown(ui->l_ssh_kexlist)) kexDataList.updateConfig(ui->l_ssh_kexlist, cfg.get());
+}
+
+enum ModeType { TTY_OP_CHAR, TTY_OP_BOOL };
+
+struct TTYModeDecl {
+  const char *const name;
+  int opcode;
+  ModeType type;
+};
+
+// from putty-0.63/ssh.c
+static const TTYModeDecl ssh_ttymodes[] = {
+    /* "V" prefix discarded for special characters relative to SSH specs */
+    {"INTR", 1, TTY_OP_CHAR},    {"QUIT", 2, TTY_OP_CHAR},     {"ERASE", 3, TTY_OP_CHAR},
+    {"KILL", 4, TTY_OP_CHAR},    {"EOF", 5, TTY_OP_CHAR},      {"EOL", 6, TTY_OP_CHAR},
+    {"EOL2", 7, TTY_OP_CHAR},    {"START", 8, TTY_OP_CHAR},    {"STOP", 9, TTY_OP_CHAR},
+    {"SUSP", 10, TTY_OP_CHAR},   {"DSUSP", 11, TTY_OP_CHAR},   {"REPRINT", 12, TTY_OP_CHAR},
+    {"WERASE", 13, TTY_OP_CHAR}, {"LNEXT", 14, TTY_OP_CHAR},   {"FLUSH", 15, TTY_OP_CHAR},
+    {"SWTCH", 16, TTY_OP_CHAR},  {"STATUS", 17, TTY_OP_CHAR},  {"DISCARD", 18, TTY_OP_CHAR},
+    {"IGNPAR", 30, TTY_OP_BOOL}, {"PARMRK", 31, TTY_OP_BOOL},  {"INPCK", 32, TTY_OP_BOOL},
+    {"ISTRIP", 33, TTY_OP_BOOL}, {"INLCR", 34, TTY_OP_BOOL},   {"IGNCR", 35, TTY_OP_BOOL},
+    {"ICRNL", 36, TTY_OP_BOOL},  {"IUCLC", 37, TTY_OP_BOOL},   {"IXON", 38, TTY_OP_BOOL},
+    {"IXANY", 39, TTY_OP_BOOL},  {"IXOFF", 40, TTY_OP_BOOL},   {"IMAXBEL", 41, TTY_OP_BOOL},
+    {"ISIG", 50, TTY_OP_BOOL},   {"ICANON", 51, TTY_OP_BOOL},  {"XCASE", 52, TTY_OP_BOOL},
+    {"ECHO", 53, TTY_OP_BOOL},   {"ECHOE", 54, TTY_OP_BOOL},   {"ECHOK", 55, TTY_OP_BOOL},
+    {"ECHONL", 56, TTY_OP_BOOL}, {"NOFLSH", 57, TTY_OP_BOOL},  {"TOSTOP", 58, TTY_OP_BOOL},
+    {"IEXTEN", 59, TTY_OP_BOOL}, {"ECHOCTL", 60, TTY_OP_BOOL}, {"ECHOKE", 61, TTY_OP_BOOL},
+    {"PENDIN", 62, TTY_OP_BOOL}, {"OPOST", 70, TTY_OP_BOOL},   {"OLCUC", 71, TTY_OP_BOOL},
+    {"ONLCR", 72, TTY_OP_BOOL},  {"OCRNL", 73, TTY_OP_BOOL},   {"ONOCR", 74, TTY_OP_BOOL},
+    {"ONLRET", 75, TTY_OP_BOOL}, {"CS7", 90, TTY_OP_BOOL},     {"CS8", 91, TTY_OP_BOOL},
+    {"PARENB", 92, TTY_OP_BOOL}, {"PARODD", 93, TTY_OP_BOOL}};
+
+static const TTYModeDecl *getModeDecl(const char *name) {
+  for (auto const &mode : ssh_ttymodes)
+    if (strcmp(mode.name, name) == 0) return &mode;
+  return nullptr;
+}
+
+static QString formatTTYMode(const QString &value) {
+  if (value == "A") return "(auto)";
+  if (value.startsWith("V")) return value.mid(1);
+  return "(auto?)";  // should not happen
+}
+
+static void setTableRow(QTableWidget *table, int row, const char *left, const char *right) {
+  auto *col0 = new QTableWidgetItem(left);
+  auto *col1 = new QTableWidgetItem(right);
+  col0->setFlags(CONST_FLAGS);
+  col1->setFlags(CONST_FLAGS);
+  table->setItem(row, 0, col0);
+  table->setItem(row, 1, col1);
+}
+
+static QByteArray removeCurrentRow(QTableWidget *table) {
+  int row = table->currentRow();
+  if (row < 0) return {};
+  auto left = table->item(row, 0)->text().toLatin1();
+  table->removeRow(row);
+  return left;
+}
+
+void GuiSettingsWindow::initTTYModes() {
+  ui->cb_ttymodes->clear();
+  for (auto const &m : ssh_ttymodes) ui->cb_ttymodes->addItem(m.name);
+
+  int rows = conf_get_str_count(cfg.get(), CONF_ttymodes);
+  QTableWidget *table = ui->l_ttymodes;
+  table->clear();
+  table->setRowCount(rows);
+  table->setColumnCount(2);
+  table->setSelectionBehavior(QAbstractItemView::SelectRows);
+  table->verticalHeader()->hide();
+  table->horizontalHeader()->hide();
+
+  const char *value = nullptr;
+  char *subkey = nullptr;
+  int i = 0;
+  while ((value = conf_get_str_strs(cfg.get(), CONF_ttymodes, subkey, &subkey))) {
+    auto text = formatTTYMode(value);
+    setTableRow(table, i, subkey, text.toLatin1());
+    i++;
+  }
+  table->sortItems(0);
+}
+
+void GuiSettingsWindow::on_pb_ttymodes_remove_clicked() {
+  QByteArray name = removeCurrentRow(ui->l_ttymodes);
+  if (!name.isEmpty()) conf_del_str_str(cfg.get(), CONF_ttymodes, name);
+}
+
+void GuiSettingsWindow::on_pb_ttymodes_add_clicked() {
+  QString const name = ui->cb_ttymodes->currentText();
+  QByteArray const bname = name.toLatin1();
+  QString value = "A";
+  if (ui->rb_terminalvalue_this->isChecked()) value = "V" + ui->le_ttymode->text();
+  QByteArray bvalue = value.toLatin1();
+
+  conf_set_str_str(cfg.get(), CONF_ttymodes, bname, bvalue);
+
+  QTableWidget *table = ui->l_ttymodes;
+  auto const items = table->findItems(name, Qt::MatchExactly);
+  int row = table->rowCount();
+  if (items.isEmpty()) {
+    table->setRowCount(row + 1);
+  } else {
+    for (auto *item : items) {
+      if (item->column() == 0) {
+        row = item->row();
+        break;
+      }
+    }
+  }
+  value = formatTTYMode(value);
+  bvalue = value.toLatin1();
+  setTableRow(table, row, bname, bvalue);
+  table->sortItems(0);
+}
+
+void GuiSettingsWindow::initPortFwds() {
+  int rows = conf_get_str_count(cfg.get(), CONF_portfwd);
+  QTableWidget *table = ui->l_portfwd;
+  table->clear();
+  table->setRowCount(rows);
+  table->setColumnCount(2);
+  table->setSelectionBehavior(QAbstractItemView::SelectRows);
+  table->verticalHeader()->hide();
+  table->horizontalHeader()->hide();
+
+  const char *value = nullptr;
+  char *subkey = nullptr;
+  int i = 0;
+  while ((value = conf_get_str_strs(cfg.get(), CONF_portfwd, subkey, &subkey))) {
+    setTableRow(table, i, subkey, value);
+    i++;
+  }
+  table->sortItems(0);
+}
+
+void GuiSettingsWindow::on_pb_portfwd_remove_clicked() {
+  QByteArray src = removeCurrentRow(ui->l_portfwd);
+  if (!src.isEmpty()) conf_del_str_str(cfg.get(), CONF_portfwd, src);
+}
+
+struct PortFwd {
+  QString src;
+  QString dest;
+
+  bool operator==(const PortFwd &o) const { return src == o.src && dest == o.dest; }
+  bool destValid() const {
+    auto const parts = dest.split(':');
+    return parts.size() == 2 && !parts[0].isEmpty() && !parts[1].isEmpty();
+  }
+};
+
+static PortFwd getPortFwdFromUi(Ui::GuiSettingsWindow *ui) {
+  QString const src = ui->le_tunnel_source->text().trimmed();
+  QString const dest = ui->le_tunnel_dest->text().trimmed();
+  if (ui->rb_sshport_dynamic->isChecked()) return {"DL" + src, QString{}};
+  PortFwd result;
+  if (ui->rb_sshport_ipv4->isChecked())
+    result.src += "4";
+  else if (ui->rb_sshport_ipv6->isChecked())
+    result.src += "6";
+  if (ui->rb_sshport_local->isChecked())
+    result.src += "L";
+  else
+    result.src += "R";
+  result.src += src;
+  result.dest = dest;
+  return result;
+}
+
+void GuiSettingsWindow::on_pb_portfwd_add_clicked() {
+  auto fwd = getPortFwdFromUi(ui);
+  if (!fwd.destValid()) {
+    QMessageBox::critical(
+        this, tr("QuTTY Error"),
+        tr("You need to specify a destination address in the form \"host.name:port\"."));
+    return;
+  }
+
+  QTableWidget *table = ui->l_portfwd;
+  int const n = table->rowCount();
+  for (int i = 0; i < n; i++) {
+    PortFwd row;
+    row.src = table->item(i, 0)->text();
+    row.dest = table->item(i, 1)->text();
+    if (row == fwd) {
+      QMessageBox::critical(this, tr("QuTTY Error"), tr("Specified forwarding already exists."));
+      return;
+    }
+  }
+
+  auto const src = fwd.src.toLatin1();
+  auto const dest = fwd.dest.toLatin1();
+  conf_set_str_str(cfg.get(), CONF_portfwd, src, dest);
+
+  int row = table->rowCount();
+  table->setRowCount(row + 1);
+  setTableRow(table, row, src, dest);
+  table->sortItems(0);
+}
+
+#ifndef NO_GSSAPI
+
+// From putty-0.63/wingss.c
+static const DataItem _gsslibnames[3] = {{"MIT Kerberos GSSAPI32.DLL", 0},
+                                         {"Microsoft SSPI SECUR32.DLL", 1},
+                                         {"User-specified GSSAPI DLL", 2}};
+
+static const DataList gssDataList(CONF_ssh_gsslist, 3, _gsslibnames);
+
+void GuiSettingsWindow::initGSSList() { gssDataList.initList(ui->l_ssh_gsslist, cfg.get()); }
+
+void GuiSettingsWindow::on_pb_ssh_gss_up_clicked() {
+  if (listMoveUp(ui->l_ssh_gsslist)) gssDataList.updateConfig(ui->l_ssh_gsslist, cfg.get());
+}
+
+void GuiSettingsWindow::on_pb_ssh_gss_down_clicked() {
+  if (listMoveDown(ui->l_ssh_gsslist)) gssDataList.updateConfig(ui->l_ssh_gsslist, cfg.get());
+}
+
+#endif // NO_GSSAPI
+
+void GuiSettingsWindow::on_btn_ssh_auth_browse_keyfile_clicked() {
+  ui->le_ssh_auth_keyfile->setText(QFileDialog::getOpenFileName(
+      this, tr("Select private key file"), ui->le_ssh_auth_keyfile->text(), tr("*.ppk")));
+}
+
+void GuiSettingsWindow::on_btn_fontsel_clicked() {
+  FontSpec &font = *conf_get_fontspec(cfg.get(), CONF_font);
+  QFont oldfont = QFont(font.name, font.height);
+  oldfont.setBold(font.isbold);
+  QFont selfont = QFontDialog::getFont(NULL, oldfont);
+
+  qstring_to_char(font.name, selfont.family(), sizeof(font.name));
+  font.height = selfont.pointSize();
+  font.isbold = selfont.bold();
+  ui->lbl_fontsel->setText(
+      QString("%1, %2%3-point")
+          .arg(font.name, font.isbold ? "Bold, " : "", QString::number(font.height)));
+  ui->chb_fontsel_varpitch->setText(
+      selfont.fixedPitch() ? "The selected font has variable-pitch. Doesn't have fixed-pitch" : "");
+}
+
+void GuiSettingsWindow::on_treeWidget_itemSelectionChanged() {
+  ui->stackedWidget->setCurrentIndex(
+      ui->treeWidget->selectedItems()[0]->data(0, Qt::UserRole).toInt());
+}
+
+void GuiSettingsWindow::on_btn_about_clicked() {
+  QMessageBox::about(this, "About " APPNAME,
+                     APPNAME "\nRelease " QUTTY_RELEASE_VERSION
+                             "\n\nhttp://code.google.com/p/qutty/");
+}
+
+// From putty-0.63/config.c
+static const char *const colours[] = {"Default Foreground", "Default Bold Foreground",
+                                      "Default Background", "Default Bold Background",
+                                      "Cursor Text",        "Cursor Colour",
+                                      "ANSI Black",         "ANSI Black Bold",
+                                      "ANSI Red",           "ANSI Red Bold",
+                                      "ANSI Green",         "ANSI Green Bold",
+                                      "ANSI Yellow",        "ANSI Yellow Bold",
+                                      "ANSI Blue",          "ANSI Blue Bold",
+                                      "ANSI Magenta",       "ANSI Magenta Bold",
+                                      "ANSI Cyan",          "ANSI Cyan Bold",
+                                      "ANSI White",         "ANSI White Bold"};
+
+void GuiSettingsWindow::initColours() {
+  int row = 0;
+  for (const char *colour : colours) {
+    ui->l_colour->addItem(colour);
+  }
+}
+
+static void setColour(Conf *conf, int index, QRgb rgb) {
+  conf_set_int_int(conf, CONF_colours, index * 3 + 0, qRed(rgb));
+  conf_set_int_int(conf, CONF_colours, index * 3 + 1, qGreen(rgb));
+  conf_set_int_int(conf, CONF_colours, index * 3 + 2, qBlue(rgb));
+}
+
+static QRgb getColour(Conf *conf, int index) {
+  int r = conf_get_int_int(conf, CONF_colours, index * 3 + 0);
+  int g = conf_get_int_int(conf, CONF_colours, index * 3 + 1);
+  int b = conf_get_int_int(conf, CONF_colours, index * 3 + 2);
+  return qRgb(r, g, b);
+}
+
+void GuiSettingsWindow::on_btn_colour_modify_clicked() {
+  int r = ui->le_colour_r->text().toInt();
+  int g = ui->le_colour_g->text().toInt();
+  int b = ui->le_colour_b->text().toInt();
+
+  QColor oldcol = QColor(r, g, b);
+  QColor newcol = QColorDialog::getColor(oldcol);
+  if (newcol.isValid()) {
+    int rgb = newcol.rgb();
+    ui->le_colour_r->setText(QString::number(qRed(rgb)));
+    ui->le_colour_g->setText(QString::number(qGreen(rgb)));
+    ui->le_colour_b->setText(QString::number(qBlue(rgb)));
+    int curr = ui->l_colour->currentIndex().row();
+    if (curr >= 0 && curr < NCFGCOLOURS) setColour(cfg.get(), curr, rgb);
+  }
+}
+
+void GuiSettingsWindow::on_l_colour_currentItemChanged(QListWidgetItem *current,
+                                                       QListWidgetItem *previous) {
+  int prev = -1, curr = -1;
+  if (previous) {
+    prev = ui->l_colour->row(previous);
+  }
+  if (current) {
+    curr = ui->l_colour->row(current);
+  }
+  qDebug() << prev << curr;
+  if (prev >= 0 && prev < NCFGCOLOURS) {
+    int r = ui->le_colour_r->text().toInt();
+    int g = ui->le_colour_g->text().toInt();
+    int b = ui->le_colour_b->text().toInt();
+    setColour(cfg.get(), prev, qRgb(r, g, b));
+  }
+  if (curr >= 0 && curr < NCFGCOLOURS) {
+    QRgb rgb = getColour(cfg.get(), curr);
+    ui->le_colour_r->setText(QString::number(qRed(rgb)));
+    ui->le_colour_g->setText(QString::number(qGreen(rgb)));
+    ui->le_colour_b->setText(QString::number(qBlue(rgb)));
+  }
+}
+
 static bool conf_del_str_all(Conf *cfg, config_primary_key key) {
   std::vector<std::string> subkeys;
   char *subkey = nullptr;
@@ -913,21 +1391,7 @@ static bool conf_del_str_all(Conf *cfg, config_primary_key key) {
 void chkUnsupportedConfigs(Conf *cfg) {
   QString opt_unsupp;
 
-  if (confKeyExists(cfg, CONF_try_gssapi_auth)) {
-    conf_set_int(cfg, CONF_try_gssapi_auth, 0);
-  }
-
-  if (conf_del_str_all(cfg, CONF_portfwd)) {
-    opt_unsupp += " * SSH Tunnels/port forwarding\n";
-  }
-
-  if (confKeyExists(cfg, CONF_tryagent)) {
-    conf_set_int(cfg, CONF_tryagent, 0);
-  }
-
-  conf_del_str_all(cfg, CONF_ttymodes);
-
-  if (opt_unsupp.length() > 0)
+  if (!opt_unsupp.isEmpty())
     QMessageBox::warning(
         NULL, QObject::tr("Qutty Configuration"),
         QObject::tr("Following options are not yet supported in QuTTY.\n\n%1").arg(opt_unsupp));

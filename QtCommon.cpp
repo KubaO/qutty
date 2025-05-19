@@ -31,11 +31,14 @@ int flags;
 int default_protocol = PROT_SSH;
 int default_port = 22;
 
+#ifdef NO_GSSAPI
+const int ngsslibs = 3;
 const struct keyvalwhere gsslibkeywords[] = {
     {(char *)"gssapi32", 0, -1, -1},
     {(char *)"sspi", 1, -1, -1},
     {(char *)"custom", 2, -1, -1},
 };
+#endif
 
 // single global timer
 QtTimer *globalTimer = new QtTimer;

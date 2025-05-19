@@ -3013,29 +3013,6 @@
           <string>Control the select-one-word-at-a-time mode</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_30">
-          <item row="2" column="2">
-           <widget class="QPushButton" name="pushButton_4">
-            <property name="text">
-             <string>&amp;Set</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="lineEdit_12"/>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="label_56">
-            <property name="text">
-             <string>Se&amp;t to class</string>
-            </property>
-            <property name="buddy">
-             <cstring>lineEdit_12</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0" colspan="3">
-           <widget class="QListWidget" name="l_char_classes"/>
-          </item>
           <item row="0" column="0">
            <widget class="QLabel" name="label_25">
             <property name="text">
@@ -3045,6 +3022,42 @@
              <cstring>l_char_classes</cstring>
             </property>
            </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="label_56">
+            <property name="text">
+             <string>Se&amp;t to class</string>
+            </property>
+            <property name="buddy">
+             <cstring>le_char_class</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="3">
+           <widget class="QPushButton" name="btn_char_class_set">
+            <property name="text">
+             <string>&amp;Set</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="le_char_class"/>
+          </item>
+          <item row="2" column="2">
+           <spacer name="horizontalSpacer_2">
+            <property name="orientation">
+             <enum>Qt::Orientation::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="1" column="0" colspan="4">
+           <widget class="QTableWidget" name="l_char_classes"/>
           </item>
          </layout>
         </widget>
@@ -3746,9 +3759,6 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0" colspan="4">
-           <widget class="QListWidget" name="l_env_vars"/>
-          </item>
           <item row="1" column="1">
            <widget class="QLineEdit" name="le_env_value"/>
           </item>
@@ -3781,6 +3791,9 @@
              <string>Variable</string>
             </property>
            </widget>
+          </item>
+          <item row="2" column="0" colspan="4">
+           <widget class="QTableWidget" name="l_env_vars"/>
           </item>
          </layout>
         </widget>
@@ -4378,14 +4391,14 @@
            </spacer>
           </item>
           <item row="2" column="1">
-           <widget class="QPushButton" name="pushButton_9">
+           <widget class="QPushButton" name="pb_ssh_cipher_up">
             <property name="text">
              <string>Up</string>
             </property>
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QPushButton" name="pushButton_10">
+           <widget class="QPushButton" name="pb_ssh_cipher_down">
             <property name="text">
              <string>Down</string>
             </property>
@@ -4454,14 +4467,14 @@
            </spacer>
           </item>
           <item row="2" column="1">
-           <widget class="QPushButton" name="pushButton_11">
+           <widget class="QPushButton" name="pb_ssh_kex_up">
             <property name="text">
              <string>Up</string>
             </property>
            </widget>
           </item>
           <item row="3" column="1">
-           <widget class="QPushButton" name="pushButton_12">
+           <widget class="QPushButton" name="pb_ssh_kex_down">
             <property name="text">
              <string>Down</string>
             </property>
@@ -4743,14 +4756,14 @@
            </spacer>
           </item>
           <item row="4" column="1">
-           <widget class="QPushButton" name="pushButton_17">
+           <widget class="QPushButton" name="pb_ssh_gss_up">
             <property name="text">
              <string>Up</string>
             </property>
            </widget>
           </item>
           <item row="5" column="1">
-           <widget class="QPushButton" name="pushButton_18">
+           <widget class="QPushButton" name="pb_ssh_gss_down">
             <property name="text">
              <string>Down</string>
             </property>
@@ -4846,14 +4859,11 @@
            </widget>
           </item>
           <item row="0" column="3">
-           <widget class="QPushButton" name="pushButton_20">
+           <widget class="QPushButton" name="pb_ttymodes_remove">
             <property name="text">
              <string>Remove</string>
             </property>
            </widget>
-          </item>
-          <item row="1" column="0" colspan="4">
-           <widget class="QListWidget" name="l_ttymodes"/>
           </item>
           <item row="2" column="0">
            <widget class="QLabel" name="label_105">
@@ -4863,272 +4873,17 @@
            </widget>
           </item>
           <item row="2" column="1" colspan="2">
-           <widget class="QComboBox" name="comboBox_3">
+           <widget class="QComboBox" name="cb_ttymodes">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
               <horstretch>1</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
-            <item>
-             <property name="text">
-              <string>INTR</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>QUIT</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ERASE</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>KILL</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>EOF</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>EOL</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>START</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>STOP</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>SUSP</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>DSUSP</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>REPRINT</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>WERASE</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>LNEXT</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>FLUSH</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>SWITCH</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>STATUS</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>DISCARD</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>INGPAR</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>PARMRK</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>INPCK</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ISTRIP</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>INLCR</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>IGNCR</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ICRNL</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>IUCLC</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>IXON</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>IXANY</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>IXOFF</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>IXAXBEL</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ISIG</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ICANON</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>XCASE</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ECHO</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ECHOE</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ECHOK</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ECHONL</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>NOFLSH</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>TOSTOP</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>IEXTEN</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ECHOCTL</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ECHOKE</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>PENDIN</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>OLCUC</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ONLCR</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>OCRNL</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ONOCR</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>ONLRET</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>CS7</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>CS8</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>PARENB</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>PARODD</string>
-             </property>
-            </item>
            </widget>
           </item>
           <item row="2" column="3">
-           <widget class="QPushButton" name="pushButton_21">
+           <widget class="QPushButton" name="pb_ttymodes_add">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
               <horstretch>1</horstretch>
@@ -5165,23 +4920,13 @@
            </widget>
           </item>
           <item row="3" column="3">
-           <widget class="QLineEdit" name="lineEdit_38"/>
+           <widget class="QLineEdit" name="le_ttymode"/>
+          </item>
+          <item row="1" column="0" colspan="4">
+           <widget class="QTableWidget" name="l_ttymodes"/>
           </item>
          </layout>
         </widget>
-       </item>
-       <item>
-        <spacer name="verticalSpacer_7">
-         <property name="orientation">
-          <enum>Qt::Orientation::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
        </item>
       </layout>
      </widget>
@@ -5336,7 +5081,7 @@
            </widget>
           </item>
           <item row="2" column="2">
-           <widget class="QPushButton" name="pushButton_23">
+           <widget class="QPushButton" name="pb_portfwd_remove">
             <property name="text">
              <string>Remove</string>
             </property>
@@ -5357,10 +5102,10 @@
            </widget>
           </item>
           <item row="5" column="1">
-           <widget class="QLineEdit" name="lineEdit_41"/>
+           <widget class="QLineEdit" name="le_tunnel_source"/>
           </item>
           <item row="5" column="2">
-           <widget class="QPushButton" name="pushButton_24">
+           <widget class="QPushButton" name="pb_portfwd_add">
             <property name="text">
              <string>Add</string>
             </property>
@@ -5376,7 +5121,7 @@
           <item row="7" column="0" colspan="3">
            <layout class="QGridLayout" name="gridLayout_22">
             <item row="0" column="2">
-             <widget class="QRadioButton" name="radioButton_98">
+             <widget class="QRadioButton" name="rb_sshport_dynamic">
               <property name="text">
                <string>Dynamic</string>
               </property>
@@ -5417,7 +5162,7 @@
              </widget>
             </item>
             <item row="0" column="1">
-             <widget class="QRadioButton" name="radioButton_97">
+             <widget class="QRadioButton" name="rb_sshport_remote">
               <property name="text">
                <string>Remote</string>
               </property>
@@ -5443,7 +5188,7 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QRadioButton" name="radioButton_100">
+             <widget class="QRadioButton" name="rb_sshport_ipv4">
               <property name="text">
                <string>IPv4</string>
               </property>
@@ -5453,7 +5198,7 @@
              </widget>
             </item>
             <item row="1" column="2">
-             <widget class="QRadioButton" name="radioButton_101">
+             <widget class="QRadioButton" name="rb_sshport_ipv6">
               <property name="text">
                <string>IPv6</string>
               </property>
@@ -5464,11 +5209,11 @@
             </item>
            </layout>
           </item>
-          <item row="3" column="0" colspan="3">
-           <widget class="QListWidget" name="l_portfwd"/>
-          </item>
           <item row="6" column="1" colspan="2">
-           <widget class="QLineEdit" name="lineEdit_42"/>
+           <widget class="QLineEdit" name="le_tunnel_dest"/>
+          </item>
+          <item row="3" column="0" colspan="3">
+           <widget class="QTableWidget" name="l_portfwd"/>
           </item>
          </layout>
         </widget>
@@ -6150,12 +5895,12 @@
   <tabstop>rb_sshprotocol_1</tabstop>
   <tabstop>rb_sshprotocol_2</tabstop>
   <tabstop>rb_sshprotocol_2only</tabstop>
-  <tabstop>pushButton_9</tabstop>
-  <tabstop>pushButton_10</tabstop>
+  <tabstop>pb_ssh_cipher_up</tabstop>
+  <tabstop>pb_ssh_cipher_down</tabstop>
   <tabstop>l_ssh_cipherlist</tabstop>
   <tabstop>l_ssh_kexlist</tabstop>
-  <tabstop>pushButton_11</tabstop>
-  <tabstop>pushButton_12</tabstop>
+  <tabstop>pb_ssh_kex_up</tabstop>
+  <tabstop>pb_ssh_kex_down</tabstop>
   <tabstop>le_ssh_rekey_time</tabstop>
   <tabstop>le_ssh_rekey_data</tabstop>
   <tabstop>chb_ssh_no_userauth</tabstop>
@@ -6166,16 +5911,16 @@
   <tabstop>chb_gssapi_authen</tabstop>
   <tabstop>chb_gssapi_credential</tabstop>
   <tabstop>l_ssh_gsslist</tabstop>
-  <tabstop>pushButton_17</tabstop>
-  <tabstop>pushButton_18</tabstop>
+  <tabstop>pb_ssh_gss_up</tabstop>
+  <tabstop>pb_ssh_gss_down</tabstop>
   <tabstop>chb_nopty</tabstop>
-  <tabstop>pushButton_20</tabstop>
+  <tabstop>pb_ttymodes_remove</tabstop>
   <tabstop>l_ttymodes</tabstop>
-  <tabstop>comboBox_3</tabstop>
-  <tabstop>pushButton_21</tabstop>
+  <tabstop>cb_ttymodes</tabstop>
+  <tabstop>pb_ttymodes_add</tabstop>
   <tabstop>rb_terminalvalue_auto</tabstop>
   <tabstop>rb_terminalvalue_this</tabstop>
-  <tabstop>lineEdit_38</tabstop>
+  <tabstop>le_ttymode</tabstop>
   <tabstop>chb_x11_forward</tabstop>
   <tabstop>le_x11_display</tabstop>
   <tabstop>rb_x11remote_mit</tabstop>
@@ -6184,17 +5929,17 @@
   <tabstop>pushButton_22</tabstop>
   <tabstop>chb_lport_acceptall</tabstop>
   <tabstop>chb_rport_acceptall</tabstop>
-  <tabstop>pushButton_23</tabstop>
+  <tabstop>pb_portfwd_remove</tabstop>
   <tabstop>l_portfwd</tabstop>
-  <tabstop>lineEdit_41</tabstop>
-  <tabstop>pushButton_24</tabstop>
-  <tabstop>lineEdit_42</tabstop>
+  <tabstop>le_tunnel_source</tabstop>
+  <tabstop>pb_portfwd_add</tabstop>
+  <tabstop>le_tunnel_dest</tabstop>
   <tabstop>rb_sshport_local</tabstop>
-  <tabstop>radioButton_97</tabstop>
-  <tabstop>radioButton_98</tabstop>
+  <tabstop>rb_sshport_remote</tabstop>
+  <tabstop>rb_sshport_dynamic</tabstop>
   <tabstop>rb_sshport_auto</tabstop>
-  <tabstop>radioButton_100</tabstop>
-  <tabstop>radioButton_101</tabstop>
+  <tabstop>rb_sshport_ipv4</tabstop>
+  <tabstop>rb_sshport_ipv6</tabstop>
   <tabstop>cb_sshbug_ignore1</tabstop>
   <tabstop>cb_sshbug_plainpw1</tabstop>
   <tabstop>cb_sshbug_rsa1</tabstop>
