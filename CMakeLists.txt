@@ -14,11 +14,16 @@ cmake_minimum_required(VERSION 3.16)
 
 project(QuTTY VERSION 0.8.3 LANGUAGES C CXX)
 
+option(HAS_GSSAPI "Enable GSS API" TRUE)
+
 add_compile_definitions(
     IS_QUTTY=1
-    NO_GSSAPI=1
     QUTTY_RELEASE_VERSION="${PROJECT_VERSION}"
 )
+
+if(NOT HAS_GSSAPI)
+    add_compile_definitions(NO_GSSAPI=1)
+endif()
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -201,6 +206,11 @@ if (WIN32)
         puttysrc/windows/winstore.c
         puttysrc/windows/windefs.c
     )
+    if(HAS_GSSAPI)
+        list(APPEND PROJECT_SOURCES
+            puttysrc/windows/wingss.c
+        )
+    endif()
     set_property(SOURCE
         puttysrc/windows/winstore.c PROPERTY COMPILE_DEFINITIONS
         verify_host_key=verify_host_key_disabled
@@ -216,6 +226,11 @@ if (LINUX)
         puttysrc/unix/uxstore.c
         puttysrc/unix/unix.h
     )
+    if(HAS_GSSAPI)
+        list(APPEND PROJECT_SOURCES
+            puttysrc/unix/uxgss.c
+        )
+    endif()
 endif()
 
 include_directories(./ puttysrc/)
