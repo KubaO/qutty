@@ -23,8 +23,8 @@ extern "C" {
 #include "puttysrc/terminal.h"
 }
 
-GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow)
-    : QAbstractScrollArea(parent) {
+GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, Conf *cfg)
+    : QAbstractScrollArea(parent), cfgOwner(QtConfig::copy(cfg)), cfg(cfgOwner.get()) {
   this->mainWindow = mainWindow;
 
   setFrameShape(QFrame::NoFrame);
@@ -74,19 +74,19 @@ extern "C" Socket get_telnet_socket(void *handle);
 
 int GuiTerminalWindow::initTerminal() {
   char *realhost = NULL;
-  char *ip_addr = cfg.host;
+  char *ip_addr = conf_get_str(cfg, CONF_host);
   void *logctx;
 
-  set_title(this, cfg.host);
+  set_title(this, ip_addr);
 
   memset(&ucsdata, 0, sizeof(struct unicode_data));
-  init_ucs(&cfg, &ucsdata);
+  init_ucs(cfg, &ucsdata);
   setTermFont(cfg);
   cfgtopalette(cfg);
 
-  backend = backend_from_proto(cfg.protocol);
-  const char *error =
-      backend->init(this, &backhandle, &cfg, (char *)ip_addr, cfg.port, &realhost, 1, 0);
+  backend = backend_from_proto(conf_get_int(cfg, CONF_protocol));
+  int port = conf_get_int(cfg, CONF_port);
+  const char *error = backend->init(this, &backhandle, cfg, (char *)ip_addr, port, &realhost, 1, 0);
   if (realhost) sfree(realhost);
 
   if (error) {
@@ -95,7 +95,7 @@ int GuiTerminalWindow::initTerminal() {
               "Unable to open connection to\n"
               "%.800s\n"
               "%s",
-              cfg_dest(&cfg), error);
+              conf_dest(cfg), error);
     qt_message_box(this, APPNAME " Error", msg);
     backend = NULL;
     term = NULL;
@@ -103,14 +103,14 @@ int GuiTerminalWindow::initTerminal() {
     goto cu0;
   }
 
-  term = term_init(&cfg, &ucsdata, this);
-  logctx = log_init(NULL, &cfg);
+  term = term_init(cfg, &ucsdata, this);
+  logctx = log_init(NULL, cfg);
   term_provide_logctx(term, logctx);
 
   term_size(term, this->viewport()->height() / fontHeight, this->viewport()->width() / fontWidth,
-            cfg.savelines);
+            term->savelines);
 
-  switch (cfg.protocol) {
+  switch (conf_get_int(cfg, CONF_protocol)) {
     case PROT_TELNET:
       as = (Actual_Socket)get_telnet_socket(backhandle);
       break;
@@ -134,12 +134,51 @@ int GuiTerminalWindow::initTerminal() {
   /*
    * Set up a line discipline.
    */
-  ldisc = ldisc_create(&cfg, term, backend, backhandle, this);
+  ldisc = ldisc_create(cfg, term, backend, backhandle, this);
 
   return 0;
 
 cu0:
   return -1;
+}
+
+static bool confUnequalInt(Conf *a, Conf *b, config_primary_key key) {
+  return conf_get_int(a, key) != conf_get_int(b, key);
+}
+
+static bool confUnequalStr(Conf *a, Conf *b, config_primary_key key) {
+  return strcmp(conf_get_str(a, key), conf_get_str(b, key)) != 0;
+}
+
+static bool confUnequalFont(Conf *a, Conf *b, config_primary_key key) {
+  FontSpec &a_font = *conf_get_fontspec(a, CONF_font);
+  FontSpec &b_font = *conf_get_fontspec(b, CONF_font);
+  return strcmp(a_font.name, b_font.name) != 0 || a_font.isbold != b_font.isbold ||
+         a_font.height != b_font.height || a_font.charset != b_font.charset;
+}
+
+static bool confSizeChanged(Conf *a, Conf *b) {
+  return confUnequalInt(a, b, CONF_height) || confUnequalInt(a, b, CONF_width) ||
+         confUnequalInt(a, b, CONF_savelines) ||
+         conf_get_int(a, CONF_resize_action) == RESIZE_FONT ||
+         (conf_get_int(a, CONF_resize_action) == RESIZE_EITHER /*&& IsZoomed(hwnd)*/) ||
+         conf_get_int(a, CONF_resize_action) == RESIZE_DISABLED;
+}
+
+char name[64];
+int isbold;
+int height;
+int charset;
+
+static bool confFontChanged(Conf *a, Conf *b) {
+  int resize_action = conf_get_int(a, CONF_resize_action);
+  return confUnequalFont(a, b, CONF_font) || confUnequalStr(a, b, CONF_line_codepage) ||
+         confUnequalInt(a, b, CONF_font_quality) || confUnequalInt(a, b, CONF_vtmode) ||
+#if 0
+         confUnequalInt(a, b, CONF_bold_colour) ||
+#endif
+         resize_action == RESIZE_DISABLED || resize_action == RESIZE_EITHER ||
+         confUnequalInt(a, b, CONF_resize_action);
 }
 
 int GuiTerminalWindow::restartTerminal() {
@@ -166,13 +205,13 @@ int GuiTerminalWindow::restartTerminal() {
   return initTerminal();
 }
 
-int GuiTerminalWindow::reconfigureTerminal(const Config &new_cfg) {
-  Config prev_cfg = this->cfg;
-
-  this->cfg = new_cfg;
+int GuiTerminalWindow::reconfigureTerminal(Conf *new_cfg) {
+  QtConfig::Pointer prev_cfg = std::move(this->cfgOwner);
+  this->cfgOwner = QtConfig::copy(new_cfg);
+  this->cfg = cfgOwner.get();
 
   /* Pass new config data to the logging module */
-  log_reconfig(term->logctx, &cfg);
+  log_reconfig(term->logctx, cfg);
 
   /*
    * Flush the line discipline's edit buffer in the
@@ -183,34 +222,26 @@ int GuiTerminalWindow::reconfigureTerminal(const Config &new_cfg) {
   cfgtopalette(cfg);
 
   /* Pass new config data to the terminal */
-  term_reconfig(term, &cfg);
+  term_reconfig(term, cfg);
 
   /* Pass new config data to the back end */
-  if (backend) backend->reconfig(backhandle, &cfg);
+  if (backend) backend->reconfig(backhandle, cfg);
 
   /* Screen size changed ? */
-  if (cfg.height != prev_cfg.height || cfg.width != prev_cfg.width ||
-      cfg.savelines != prev_cfg.savelines || cfg.resize_action == RESIZE_FONT ||
-      (cfg.resize_action == RESIZE_EITHER /*&& IsZoomed(hwnd)*/) ||
-      cfg.resize_action == RESIZE_DISABLED)
-    term_size(term, cfg.height, cfg.width, cfg.savelines);
+  if (confSizeChanged(cfg, prev_cfg.get()))
+    term_size(term, conf_get_int(cfg, CONF_height), conf_get_int(cfg, CONF_width),
+              conf_get_int(cfg, CONF_savelines));
 
-  if (cfg.alwaysontop != prev_cfg.alwaysontop) {
+  if (confUnequalInt(cfg, prev_cfg.get(), CONF_alwaysontop)) {
+    // TODO
   }
 
-  if (strcmp(cfg.font.name, prev_cfg.font.name) != 0 ||
-      strcmp(cfg.line_codepage, prev_cfg.line_codepage) != 0 ||
-      cfg.font.isbold != prev_cfg.font.isbold || cfg.font.height != prev_cfg.font.height ||
-      cfg.font.charset != prev_cfg.font.charset || cfg.font_quality != prev_cfg.font_quality ||
-      cfg.vtmode != prev_cfg.vtmode || cfg.bold_colour != prev_cfg.bold_colour ||
-      cfg.resize_action == RESIZE_DISABLED || cfg.resize_action == RESIZE_EITHER ||
-      (cfg.resize_action != prev_cfg.resize_action)) {
-    init_ucs(&cfg, &ucsdata);
+  if (confFontChanged(cfg, prev_cfg.get())) {
+    init_ucs(cfg, &ucsdata);
     setTermFont(cfg);
   }
 
   repaint();
-
   return 0;
 }
 
@@ -219,31 +250,33 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   TmuxWindowPane *tmuxPane = NULL;
 
   memset(&ucsdata, 0, sizeof(struct unicode_data));
-  init_ucs(&cfg, &ucsdata);
+  init_ucs(cfg, &ucsdata);
   setTermFont(cfg);
   cfgtopalette(cfg);
 
-  term = term_init(&cfg, &ucsdata, this);
-  void *logctx = log_init(NULL, &cfg);
+  term = term_init(cfg, &ucsdata, this);
+  void *logctx = log_init(NULL, cfg);
   term_provide_logctx(term, logctx);
+  int cfg_width = conf_get_int(cfg, CONF_width);
+  int cfg_height = conf_get_int(cfg, CONF_height);
   // resize according to config if window is smaller
   if (!(mainWindow->windowState() & Qt::WindowMaximized) &&
-      (mainWindow->size().width() < cfg.width * fontWidth ||
-       mainWindow->size().height() < cfg.height * fontHeight)) {
-    mainWindow->resize(cfg.width * fontWidth, cfg.height * fontHeight);
+      (mainWindow->size().width() < cfg_width * fontWidth ||
+       mainWindow->size().height() < cfg_height * fontHeight)) {
+    mainWindow->resize(cfg_width * fontWidth, cfg_height * fontHeight);
   }
-  term_size(term, height, width, cfg.savelines);
+  term_size(term, height, width, conf_get_int(cfg, CONF_savelines));
 
   _tmuxMode = TMUX_MODE_CLIENT;
   _tmuxGateway = gateway;
-  cfg.protocol = PROT_TMUX_CLIENT;
-  cfg.port = -1;
-  cfg.width = width;
-  cfg.height = height;
+  conf_set_int(cfg, CONF_protocol, PROT_TMUX_CLIENT);
+  conf_set_int(cfg, CONF_port, -1);
+  conf_set_int(cfg, CONF_width, width);
+  conf_set_int(cfg, CONF_height, height);
 
-  backend = backend_from_proto(cfg.protocol);
+  backend = backend_from_proto(conf_get_int(cfg, CONF_protocol));
   // HACK - pass paneid in port
-  backend->init(this, &backhandle, &cfg, NULL, id, NULL, 0, 0);
+  backend->init(this, &backhandle, cfg, NULL, id, NULL, 0, 0);
   tmuxPane = new TmuxWindowPane(gateway, this);
   tmuxPane->id = id;
   tmuxPane->width = width;
@@ -260,7 +293,7 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   /*
    * Set up a line discipline.
    */
-  ldisc = ldisc_create(&cfg, term, backend, backhandle, this);
+  ldisc = ldisc_create(cfg, term, backend, backhandle, this);
   return tmuxPane;
 }
 
@@ -390,7 +423,7 @@ void GuiTerminalWindow::paintEvent(QPaintEvent *e) {
 
 void GuiTerminalWindow::paintText(QPainter &painter, int row, int col, const QString &str,
                                   unsigned long attr) {
-  if ((attr & TATTR_ACTCURS) && (cfg.cursor_type == 0 || term->big_cursor)) {
+  if ((attr & TATTR_ACTCURS) && (conf_get_int(cfg, CONF_cursor_type) == 0 || term->big_cursor)) {
     attr &= ~(ATTR_REVERSE | ATTR_BLINK | ATTR_COLOURS);
     if (bold_mode == BOLD_COLOURS) attr &= ~ATTR_BOLD;
 
@@ -427,7 +460,7 @@ void GuiTerminalWindow::paintCursor(QPainter &painter, int row, int col, const Q
                                     unsigned long attr) {
   int fnt_width;
   int char_width;
-  int ctype = cfg.cursor_type;
+  int ctype = conf_get_int(cfg, CONF_cursor_type);
 
   if ((attr & TATTR_ACTCURS) && (ctype == 0 || term->big_cursor)) {
     return paintText(painter, row, col, str, attr);
@@ -503,14 +536,16 @@ void GuiTerminalWindow::drawText(int row, int col, wchar_t * /*ch*/, int len, un
   termrgn |= QRect(col * fontWidth, row * fontHeight, fontWidth * len, fontHeight);
 }
 
-void GuiTerminalWindow::setTermFont(const Config &cfg) {
-  _font.setFamily(cfg.font.name);
-  _font.setPointSize(cfg.font.height);
+void GuiTerminalWindow::setTermFont(Conf *cfg) {
+  FontSpec &font = *conf_get_fontspec(cfg, CONF_font);
+  int font_quality = conf_get_int(cfg, CONF_font_quality);
+  _font.setFamily(font.name);
+  _font.setPointSize(font.height);
   _font.setStyleHint(QFont::TypeWriter);
 
-  if (cfg.font_quality == FQ_NONANTIALIASED)
+  if (font_quality == FQ_NONANTIALIASED)
     _font.setStyleStrategy(QFont::NoAntialias);
-  else if (cfg.font_quality == FQ_ANTIALIASED)
+  else if (font_quality == FQ_ANTIALIASED)
     _font.setStyleStrategy(QFont::PreferAntialias);
   setFont(_font);
 
@@ -520,13 +555,16 @@ void GuiTerminalWindow::setTermFont(const Config &cfg) {
   fontAscent = fontMetrics.ascent();
 }
 
-void GuiTerminalWindow::cfgtopalette(const Config &cfg) {
+void GuiTerminalWindow::cfgtopalette(Conf *cfg) {
   int i;
-  static const int ww[] = {256, 257, 258, 259, 260, 261, 0,  8, 1,  9, 2,
-                           10,  3,   11,  4,   12,  5,   13, 6, 14, 7, 15};
+  static const int ww[NCFGCOLOURS] = {256, 257, 258, 259, 260, 261, 0,  8, 1,  9, 2,
+                                      10,  3,   11,  4,   12,  5,   13, 6, 14, 7, 15};
 
-  for (i = 0; i < 22; i++) {
-    colours[ww[i]] = QColor::fromRgb(cfg.colours[i][0], cfg.colours[i][1], cfg.colours[i][2]);
+  for (i = 0; i < NCFGCOLOURS; i++) {
+    int r = conf_get_int_int(cfg, CONF_colours, i * 3 + 0);
+    int g = conf_get_int_int(cfg, CONF_colours, i * 3 + 1);
+    int b = conf_get_int_int(cfg, CONF_colours, i * 3 + 2);
+    colours[ww[i]] = QColor::fromRgb(r, g, b);
   }
   for (i = 0; i < NEXTCOLOURS; i++) {
     if (i < 216) {
@@ -543,7 +581,7 @@ void GuiTerminalWindow::cfgtopalette(const Config &cfg) {
   }
 
   /* Override with system colours if appropriate * /
-  if (cfg.system_colour)
+  if (conf_get_int(cfg, CONF_system_colour))
       systopalette();*/
 }
 
@@ -551,10 +589,11 @@ void GuiTerminalWindow::cfgtopalette(const Config &cfg) {
  * Translate a raw mouse button designation (LEFT, MIDDLE, RIGHT)
  * into a cooked one (SELECT, EXTEND, PASTE).
  */
-static Mouse_Button translate_button(Config *cfg, Mouse_Button button) {
+static Mouse_Button translate_button(Conf *cfg, Mouse_Button button) {
   if (button == MBT_LEFT) return MBT_SELECT;
-  if (button == MBT_MIDDLE) return cfg->mouse_is_xterm == 1 ? MBT_PASTE : MBT_EXTEND;
-  if (button == MBT_RIGHT) return cfg->mouse_is_xterm == 1 ? MBT_EXTEND : MBT_PASTE;
+  int mouse_is_xterm = conf_get_int(cfg, CONF_mouse_is_xterm);
+  if (button == MBT_MIDDLE) return mouse_is_xterm == 1 ? MBT_PASTE : MBT_EXTEND;
+  if (button == MBT_RIGHT) return mouse_is_xterm == 1 ? MBT_EXTEND : MBT_PASTE;
   assert(0);
   return MBT_NOTHING; /* shouldn't happen */
 }
@@ -564,8 +603,9 @@ void GuiTerminalWindow::mouseDoubleClickEvent(QMouseEvent *e) {
   noise_ultralight(pos.x() << 16 | pos.y());
   if (!term) return;
 
+  int mouse_is_xterm = conf_get_int(cfg, CONF_mouse_is_xterm);
   if (e->button() == Qt::RightButton &&
-      ((e->modifiers() & Qt::ControlModifier) || (cfg.mouse_is_xterm == 2))) {
+      ((e->modifiers() & Qt::ControlModifier) || (mouse_is_xterm == 2))) {
     // TODO right click menu
   }
   Mouse_Button button, bcooked;
@@ -576,7 +616,7 @@ void GuiTerminalWindow::mouseDoubleClickEvent(QMouseEvent *e) {
   // assert(button!=MBT_NOTHING);
   if (button == MBT_NOTHING) return;
   int x = pos.x() / fontWidth, y = pos.y() / fontHeight, mod = e->modifiers();
-  bcooked = translate_button(&cfg, button);
+  bcooked = translate_button(cfg, button);
 
   // detect single/double/triple click
   mouseClickTimer.start();
@@ -598,8 +638,9 @@ void GuiTerminalWindow::mouseMoveEvent(QMouseEvent *e) {
   }
   if (!term) return;
 
+  int mouse_is_xterm = conf_get_int(cfg, CONF_mouse_is_xterm);
   if (e->buttons() == Qt::LeftButton &&
-      ((e->modifiers() & Qt::ControlModifier) || (cfg.mouse_is_xterm == 2)) &&
+      ((e->modifiers() & Qt::ControlModifier) || (mouse_is_xterm == 2)) &&
       (e->pos() - dragStartPos).manhattanLength() >= QApplication::startDragDistance()) {
     // start of drag
     this->dragStartEvent(e);
@@ -614,7 +655,7 @@ void GuiTerminalWindow::mouseMoveEvent(QMouseEvent *e) {
   // assert(button!=MBT_NOTHING);
   if (button == MBT_NOTHING) return;
   int x = pos.x() / fontWidth, y = pos.y() / fontHeight, mod = e->modifiers();
-  bcooked = translate_button(&cfg, button);
+  bcooked = translate_button(cfg, button);
   term_mouse(term, button, bcooked, MA_DRAG, x, y, mod & Qt::ShiftModifier,
              mod & Qt::ControlModifier, mod & Qt::AltModifier);
   e->accept();
@@ -628,14 +669,15 @@ void GuiTerminalWindow::mousePressEvent(QMouseEvent *e) {
   noise_ultralight(pos.x() << 16 | pos.y());
   if (!term) return;
 
+  int mouse_is_xterm = conf_get_int(cfg, CONF_mouse_is_xterm);
   if (e->button() == Qt::LeftButton &&
-      ((e->modifiers() & Qt::ControlModifier) || (cfg.mouse_is_xterm == 2))) {
+      ((e->modifiers() & Qt::ControlModifier) || (mouse_is_xterm == 2))) {
     // possible start of drag
     dragStartPos = e->pos();
   }
 
   if (e->button() == Qt::RightButton &&
-      ((e->modifiers() & Qt::ControlModifier) || (cfg.mouse_is_xterm == 2))) {
+      ((e->modifiers() & Qt::ControlModifier) || (mouse_is_xterm == 2))) {
     // right click menu
     this->showContextMenu(e);
     e->accept();
@@ -649,7 +691,7 @@ void GuiTerminalWindow::mousePressEvent(QMouseEvent *e) {
   // assert(button!=MBT_NOTHING);
   if (button == MBT_NOTHING) return;
   int x = pos.x() / fontWidth, y = pos.y() / fontHeight, mod = e->modifiers();
-  bcooked = translate_button(&cfg, button);
+  bcooked = translate_button(cfg, button);
 
   // detect single/double/triple click
   if (button == MBT_LEFT && !mouseClickTimer.hasExpired(CFG_MOUSE_TRIPLE_CLICK_INTERVAL)) {
@@ -679,7 +721,7 @@ void GuiTerminalWindow::mouseReleaseEvent(QMouseEvent *e) {
   // assert(button!=MBT_NOTHING);
   if (button == MBT_NOTHING) return;
   int x = pos.x() / fontWidth, y = pos.y() / fontHeight, mod = e->modifiers();
-  bcooked = translate_button(&cfg, button);
+  bcooked = translate_button(cfg, button);
   term_mouse(term, button, bcooked, MA_RELEASE, x, y, mod & Qt::ShiftModifier,
              mod & Qt::ControlModifier, mod & Qt::AltModifier);
   e->accept();
@@ -750,7 +792,7 @@ void GuiTerminalWindow::resizeEvent(QResizeEvent *) {
   }
   if (term)
     term_size(term, viewport()->size().height() / fontHeight,
-              viewport()->size().width() / fontWidth, cfg.savelines);
+              viewport()->size().width() / fontWidth, conf_get_int(cfg, CONF_savelines));
 }
 
 bool GuiTerminalWindow::event(QEvent *event) {
@@ -864,7 +906,7 @@ void GuiTerminalWindow::closeTerminal() {
 
 void GuiTerminalWindow::reqCloseTerminal(bool userConfirm) {
   userClosingTab = true;
-  if (!userConfirm && cfg.warn_on_close && !isSockDisconnected &&
+  if (!userConfirm && conf_get_int(cfg, CONF_warn_on_close) && !isSockDisconnected &&
       QMessageBox::No == QMessageBox::question(this, "Exit Confirmation?",
                                                "Are you sure you want to close this session?",
                                                QMessageBox::Yes | QMessageBox::No))

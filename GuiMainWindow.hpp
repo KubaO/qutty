@@ -78,7 +78,7 @@ class GuiMainWindow : public QMainWindow {
  public:
   explicit GuiMainWindow(QWidget *parent = 0);
   ~GuiMainWindow() override;
-  void createNewTab(const Config &cfg, GuiBase::SplitType splittype = GuiBase::TYPE_LEAF);
+  void createNewTab(Conf *cfg, GuiBase::SplitType splittype = GuiBase::TYPE_LEAF);
   void closeEvent(QCloseEvent *event) override;
   GuiTerminalWindow *getCurrentTerminal();
   GuiTerminalWindow *getCurrentTerminalInTab(int tabIndex);
@@ -113,14 +113,14 @@ class GuiMainWindow : public QMainWindow {
  public slots:
   void on_openNewWindow();
   void on_openNewCompactSession(GuiBase::SplitType splittype);
-  void on_openNewSession(const Config &cfg, GuiBase::SplitType splittype);
+  void on_openNewSession(Conf *cfg, GuiBase::SplitType splittype);
   void on_openNewTab() { on_openNewCompactSession(GuiBase::TYPE_LEAF); }
   void on_openNewSplitHorizontal() { on_openNewCompactSession(GuiBase::TYPE_HORIZONTAL); }
   void on_openNewSplitVertical() { on_openNewCompactSession(GuiBase::TYPE_VERTICAL); }
-  void on_createNewSession(const Config &cfg, GuiBase::SplitType splittype);
+  void on_createNewSession(Conf *cfg, GuiBase::SplitType splittype);
   void on_settingsWindowClose();
   void on_changeSettingsTab(GuiTerminalWindow *termWnd);
-  void on_changeSettingsTabComplete(const Config &cfg, GuiTerminalWindow *termWnd);
+  void on_changeSettingsTabComplete(Conf *cfg, GuiTerminalWindow *termWnd);
   void closeTerminal(GuiTerminalWindow *termWnd);
   void hideTerminal(GuiTerminalWindow *termWnd);
   void tabCloseRequested(int index);

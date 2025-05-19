@@ -44,6 +44,7 @@ struct FontSpec {
     int height;
     int charset;
 };
+struct FontSpec *fontspec_new(const char *name, int bold, int height, int charset);
 
 typedef uint32_t uint32;
 
@@ -51,7 +52,7 @@ typedef void* Context;
 
 typedef struct unicode_data unicode_data_t;
 
-void init_ucs(Config *, unicode_data_t *);
+void init_ucs(Conf *, unicode_data_t *);
 
 #ifdef __linux
 #include <time.h>
@@ -71,7 +72,7 @@ void init_ucs(Config *, unicode_data_t *);
 #define SEL_NL { 13, 10 }
 #endif
 
-#define f_open(filename, mode, isprivate) ( fopen((filename).path, (mode)) )
+#define f_open(filename, mode, isprivate) (fopen((filename)->path, (mode)))
 
 /*
  * sk_getxdmdata() does not exist under Windows (not that I
@@ -105,8 +106,6 @@ void qutty_connection_fatal(void *frontend, char *msg);
 
 static void clear_jumplist(void) {}
 
-static HMODULE load_system32_dll(const char *libname) { return ((HMODULE)(LONG_PTR)-1); }
-
 /*
  * Dynamically linked functions. These come in two flavours:
  *
@@ -133,6 +132,8 @@ static HMODULE load_system32_dll(const char *libname) { return ((HMODULE)(LONG_P
   (p_##name = module ? (t_##name)GetProcAddress(module, STR(name)) : NULL)
 #define GET_WINDOWS_FUNCTION(module, name) \
   (p_##name = module ? (t_##name)GetProcAddress(module, #name) : NULL)
+
+HMODULE load_system32_dll(const char *libname);
 
 #ifdef __cplusplus
 }

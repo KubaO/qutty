@@ -17,6 +17,7 @@
 #include "GuiBase.hpp"
 #include "GuiDrag.hpp"
 #include "QtCommon.hpp"
+#include "QtConfig.hpp"
 #include "tmux/TmuxGateway.hpp"
 #include "tmux/TmuxWindowPane.hpp"
 #include "tmux/tmux.h"
@@ -24,7 +25,6 @@ extern "C" {
 #include "putty.h"
 }
 
-#define NCFGCOLOURS 22
 #define NEXTCOLOURS 240
 #define NALLCOLOURS (NCFGCOLOURS + NEXTCOLOURS)
 
@@ -68,8 +68,10 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   QString custom_title;   // given by user
   QString temp_title;
 
+  QtConfig::Pointer cfgOwner;
+  Conf *cfg;
+
  public:
-  Config cfg = {};
   Terminal *term = nullptr;
   Backend *backend = nullptr;
   void *backhandle = nullptr;
@@ -81,7 +83,9 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   // order-of-usage
   uint32_t mru_count = 0;
 
-  explicit GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow);
+  Conf *getCfg() const { return cfgOwner.get(); }
+
+  GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, Conf *cfg);
   ~GuiTerminalWindow() override;
 
   GuiMainWindow *getMainWindow() { return mainWindow; }
@@ -93,7 +97,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
    */
   int initTerminal();
   int restartTerminal();
-  int reconfigureTerminal(const Config &new_cfg);
+  int reconfigureTerminal(Conf *new_cfg);
 
   void createSplitLayout(GuiBase::SplitType split, GuiTerminalWindow *newTerm);
 
@@ -104,8 +108,8 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void drawTerm();
   void drawText(int row, int col, wchar_t *ch, int len, unsigned long attr, int lattr);
 
-  void setTermFont(const Config &cfg);
-  void cfgtopalette(const Config &cfg);
+  void setTermFont(Conf *cfg);
+  void cfgtopalette(Conf *cfg);
   void requestPaste();
   void getClip(wchar_t **p, int *len);
   void writeClip(wchar_t *data, int *attr, int len, int must_deselect);

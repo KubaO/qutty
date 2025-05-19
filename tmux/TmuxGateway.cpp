@@ -428,9 +428,9 @@ int TmuxGateway::createNewWindowPane(int id, const char *name, const TmuxLayout 
   switch (layout.layoutType) {
     case TmuxLayout::TMUX_LAYOUT_TYPE_LEAF:
       if (_mapPanes.find(layout.paneid) == _mapPanes.end()) {
-        GuiTerminalWindow *newtermwnd = new GuiTerminalWindow(
-            termGatewayWnd->getMainWindow()->tabArea, termGatewayWnd->getMainWindow());
-        newtermwnd->cfg = termGatewayWnd->cfg;
+        GuiTerminalWindow *newtermwnd =
+            new GuiTerminalWindow(termGatewayWnd->getMainWindow()->tabArea,
+                                  termGatewayWnd->getMainWindow(), termGatewayWnd->getCfg());
         TmuxWindowPane *tmuxPane =
             newtermwnd->initTmuxClientTerminal(this, layout.paneid, layout.width, layout.height);
         termGatewayWnd->getMainWindow()->setupLayout(newtermwnd, splitter);
@@ -438,9 +438,9 @@ int TmuxGateway::createNewWindowPane(int id, const char *name, const TmuxLayout 
         newtermwnd->setSessionTitle(name);
         wchar_t cmd_state[2000], cmd_hist[256], cmd_hist_alt[256];
         wsprintf(cmd_hist, L"capture-pane -peqJ -t %%%d -S -%d\n", layout.paneid,
-                 termGatewayWnd->cfg.savelines);
+                 conf_get_int(termGatewayWnd->getCfg(), CONF_savelines));
         wsprintf(cmd_hist_alt, L"capture-pane -peqJ -a -t %%%d -S -%d\n", layout.paneid,
-                 termGatewayWnd->cfg.savelines);
+                 conf_get_int(termGatewayWnd->getCfg(), CONF_savelines));
         wsprintf(
             cmd_state,
             L"list-panes -t %%%d -F \""
@@ -464,7 +464,7 @@ int TmuxGateway::createNewWindowPane(int id, const char *name, const TmuxLayout 
         break;
       } else {
         term_size(_mapPanes[layout.paneid]->termWnd()->term, layout.height, layout.width,
-                  _mapPanes[layout.paneid]->termWnd()->cfg.savelines);
+                  conf_get_int(_mapPanes[layout.paneid]->termWnd()->getCfg(), CONF_savelines));
       }
       break;
     case TmuxLayout::TMUX_LAYOUT_TYPE_HORIZONTAL:

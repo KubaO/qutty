@@ -78,9 +78,16 @@ static Plug sk_tcp_plug(Socket sock, Plug p) {
 
 Socket sk_new(char *addr, int port, int privport, int oobinline, int nodelay, int keepalive,
               Plug plug) {
-  static const struct socket_function_table fn_table = {
-      sk_tcp_plug, sk_tcp_close, sk_tcp_write, sk_tcp_write_oob, sk_tcp_flush,
-      sk_tcp_set_private_ptr, sk_tcp_get_private_ptr, sk_tcp_set_frozen, sk_tcp_socket_error};
+  static const struct socket_function_table fn_table = {sk_tcp_plug,
+                                                        sk_tcp_close,
+                                                        sk_tcp_write,
+                                                        sk_tcp_write_oob,
+                                                        nullptr /* TODO write_eof */,
+                                                        sk_tcp_flush,
+                                                        sk_tcp_set_private_ptr,
+                                                        sk_tcp_get_private_ptr,
+                                                        sk_tcp_set_frozen,
+                                                        sk_tcp_socket_error};
 
   Actual_Socket ret;
 
@@ -214,7 +221,7 @@ const char *sk_addr_error(SockAddr addr) {
   return addr->error;
 }
 
-int sk_hostname_is_local(char *name) {
+int sk_hostname_is_local(const char *name) {
   return !strcmp(name, "localhost") || !strcmp(name, "::1") || !strncmp(name, "127.", 4);
 }
 
@@ -237,11 +244,22 @@ int sk_address_is_local(SockAddr addr) {
   return 0;
 }
 
+int sk_address_is_special_local(SockAddr addr) {
+  return 0; /* no Unix-domain socket analogue here */
+}
+
 Socket sk_new(SockAddr addr, int port, int privport, int oobinline, int nodelay, int keepalive,
               Plug plug) {
-  static const struct socket_function_table fn_table = {
-      sk_tcp_plug, sk_tcp_close, sk_tcp_write, sk_tcp_write_oob, sk_tcp_flush,
-      sk_tcp_set_private_ptr, sk_tcp_get_private_ptr, sk_tcp_set_frozen, sk_tcp_socket_error};
+  static const struct socket_function_table fn_table = {sk_tcp_plug,
+                                                        sk_tcp_close,
+                                                        sk_tcp_write,
+                                                        sk_tcp_write_oob,
+                                                        nullptr /* TODO write_eof */,
+                                                        sk_tcp_flush,
+                                                        sk_tcp_set_private_ptr,
+                                                        sk_tcp_get_private_ptr,
+                                                        sk_tcp_set_frozen,
+                                                        sk_tcp_socket_error};
 
   Actual_Socket ret;
 
@@ -321,7 +339,7 @@ SockAddr platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*/
 
 Socket platform_new_connection(SockAddr /*addr*/, char * /*hostname*/, int /*port*/,
                                int /*privport*/, int /*oobinline*/, int /*nodelay*/,
-                               int /*keepalive*/, Plug /*plug*/, const Config * /*cfg*/) {
+                               int /*keepalive*/, Plug /*plug*/, Conf * /*cfg*/) {
   // TODO not yet implemented
   return NULL;
 }

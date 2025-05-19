@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-# Using putty 0.62 source code in puttysrc
+# Using putty 0.63 source code in puttysrc
 #
 # settings.c:
 # In QuTTY this file is only used for loading saved sessions in
@@ -14,11 +14,16 @@ cmake_minimum_required(VERSION 3.16)
 
 project(QuTTY VERSION 0.8.3 LANGUAGES C CXX)
 
+option(HAS_GSSAPI "Enable GSS API" TRUE)
+
 add_compile_definitions(
     IS_QUTTY=1
-    NO_GSSAPI=1
     QUTTY_RELEASE_VERSION="${PROJECT_VERSION}"
 )
+
+if(NOT HAS_GSSAPI)
+    add_compile_definitions(NO_GSSAPI=1)
+endif()
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -58,6 +63,8 @@ set(PROJECT_SOURCES
     GuiTextFilterWindow.cpp
     QtSessionTreeModel.cpp
     QtCompleterWithAdvancedCompletion.cpp
+
+    puttysrc/conf.c
     puttysrc/pgssapi.c
     puttysrc/int64.c
     puttysrc/ssh.c
@@ -114,7 +121,6 @@ set(PROJECT_SOURCES
     QtCommon.hpp
     QtLogDbg.hpp
     QtConfig.hpp
-    QtConfigTag.h
     QtTimer.hpp
     GuiTabWidget.hpp
     GuiMenu.hpp
@@ -129,6 +135,7 @@ set(PROJECT_SOURCES
     QtSessionTreeItem.hpp
     QtComboBoxWithTreeView.hpp
     QtCompleterWithAdvancedCompletion.hpp
+
     puttysrc/ssh.h
     puttysrc/putty.h
     puttysrc/QtStuff.h
@@ -199,6 +206,11 @@ if (WIN32)
         puttysrc/windows/winstore.c
         puttysrc/windows/windefs.c
     )
+    if(HAS_GSSAPI)
+        list(APPEND PROJECT_SOURCES
+            puttysrc/windows/wingss.c
+        )
+    endif()
     set_property(SOURCE
         puttysrc/windows/winstore.c PROPERTY COMPILE_DEFINITIONS
         verify_host_key=verify_host_key_disabled
@@ -207,11 +219,6 @@ if (WIN32)
     link_libraries(user32 advapi32)
 endif()
 
-set_property(SOURCE
-    puttysrc/settings.c PROPERTY COMPILE_DEFINITIONS
-    get_remote_username=get_remote_username_disabled
-)
-
 if (LINUX)
     list(APPEND PROJECT_SOURCES
         puttysrc/unix/gtkwin.c
@@ -219,12 +226,18 @@ if (LINUX)
         puttysrc/unix/uxstore.c
         puttysrc/unix/unix.h
     )
+    if(HAS_GSSAPI)
+        list(APPEND PROJECT_SOURCES
+            puttysrc/unix/uxgss.c
+        )
+    endif()
 endif()
 
 include_directories(./ puttysrc/)
 
 if (MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+    add_compile_options(/Zc:preprocessor)
     add_link_options($<$<CONFIG:Release>:/MANIFEST:EMBED>)
 
     # enable google-breakpad support for release mode in MSVC

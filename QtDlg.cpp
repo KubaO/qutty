@@ -44,10 +44,10 @@ int askalg(void *frontend, const char *algtype, const char *algname,
  * Ask whether to wipe a session log file before writing to it.
  * Returns 2 for wipe, 1 for append, 0 for cancel (don't log).
  */
-int askappend(void * /*frontend*/, Filename filename, void (*/*callback*/)(void *ctx, int result),
+int askappend(void * /*frontend*/, Filename *filename, void (* /*callback*/)(void *ctx, int result),
               void * /*ctx*/) {
   // assert(frontend);
-  QString msg = QString("The session log file \"") + QString(filename.path) +
+  QString msg = QString("The session log file \"") + QString(filename->path) +
                 QString(
                     "\" already exists.\n"
                     "You can overwrite it with a new session log,\n"
@@ -198,6 +198,14 @@ void qt_message_box_no_frontend(const char *title, const char *fmt, ...) {
 void qt_vmessage_box_no_frontend(const char *title, const char *fmt, va_list args) {
   QString msg;
   QMessageBox::critical(NULL, QString(title), msg.vasprintf(fmt, args), QMessageBox::Ok);
+}
+
+void nonfatal(char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  QString msg = QString::vasprintf(fmt, args);
+  QMessageBox::critical(nullptr, QStringLiteral("%1 Error").arg(appname), msg, QMessageBox::Ok);
+  va_end(args);
 }
 
 void qt_message_box(void *frontend, const char *title, const char *fmt, ...) {
