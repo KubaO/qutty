@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-# Using putty 0.63 source code in puttysrc
+# Using putty 0.64 source code in puttysrc
 #
 # settings.c:
 # In QuTTY this file is only used for loading saved sessions in
@@ -64,6 +64,7 @@ set(PROJECT_SOURCES
     QtSessionTreeModel.cpp
     QtCompleterWithAdvancedCompletion.cpp
 
+    puttysrc/callback.c
     puttysrc/conf.c
     puttysrc/pgssapi.c
     puttysrc/int64.c
@@ -82,6 +83,7 @@ set(PROJECT_SOURCES
     puttysrc/sshsh256.c
     puttysrc/sshsh512.c
     puttysrc/sshsha.c
+    puttysrc/sshshare.c
     puttysrc/x11fwd.c
     puttysrc/tree234.c
     puttysrc/telnet.c

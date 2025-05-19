@@ -6,6 +6,7 @@
 
 // #define PUTTY_DO_GLOBALS /* actually _define_ globals */
 #include "QtCommon.hpp"
+#define SECURITY_WIN32
 
 #include <QKeyEvent>
 #include <cstring>
