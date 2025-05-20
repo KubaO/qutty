@@ -91,4 +91,7 @@ typedef struct telnet_tag {
 
 void qstring_to_char(char *dst, const QString &src, int dstlen);
 
+class QTextCodec;
+QTextCodec *getTextCodec(int line_codepage);
+
 #endif  // QTCOMMON_H

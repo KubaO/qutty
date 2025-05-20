@@ -28,11 +28,7 @@ void lpage_send(void *handle,
     widesize = len * 2;
     widebuffer = snewn(widesize, wchar_t);
 
-    wclen = mb_to_wc(codepage, 0, buf, len, widebuffer, widesize
-#ifdef IS_QUTTY
-                     , ldisc->term->ucsdata
-#endif
-                     );
+    wclen = mb_to_wc(codepage, 0, buf, len, widebuffer, widesize);
     luni_send(ldisc, widebuffer, wclen, interactive);
 
     sfree(widebuffer);
