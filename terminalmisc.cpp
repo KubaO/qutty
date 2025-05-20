@@ -124,17 +124,19 @@ int is_dbcs_leadbyte(int /*codepage*/, char /*byte*/) {
   return 0;
 }
 
-int mb_to_wc(int /*codepage*/, int /*flags*/, const char *mbstr, int mblen, wchar_t *wcstr,
-             int /*wclen*/, struct unicode_data *ucsdata) {
-  if (!ucsdata->encoder) return 0;
-  QTextCodec *codec = (QTextCodec *)ucsdata->encoder;
+int mb_to_wc(int codepage, int /*flags*/, const char *mbstr, int mblen, wchar_t *wcstr,
+             int /*wclen*/) {
+  QTextCodec *codec = getTextCodec(codepage);
+  if (!codec) return 0;
   return codec->toUnicode(mbstr, mblen).toWCharArray(wcstr);
 }
 
-int wc_to_mb(int /*codepage*/, int /*flags*/, const wchar_t *wcstr, int wclen, char *mbstr,
-             int mblen, char * /*defchr*/, int * /*defused*/, struct unicode_data *ucsdata) {
-  if (!ucsdata->encoder) return 0;
-  QTextCodec *codec = (QTextCodec *)ucsdata->encoder;
+int wc_to_mb(int codepage, int /*flags*/, const wchar_t *wcstr, int wclen, char *mbstr, int mblen,
+             char * /*defchr*/, int * /*defused*/, struct unicode_data *ucsdata) {
+  QTextCodec *codec = nullptr;
+  if (ucsdata) getTextCodec(ucsdata->line_codepage);
+  if (!codec) codec = getTextCodec(codepage);
+  if (!codec) return 0;
   QByteArray mbarr = codec->fromUnicode(QString::fromWCharArray(wcstr, wclen));
   qstrncpy(mbstr, mbarr.constData(), mblen);
   return mbarr.length();

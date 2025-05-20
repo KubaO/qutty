@@ -14,21 +14,68 @@ extern "C" {
 
 #define CS_QTEXTCODEC 11111111
 
-void *get_text_codec(const char *line_codepage) {
-  QTextCodec *codec = NULL;
-  if (line_codepage && *line_codepage) {
-    qDebug() << __FUNCTION__ << " using line_codepage " << line_codepage;
-    codec = QTextCodec::codecForName(line_codepage);
+struct QtCodec {
+  int intCodepage; /* first one is CS_QTEXTCODEC, next is CS_QTEXTCODEC+1, etc. */
+  std::string strCodepage;
+  QTextCodec *codec;
+
+  QtCodec(int intCodepage, std::string_view strCodepage, QTextCodec *codec)
+      : intCodepage(intCodepage), strCodepage(strCodepage), codec(codec) {}
+};
+
+std::vector<QtCodec> qtCodecs;
+
+static QTextCodec *getTextCodec(const std::string &lineCodepage, int *codepageOut) {
+  if (codepageOut) *codepageOut = -1;
+
+  for (auto const &qtCodec : qtCodecs) {
+    if (qtCodec.strCodepage == lineCodepage) {
+      if (codepageOut) *codepageOut = qtCodec.intCodepage;
+      return qtCodec.codec;
+    }
+  }
+
+  QTextCodec *codec = nullptr;
+  if (!lineCodepage.empty()) {
+    qDebug() << __FUNCTION__ << " using line_codepage " << lineCodepage;
+    codec = QTextCodec::codecForName(lineCodepage.c_str());
     if (!codec) {
-      char codepage[100];
-      strncpy(codepage, line_codepage, sizeof(codepage));
-      if (strtok(codepage, ":(")) codec = QTextCodec::codecForName(codepage);
+      std::string codepage = lineCodepage;
+      if (strtok(codepage.data(), ":(")) codec = QTextCodec::codecForName(codepage.c_str());
     }
   }
   if (!codec) codec = QTextCodec::codecForLocale();
   if (!codec) codec = QTextCodec::codecForUtfText(APPNAME);
   qDebug() << __FUNCTION__ << " using codec " << (codec ? codec->name().constData() : "NULL");
+
+  int intLineCodepage = CS_QTEXTCODEC + qtCodecs.size();
+  qtCodecs.emplace_back(intLineCodepage, lineCodepage, codec);
+  if (lineCodepage == "UTF-8") {
+    intLineCodepage = CP_UTF8;
+    qtCodecs.emplace_back(intLineCodepage, lineCodepage, codec);
+  }
+  if (codepageOut) *codepageOut = intLineCodepage;
+
   return codec;
+}
+
+QTextCodec *getTextCodec(int codepage) {
+#ifdef _WIN32
+  // Translate Windows-specific default code pages
+  switch (codepage) {
+    case CP_ACP:
+      codepage = GetACP();
+      break;
+    case CP_OEMCP:
+      codepage = GetOEMCP();
+      break;
+    default:
+      break;
+  }
+#endif
+  for (auto const &qtCodec : qtCodecs)
+    if (qtCodec.intCodepage == codepage) return qtCodec.codec;
+  return nullptr;
 }
 
 void init_ucs(Conf *cfg, struct unicode_data *ucsdata) {
@@ -37,20 +84,18 @@ void init_ucs(Conf *cfg, struct unicode_data *ucsdata) {
   /*
    * In the platform-independent parts of the code, font_codepage
    * is used only for system DBCS support - which we don't
-   * support at all. So we set this to something which will never
-   * be used.
+   * support at all. We set it to line_codepage below, so that
+   * multibyte<->wide conversions work with either line_codepage
+   * or font_codepage.
    */
   ucsdata->font_codepage = -1;
   const char *line_codepage = "";
   if (confKeyExists(cfg, CONF_line_codepage)) line_codepage = conf_get_str(cfg, CONF_line_codepage);
 
-  ucsdata->encoder = get_text_codec(line_codepage);
-  if (!ucsdata->encoder) {
-    assert(0);
-  } else {
-    ucsdata->line_codepage = CS_QTEXTCODEC;
-    if (!strcmp(line_codepage, "UTF-8")) ucsdata->line_codepage = CP_UTF8;
-  }
+  QTextCodec *encoder = getTextCodec(line_codepage, &ucsdata->line_codepage);
+  if (!encoder) fatalbox((char *)"Unable to get a QTextCodec for codepage %s", line_codepage);
+
+  ucsdata->font_codepage = ucsdata->line_codepage;
 
   /*
    * Set up unitab_line, by translating each individual character
@@ -64,7 +109,7 @@ void init_ucs(Conf *cfg, struct unicode_data *ucsdata) {
     p = c;
     len = 1;
     ucsdata->unitab_line[i] = i;
-    if (mb_to_wc(ucsdata->line_codepage, 0, c, 1, wc, 1, ucsdata) == 1)
+    if (mb_to_wc(ucsdata->line_codepage, 0, c, 1, wc, 1) == 1)
       ucsdata->unitab_line[i] = wc[0];
     else
       ucsdata->unitab_line[i] = 0xFFFD;

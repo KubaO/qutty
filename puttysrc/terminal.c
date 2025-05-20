@@ -5647,19 +5647,11 @@ static void clipme(Terminal *term, pos top, pos bottom, int rect, int desel)
 			if (is_dbcs_leadbyte(term->ucsdata->font_codepage, (BYTE) c)) {
 			    buf[0] = c;
 			    buf[1] = (char) (0xFF & ldata->chars[top.x + 1].chr);
-			    rv = mb_to_wc(term->ucsdata->font_codepage, 0, buf, 2, wbuf, 4
-#ifdef IS_QUTTY
-                              , term->ucsdata
-#endif
-                              );
+			    rv = mb_to_wc(term->ucsdata->font_codepage, 0, buf, 2, wbuf, 4);
 			    top.x++;
 			} else {
 			    buf[0] = c;
-			    rv = mb_to_wc(term->ucsdata->font_codepage, 0, buf, 1, wbuf, 4
-#ifdef IS_QUTTY
-                              , term->ucsdata
-#endif
-                              );
+			    rv = mb_to_wc(term->ucsdata->font_codepage, 0, buf, 1, wbuf, 4);
 			}
 
 			if (rv > 0) {
