@@ -47,6 +47,7 @@ class GuiSettingsWindow : public QDialog {
     GUI_PAGE_RLOGIN,
     GUI_PAGE_SSH,
     GUI_PAGE_KEX,
+    GUI_PAGE_CIPHER,
     GUI_PAGE_AUTH,
     GUI_PAGE_GSSAPI,
     GUI_PAGE_TTY,
@@ -137,6 +138,9 @@ class GuiSettingsWindow : public QDialog {
   void on_pb_portfwd_add_clicked();
   void on_pb_portfwd_remove_clicked();
 
+  void on_pb_ssh_manual_hostkeys_add_clicked();
+  void on_pb_ssh_manual_hostkeys_remove_clicked();
+
 #ifndef NO_GSSAPI
   void on_pb_ssh_gss_up_clicked();
   void on_pb_ssh_gss_down_clicked();
@@ -152,6 +156,7 @@ class GuiSettingsWindow : public QDialog {
   void initKexList();
   void initTTYModes();
   void initPortFwds();
+  void initHostKeys();
 #ifndef NO_GSSAPI
   void initGSSList();
 #endif
