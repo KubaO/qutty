@@ -707,3 +707,8 @@ extern "C" const char *win_strerror(int error) {
 
   return es->text;
 }
+
+char filename_char_sanitise(char c) {
+  if (strchr("<>:\"/\\|?*", c)) return '.';
+  return c;
+}
