@@ -6,13 +6,13 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-# Using putty 0.66 source code in puttysrc
+# Using putty 0.67 source code in puttysrc
 #
 # settings.c:
 # In QuTTY this file is only used for loading saved sessions in
 # Windows registry by PuTTY
 
-project(QuTTY VERSION 0.8.3 LANGUAGES C CXX)
+project(QuTTY VERSION 0.9 LANGUAGES C CXX)
 
 option(HAS_GSSAPI "Enable GSS API" TRUE)
 
