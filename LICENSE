@@ -1,25 +1,20 @@
 QuTTY is a multi-tabbed version of PuTTY, a free Win32 and Unix 
 SSH/Telnet client with a terminal emulator.
 
-QuTTY is copyright (C) 2012 Rajendran Thirupugalsamy
+QuTTY is copyright 2012 Rajendran Thirupugalsamy,
+         copyright 2025 Sunderland Ober Consulting.
 
 This program is free software: you can redistribute it and/or modify it under 
 the terms of the GNU General Public License as published by the Free Software 
 Foundation, either version 3 of the License, or (at your option) any later 
 version.
 
-PuTTY is copyright (C) 1997-2007 Simon Tatham.
+PuTTY is copyright 1997-2015 Simon Tatham.
 
 Portions copyright Robert de Bath, Joris van Rantwijk, Delian
 Delchev, Andreas Schultz, Jeroen Massar, Wez Furlong, Nicolas Barry,
 Justin Bradford, Ben Harris, Malcolm Smith, Ahmad Khalifa, Markus
 Kuhn, Colin Watson, and CORE SDI S.A.
-
-This program is distributed in the hope that it will be useful, but WITHOUT 
-ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS 
-FOR A PARTICULAR PURPOSE. See the GNU General Public License for more 
-details. You should have received a copy of the GNU General Public License 
-along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation files
