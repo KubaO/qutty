@@ -409,6 +409,7 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("cb_sshbug_rekey2", sshbug_rekey2)                                         \
   X("cb_sshbug_maxpkt2", sshbug_maxpkt2)                                       \
   X("cb_sshbug_chanreq", sshbug_chanreq)                                       \
+  X("cb_sshbug_oldgex2", sshbug_oldgex2)                                       \
   /* Serial Port  */                                                           \
   X("le_serial_line", serline)                                                 \
   X("le_config_speed", serspeed)                                               \

@@ -149,6 +149,7 @@ set(PROJECT_SOURCES
     puttysrc/tree234.h
     puttysrc/sshgss.h
     puttysrc/pgssapi.h
+    puttysrc/sshbn.h
     puttysrc/sshgssc.h
     puttysrc/proxy.h
     puttysrc/int64.h
