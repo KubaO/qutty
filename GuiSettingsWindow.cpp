@@ -52,6 +52,9 @@ vector<string> qutty_string_split(const string &str, char delim) {
 GuiSettingsWindow::GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmode)
     : QDialog(parent), openMode(openmode), ui(new Ui::GuiSettingsWindow) {
   ui->setupUi(this);
+#ifndef Q_OS_MACOS
+  ui->gb_osx_meta->hide();
+#endif
   ui->stackedWidget->setCurrentIndex(0);
   ui->treeWidget->topLevelItem(0)->setData(0, Qt::UserRole, GUI_PAGE_SESSION);
   ui->treeWidget->topLevelItem(0)->child(0)->setData(0, Qt::UserRole, GUI_PAGE_LOGGING);
@@ -72,14 +75,15 @@ GuiSettingsWindow::GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmod
   ui->treeWidget->topLevelItem(3)->child(3)->setData(0, Qt::UserRole, GUI_PAGE_RLOGIN);
   ui->treeWidget->topLevelItem(3)->child(4)->setData(0, Qt::UserRole, GUI_PAGE_SSH);
   ui->treeWidget->topLevelItem(3)->child(4)->child(0)->setData(0, Qt::UserRole, GUI_PAGE_KEX);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(1)->setData(0, Qt::UserRole, GUI_PAGE_CIPHER);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(2)->setData(0, Qt::UserRole, GUI_PAGE_AUTH);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(2)->child(0)->setData(0, Qt::UserRole,
+  ui->treeWidget->topLevelItem(3)->child(4)->child(1)->setData(0, Qt::UserRole, GUI_PAGE_HOST_KEYS);
+  ui->treeWidget->topLevelItem(3)->child(4)->child(2)->setData(0, Qt::UserRole, GUI_PAGE_CIPHER);
+  ui->treeWidget->topLevelItem(3)->child(4)->child(3)->setData(0, Qt::UserRole, GUI_PAGE_AUTH);
+  ui->treeWidget->topLevelItem(3)->child(4)->child(3)->child(0)->setData(0, Qt::UserRole,
                                                                          GUI_PAGE_GSSAPI);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(3)->setData(0, Qt::UserRole, GUI_PAGE_TTY);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(4)->setData(0, Qt::UserRole, GUI_PAGE_X11);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(5)->setData(0, Qt::UserRole, GUI_PAGE_TUNNELS);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(6)->setData(0, Qt::UserRole, GUI_PAGE_BUGS);
+  ui->treeWidget->topLevelItem(3)->child(4)->child(4)->setData(0, Qt::UserRole, GUI_PAGE_TTY);
+  ui->treeWidget->topLevelItem(3)->child(4)->child(5)->setData(0, Qt::UserRole, GUI_PAGE_X11);
+  ui->treeWidget->topLevelItem(3)->child(4)->child(6)->setData(0, Qt::UserRole, GUI_PAGE_TUNNELS);
+  ui->treeWidget->topLevelItem(3)->child(4)->child(7)->setData(0, Qt::UserRole, GUI_PAGE_BUGS);
   ui->treeWidget->topLevelItem(3)->child(5)->setData(0, Qt::UserRole, GUI_PAGE_SERIAL);
 
   // expand all 1st level items
@@ -106,9 +110,17 @@ GuiSettingsWindow::GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmod
 
 GuiSettingsWindow::~GuiSettingsWindow() { delete ui; }
 
-void GuiSettingsWindow::on_rb_contype_telnet_clicked() { ui->le_port->setText("23"); }
+void GuiSettingsWindow::on_rb_contype_telnet_clicked() {
+  ui->sw_target->setCurrentIndex(0);
+  ui->le_port->setText("23");
+}
 
-void GuiSettingsWindow::on_rb_contype_ssh_clicked() { ui->le_port->setText("22"); }
+void GuiSettingsWindow::on_rb_contype_ssh_clicked() {
+  ui->sw_target->setCurrentIndex(0);
+  ui->le_port->setText("22");
+}
+
+void GuiSettingsWindow::on_rb_contype_serial_clicked() { ui->sw_target->setCurrentIndex(1); }
 
 void GuiSettingsWindow::on_buttonBox_accepted() {
   if (isChangeSettingsMode) {
@@ -164,6 +176,8 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   /* Session */                                                                \
   X("le_hostname", host)                                                       \
   X("le_port", port)                                                           \
+  X("le_line", serline)                                                        \
+  X("le_speed", serspeed)                                                      \
   X("rb_contype_raw", protocol, PROT_RAW)                                      \
   X("rb_contype_telnet", protocol, PROT_TELNET)                                \
   X("rb_contype_rlogin", protocol, PROT_RLOGIN)                                \
@@ -218,6 +232,8 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("rb_ininumkeys_nethack", nethack_keypad, 2)                                \
   X("chb_altgrkey", compose_key)                                               \
   X("chb_ctrl_alt", ctrlaltkeys)                                               \
+  X("chb_osx_option_meta", osx_option_meta, UI::Optional)                      \
+  X("chb_osx_command_meta", osx_command_meta, UI::Optional)                    \
   /* Bell */                                                                   \
   X("rb_bellaction_none", beep, BELL_DISABLED)                                 \
   X("rb_bellaction_alertsound", beep, BELL_DEFAULT)                            \
@@ -239,6 +255,7 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("chb_no_remote_resize", no_remote_resize)                                  \
   X("chb_no_alt_screen", no_alt_screen)                                        \
   X("chb_no_remote_wintitle", no_remote_wintitle)                              \
+  X("chb_no_remote_clearscroll", no_remote_clearscroll)                        \
   X("rb_featqtitle_none", remote_qtitle_action, TITLE_NONE)                    \
   X("rb_featqtitle_empstring", remote_qtitle_action, TITLE_EMPTY)              \
   X("rb_featqtitle_wndtitle", remote_qtitle_action, TITLE_REAL)                \
@@ -259,6 +276,7 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("chb_wndscroll_resetkeypress", scroll_on_key)                              \
   X("chb_wndscroll_resetdisply", scroll_on_disp)                               \
   X("chb_wndscroll_pusherasedtext", erase_to_scrollback)                       \
+  X("chb_scrollbar_on_left", scrollbar_on_left)                                \
   /* Window Appearance */                                                      \
   X("rb_curappear_block", cursor_type, 0)                                      \
   X("rb_curappear_underline", cursor_type, 1)                                  \
@@ -283,6 +301,7 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("chb_behaviour_alt_enter", fullscreenonaltenter)                           \
   /* Character Set Translation */                                              \
   X("cb_codepage", line_codepage)                                              \
+  X("chb_utf8_override", utf8_override)                                        \
   X("chb_cjk_ambig_wide", cjk_ambig_wide)                                      \
   X("chb_xlat_capslockcyr", xlat_capslockcyr)                                  \
   X("rb_translation_useunicode", vtmode, VT_UNICODE)                           \
@@ -341,6 +360,9 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("le_proxy_username", proxy_username)                                       \
   X("le_proxy_password", proxy_password)                                       \
   X("le_proxy_telnet_command", proxy_telnet_command)                           \
+  X("rb_proxy_log_to_term_no", proxy_log_to_term, FORCE_OFF)                   \
+  X("rb_proxy_log_to_term_yes", proxy_log_to_term, FORCE_ON)                   \
+  X("rb_proxy_log_to_term_until_start", proxy_log_to_term, AUTO)               \
   /* Telnet */                                                                 \
   X("rb_telnetprotocol_bsd", rfc_environ, false)                               \
   X("rb_telnetprotocol_rfc1408", rfc_environ, true)                            \
@@ -355,8 +377,6 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("chb_ssh_no_shell", ssh_no_shell)                                          \
   X("chb_compression", compression)                                            \
   X("rb_sshprotocol_1only", sshprot, 0)                                        \
-  X("rb_sshprotocol_1", sshprot, 1)                                            \
-  X("rb_sshprotocol_2", sshprot, 2)                                            \
   X("rb_sshprotocol_2only", sshprot, 3)                                        \
   X("cb_ssh_connection_sharing", ssh_connection_sharing)                       \
   X("cb_ssh_connection_sharing_upstream", ssh_connection_sharing_upstream)     \
@@ -365,6 +385,8 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("l_ssh_kexlist", ssh_kexlist)                                              \
   X("le_ssh_rekey_time", ssh_rekey_time)                                       \
   X("le_ssh_rekey_time", ssh_rekey_data)                                       \
+  /* SSH Host Keys */                                                          \
+  X("l_ssh_hklist", ssh_hklist)                                                \
   X("l_ssh_manual_hostkeys", ssh_manual_hostkeys)                              \
   /* SSH Cipher */                                                             \
   X("l_ssh_cipherlist", ssh_cipherlist)                                        \
@@ -495,6 +517,10 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
     Type const type = KEY_TO_TYPE.at(key);
     UIFlags opt = kv.options;
 
+#ifndef OSX_META_KEY_CONFIG
+    // if (key == CONF_osx_command_meta || key == CONF_osx_option_meta) continue;
+#endif
+
     if (opt & UI::Optional && !confKeyExists(cfg.get(), key)) continue;
     QCheckBox *cb = qobject_cast<QCheckBox *>(widget);
     if (cb) {
@@ -560,6 +586,7 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
   initColours();
   initEnvVars();
   initCipherList();
+  initHKList();
   initKexList();
   initTTYModes();
   initPortFwds();
@@ -1062,6 +1089,25 @@ void GuiSettingsWindow::on_pb_ssh_kex_down_clicked() {
   if (listMoveDown(ui->l_ssh_kexlist)) kexDataList.updateConfig(ui->l_ssh_kexlist, cfg.get());
 }
 
+// From putty-0.69/config.c
+static const DataItem hks[] = {{"Ed25519", HK_ED25519},
+                               {"ECDSA", HK_ECDSA},
+                               {"DSA", HK_DSA},
+                               {"RSA", HK_RSA},
+                               {"-- warn below here --", HK_WARN}};
+
+static const DataList hkDataList(CONF_ssh_hklist, HK_MAX, hks);
+
+void GuiSettingsWindow::initHKList() { hkDataList.initList(ui->l_ssh_hklist, cfg.get()); }
+
+void GuiSettingsWindow::on_pb_ssh_hklist_up_clicked() {
+  if (listMoveUp(ui->l_ssh_hklist)) hkDataList.updateConfig(ui->l_ssh_hklist, cfg.get());
+}
+
+void GuiSettingsWindow::on_pb_ssh_hklist_down_clicked() {
+  if (listMoveDown(ui->l_ssh_hklist)) hkDataList.updateConfig(ui->l_ssh_hklist, cfg.get());
+}
+
 enum ModeType { TTY_OP_CHAR, TTY_OP_BOOL };
 
 struct TTYModeDecl {
@@ -1101,16 +1147,21 @@ static const TTYModeDecl *getModeDecl(const char *name) {
 static QString formatTTYMode(const QString &value) {
   if (value == "A") return "(auto)";
   if (value.startsWith("V")) return value.mid(1);
-  return "(auto?)";  // should not happen
+  if (value.startsWith("N")) return "(don't send)";
+  return "(---)";  // should not happen
 }
 
 static void setTableRow(QTableWidget *table, int row, const char *left, const char *right) {
-  auto *col0 = new QTableWidgetItem(left);
-  auto *col1 = new QTableWidgetItem(right);
-  col0->setFlags(CONST_FLAGS);
-  col1->setFlags(CONST_FLAGS);
-  table->setItem(row, 0, col0);
-  table->setItem(row, 1, col1);
+  if (left) {
+    auto *col0 = new QTableWidgetItem(left);
+    col0->setFlags(CONST_FLAGS);
+    table->setItem(row, 0, col0);
+  }
+  if (right) {
+    auto *col1 = new QTableWidgetItem(right);
+    col1->setFlags(CONST_FLAGS);
+    table->setItem(row, 1, col1);
+  }
 }
 
 static QByteArray removeCurrentRow(QTableWidget *table) {
@@ -1122,8 +1173,8 @@ static QByteArray removeCurrentRow(QTableWidget *table) {
 }
 
 void GuiSettingsWindow::initTTYModes() {
-  ui->cb_ttymodes->clear();
-  for (auto const &m : ssh_ttymodes) ui->cb_ttymodes->addItem(m.name);
+  // ui->cb_ttymodes->clear();
+  // for (auto const &m : ssh_ttymodes) ui->cb_ttymodes->addItem(m.name);
 
   int rows = conf_get_str_count(cfg.get(), CONF_ttymodes);
   QTableWidget *table = ui->l_ttymodes;
@@ -1145,36 +1196,43 @@ void GuiSettingsWindow::initTTYModes() {
   table->sortItems(0);
 }
 
-void GuiSettingsWindow::on_pb_ttymodes_remove_clicked() {
-  QByteArray name = removeCurrentRow(ui->l_ttymodes);
-  if (!name.isEmpty()) conf_del_str_str(cfg.get(), CONF_ttymodes, name);
+void GuiSettingsWindow::on_l_ttymodes_currentItemChanged(QTableWidgetItem *current) {
+  if (!current) return;
+  QTableWidget *table = ui->l_ttymodes;
+  int row = table->indexFromItem(current).row();
+  if (row < 0) return;
+  QString const name = table->item(row, 0)->text();
+  QByteArray const bname = name.toLatin1();
+  QLatin1StringView value(conf_get_str_str(cfg.get(), CONF_ttymodes, bname));
+  if (value == "A")
+    ui->rb_terminalvalue_auto->click();
+  else if (value == "N")
+    ui->rb_terminalvalue_nothing->click();
+  else if (!value.empty() && value[0] == 'V') {
+    QString text = value.slice(1);
+    ui->le_ttymode->setText(text);
+    ui->rb_terminalvalue_this->click();
+  }
 }
 
-void GuiSettingsWindow::on_pb_ttymodes_add_clicked() {
-  QString const name = ui->cb_ttymodes->currentText();
+void GuiSettingsWindow::on_pb_ttymodes_set_clicked() {
+  QTableWidget *table = ui->l_ttymodes;
+  int row = table->currentRow();
+  if (row < 0) return;
+  QString const name = table->item(row, 0)->text();
   QByteArray const bname = name.toLatin1();
+
   QString value = "A";
   if (ui->rb_terminalvalue_this->isChecked()) value = "V" + ui->le_ttymode->text();
+  else if (ui->rb_terminalvalue_nothing->isChecked())
+    value = "N";
   QByteArray bvalue = value.toLatin1();
 
   conf_set_str_str(cfg.get(), CONF_ttymodes, bname, bvalue);
 
-  QTableWidget *table = ui->l_ttymodes;
-  auto const items = table->findItems(name, Qt::MatchExactly);
-  int row = table->rowCount();
-  if (items.isEmpty()) {
-    table->setRowCount(row + 1);
-  } else {
-    for (auto *item : items) {
-      if (item->column() == 0) {
-        row = item->row();
-        break;
-      }
-    }
-  }
   value = formatTTYMode(value);
   bvalue = value.toLatin1();
-  setTableRow(table, row, bname, bvalue);
+  setTableRow(table, row, nullptr, bvalue);
   table->sortItems(0);
 }
 

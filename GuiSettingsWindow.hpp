@@ -47,6 +47,7 @@ class GuiSettingsWindow : public QDialog {
     GUI_PAGE_RLOGIN,
     GUI_PAGE_SSH,
     GUI_PAGE_KEX,
+    GUI_PAGE_HOST_KEYS,
     GUI_PAGE_CIPHER,
     GUI_PAGE_AUTH,
     GUI_PAGE_GSSAPI,
@@ -96,8 +97,8 @@ class GuiSettingsWindow : public QDialog {
   void slot_GuiSettingsWindow_rejected();
 
   void on_rb_contype_telnet_clicked();
-
   void on_rb_contype_ssh_clicked();
+  void on_rb_contype_serial_clicked();
 
   void on_b_save_sess_clicked();
 
@@ -132,8 +133,11 @@ class GuiSettingsWindow : public QDialog {
   void on_pb_ssh_kex_up_clicked();
   void on_pb_ssh_kex_down_clicked();
 
-  void on_pb_ttymodes_add_clicked();
-  void on_pb_ttymodes_remove_clicked();
+  void on_pb_ssh_hklist_up_clicked();
+  void on_pb_ssh_hklist_down_clicked();
+
+  void on_l_ttymodes_currentItemChanged(QTableWidgetItem *current);
+  void on_pb_ttymodes_set_clicked();
 
   void on_pb_portfwd_add_clicked();
   void on_pb_portfwd_remove_clicked();
@@ -154,6 +158,7 @@ class GuiSettingsWindow : public QDialog {
   void initEnvVars();
   void initCipherList();
   void initKexList();
+  void initHKList();
   void initTTYModes();
   void initPortFwds();
   void initHostKeys();
