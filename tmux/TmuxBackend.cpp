@@ -41,7 +41,7 @@ extern "C" void tmux_sent(Plug /*plug*/, int /*bufsize*/) { qDebug() << __FUNCTI
  * Returns an error message, or NULL on success.
  */
 extern "C" const char *tmux_client_init(void *frontend_handle, void **backend_handle,
-                                        Conf * /*cfg*/, char * /*host*/, int port,
+                                        Conf * /*cfg*/, const char * /*host*/, int port,
                                         char ** /*realhost*/, int /*nodelay*/, int /*keepalive*/) {
   static const struct plug_function_table fn_table = {tmux_log, tmux_closing, tmux_receive,
                                                       tmux_sent, NULL};
@@ -68,11 +68,11 @@ extern "C" void tmux_reconfig(void * /*handle*/, Conf * /*cfg*/) {}
 /*
  * Called to send data down the backend connection.
  */
-extern "C" int tmux_send(void *handle, char *buf, int len) {
+extern "C" int tmux_send(void *handle, const char *buf, int len) {
   tmux_window_pane_t *tmuxpane = static_cast<tmux_window_pane_t *>(handle);
   const size_t wbuf_len = 20480;
   wchar_t wbuf[wbuf_len];  // for plenty of speed
-  char *rem_buf = buf;
+  const char *rem_buf = buf;
   int i, rem_len = len;
   do {
     size_t ptrlen = 0;
@@ -115,17 +115,25 @@ extern "C" void tmux_provide_logctx(void * /*handle*/, void * /*logctx*/) { /* T
 
 extern "C" int tmux_cfg_info(void * /*handle*/) { return 0; }
 
-static char tmux_client_backend_name[] = "tmux_client_backend";
+static const char tmux_client_backend_name[] = "tmux_client_backend";
 
-Backend tmux_client_backend = {tmux_client_init, tmux_free, tmux_reconfig, tmux_send,
-                               tmux_sendbuffer, NULL, NULL, NULL, NULL, NULL, NULL,
-                               /*
-                                   telnet_size,
-                                   telnet_special,
-                                   telnet_get_specials,
-                                   telnet_connected,
-                                   telnet_exitcode,
-                                   telnet_sendok,
-                               */
-                               tmux_ldisc, tmux_provide_ldisc, tmux_provide_logctx, tmux_unthrottle,
-                               tmux_cfg_info, tmux_client_backend_name, PROT_TMUX_CLIENT, -1};
+Backend tmux_client_backend = {tmux_client_init,
+                               tmux_free,
+                               tmux_reconfig,
+                               tmux_send,
+                               tmux_sendbuffer,
+                               NULL /*size*/,
+                               NULL /*special*/,
+                               NULL /*get_specials*/,
+                               NULL /*connected*/,
+                               NULL /*exitcode*/,
+                               NULL /*sendok*/,
+                               tmux_ldisc,
+                               tmux_provide_ldisc,
+                               tmux_provide_logctx,
+                               tmux_unthrottle,
+                               tmux_cfg_info,
+                               NULL /*test_for_upstream*/,
+                               tmux_client_backend_name,
+                               PROT_TMUX_CLIENT,
+                               -1};

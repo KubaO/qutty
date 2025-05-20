@@ -20,6 +20,10 @@ extern "C" {
 
 #define APPNAME "QuTTY"
 
+#ifdef _WIN32
+#define BUILDINFO_PLATFORM "Windows"
+#endif
+
 #define PUTTY_REG_POS "Software\\SimonTatham\\PuTTY"
 #define PUTTY_REG_PARENT "Software\\SimonTatham"
 #define PUTTY_REG_PARENT_CHILD "PuTTY"
@@ -71,6 +75,8 @@ void init_ucs(Conf *, unicode_data_t *);
  */
 #define SEL_NL { 13, 10 }
 #endif
+
+void socket_reselect_all(void);
 
 #define f_open(filename, mode, isprivate) (fopen((filename)->path, (mode)))
 

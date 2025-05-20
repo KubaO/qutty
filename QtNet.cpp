@@ -284,8 +284,8 @@ cu0:
   return (Socket)ret;
 }
 
-Socket sk_newlistener(char * /*srcaddr*/, int /*port*/, Plug /*plug*/, int /*local_host_only*/,
-                      int /*orig_address_family*/) {
+Socket sk_newlistener(const char * /*srcaddr*/, int /*port*/, Plug /*plug*/,
+                      int /*local_host_only*/, int /*orig_address_family*/) {
   // TODO not implemented
   return NULL;
 }
@@ -320,7 +320,7 @@ SockAddr platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*/
   return NULL;
 }
 
-Socket platform_new_connection(SockAddr /*addr*/, char * /*hostname*/, int /*port*/,
+Socket platform_new_connection(SockAddr /*addr*/, const char * /*hostname*/, int /*port*/,
                                int /*privport*/, int /*oobinline*/, int /*nodelay*/,
                                int /*keepalive*/, Plug /*plug*/, Conf * /*cfg*/) {
   // TODO not yet implemented

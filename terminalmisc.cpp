@@ -132,7 +132,7 @@ int mb_to_wc(int codepage, int /*flags*/, const char *mbstr, int mblen, wchar_t 
 }
 
 int wc_to_mb(int codepage, int /*flags*/, const wchar_t *wcstr, int wclen, char *mbstr, int mblen,
-             char * /*defchr*/, int * /*defused*/, struct unicode_data *ucsdata) {
+             const char * /*defchr*/, int * /*defused*/, struct unicode_data *ucsdata) {
   QTextCodec *codec = nullptr;
   if (ucsdata) getTextCodec(ucsdata->line_codepage);
   if (!codec) codec = getTextCodec(codepage);

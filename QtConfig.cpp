@@ -514,7 +514,7 @@ bool QtConfig::restoreFromPuttyWinRegistry() {
   qDebug() << "putty nsessions " << savedSess.nsessions;
   for (int i = 0; i < savedSess.nsessions; i++) {
     Pointer cfg(conf_new());
-    char *config_name = savedSess.sessions[i];
+    const char *config_name = savedSess.sessions[i];
 
     void *sesskey = open_settings_r(config_name);
     load_open_settings(sesskey, cfg.get());

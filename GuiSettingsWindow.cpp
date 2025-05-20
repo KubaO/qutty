@@ -1018,7 +1018,8 @@ struct DataList {
 };
 
 // From putty-0.63/config.c
-static const DataItem ciphers[] = {{"3DES", CIPHER_3DES},
+static const DataItem ciphers[] = {{"ChaCha20 (SSH-2 only)", CIPHER_CHACHA20},
+                                   {"3DES", CIPHER_3DES},
                                    {"Blowfish", CIPHER_BLOWFISH},
                                    {"DES", CIPHER_DES},
                                    {"AES (SSH-2 only)", CIPHER_AES},
@@ -1046,6 +1047,7 @@ static const DataItem kexes[] = {{"Diffie-Hellman group 1", KEX_DHGROUP1},
                                  {"Diffie-Hellman group 14", KEX_DHGROUP14},
                                  {"Diffie-Hellman group exchange", KEX_DHGEX},
                                  {"RSA-based key exchange", KEX_RSA},
+                                 {"ECDH key exchange", KEX_ECDH},
                                  {"-- warn below here --", KEX_WARN}};
 
 static const DataList kexDataList(CONF_ssh_kexlist, KEX_MAX, kexes);
@@ -1071,24 +1073,24 @@ struct TTYModeDecl {
 // from putty-0.63/ssh.c
 static const TTYModeDecl ssh_ttymodes[] = {
     /* "V" prefix discarded for special characters relative to SSH specs */
-    {"INTR", 1, TTY_OP_CHAR},    {"QUIT", 2, TTY_OP_CHAR},     {"ERASE", 3, TTY_OP_CHAR},
-    {"KILL", 4, TTY_OP_CHAR},    {"EOF", 5, TTY_OP_CHAR},      {"EOL", 6, TTY_OP_CHAR},
-    {"EOL2", 7, TTY_OP_CHAR},    {"START", 8, TTY_OP_CHAR},    {"STOP", 9, TTY_OP_CHAR},
-    {"SUSP", 10, TTY_OP_CHAR},   {"DSUSP", 11, TTY_OP_CHAR},   {"REPRINT", 12, TTY_OP_CHAR},
-    {"WERASE", 13, TTY_OP_CHAR}, {"LNEXT", 14, TTY_OP_CHAR},   {"FLUSH", 15, TTY_OP_CHAR},
-    {"SWTCH", 16, TTY_OP_CHAR},  {"STATUS", 17, TTY_OP_CHAR},  {"DISCARD", 18, TTY_OP_CHAR},
-    {"IGNPAR", 30, TTY_OP_BOOL}, {"PARMRK", 31, TTY_OP_BOOL},  {"INPCK", 32, TTY_OP_BOOL},
-    {"ISTRIP", 33, TTY_OP_BOOL}, {"INLCR", 34, TTY_OP_BOOL},   {"IGNCR", 35, TTY_OP_BOOL},
-    {"ICRNL", 36, TTY_OP_BOOL},  {"IUCLC", 37, TTY_OP_BOOL},   {"IXON", 38, TTY_OP_BOOL},
-    {"IXANY", 39, TTY_OP_BOOL},  {"IXOFF", 40, TTY_OP_BOOL},   {"IMAXBEL", 41, TTY_OP_BOOL},
-    {"ISIG", 50, TTY_OP_BOOL},   {"ICANON", 51, TTY_OP_BOOL},  {"XCASE", 52, TTY_OP_BOOL},
-    {"ECHO", 53, TTY_OP_BOOL},   {"ECHOE", 54, TTY_OP_BOOL},   {"ECHOK", 55, TTY_OP_BOOL},
-    {"ECHONL", 56, TTY_OP_BOOL}, {"NOFLSH", 57, TTY_OP_BOOL},  {"TOSTOP", 58, TTY_OP_BOOL},
-    {"IEXTEN", 59, TTY_OP_BOOL}, {"ECHOCTL", 60, TTY_OP_BOOL}, {"ECHOKE", 61, TTY_OP_BOOL},
-    {"PENDIN", 62, TTY_OP_BOOL}, {"OPOST", 70, TTY_OP_BOOL},   {"OLCUC", 71, TTY_OP_BOOL},
-    {"ONLCR", 72, TTY_OP_BOOL},  {"OCRNL", 73, TTY_OP_BOOL},   {"ONOCR", 74, TTY_OP_BOOL},
-    {"ONLRET", 75, TTY_OP_BOOL}, {"CS7", 90, TTY_OP_BOOL},     {"CS8", 91, TTY_OP_BOOL},
-    {"PARENB", 92, TTY_OP_BOOL}, {"PARODD", 93, TTY_OP_BOOL}};
+    {"INTR", 1, TTY_OP_CHAR},    {"QUIT", 2, TTY_OP_CHAR},    {"ERASE", 3, TTY_OP_CHAR},
+    {"KILL", 4, TTY_OP_CHAR},    {"EOF", 5, TTY_OP_CHAR},     {"EOL", 6, TTY_OP_CHAR},
+    {"EOL2", 7, TTY_OP_CHAR},    {"START", 8, TTY_OP_CHAR},   {"STOP", 9, TTY_OP_CHAR},
+    {"SUSP", 10, TTY_OP_CHAR},   {"DSUSP", 11, TTY_OP_CHAR},  {"REPRINT", 12, TTY_OP_CHAR},
+    {"WERASE", 13, TTY_OP_CHAR}, {"LNEXT", 14, TTY_OP_CHAR},  {"FLUSH", 15, TTY_OP_CHAR},
+    {"SWTCH", 16, TTY_OP_CHAR},  {"STATUS", 17, TTY_OP_CHAR}, {"DISCARD", 18, TTY_OP_CHAR},
+    {"IGNPAR", 30, TTY_OP_BOOL}, {"PARMRK", 31, TTY_OP_BOOL}, {"INPCK", 32, TTY_OP_BOOL},
+    {"ISTRIP", 33, TTY_OP_BOOL}, {"INLCR", 34, TTY_OP_BOOL},  {"IGNCR", 35, TTY_OP_BOOL},
+    {"ICRNL", 36, TTY_OP_BOOL},  {"IUCLC", 37, TTY_OP_BOOL},  {"IXON", 38, TTY_OP_BOOL},
+    {"IXANY", 39, TTY_OP_BOOL},  {"IXOFF", 40, TTY_OP_BOOL},  {"IMAXBEL", 41, TTY_OP_BOOL},
+    {"IUTF8", 42, TTY_OP_BOOL},  {"ISIG", 50, TTY_OP_BOOL},   {"ICANON", 51, TTY_OP_BOOL},
+    {"XCASE", 52, TTY_OP_BOOL},  {"ECHO", 53, TTY_OP_BOOL},   {"ECHOE", 54, TTY_OP_BOOL},
+    {"ECHOK", 55, TTY_OP_BOOL},  {"ECHONL", 56, TTY_OP_BOOL}, {"NOFLSH", 57, TTY_OP_BOOL},
+    {"TOSTOP", 58, TTY_OP_BOOL}, {"IEXTEN", 59, TTY_OP_BOOL}, {"ECHOCTL", 60, TTY_OP_BOOL},
+    {"ECHOKE", 61, TTY_OP_BOOL}, {"PENDIN", 62, TTY_OP_BOOL}, {"OPOST", 70, TTY_OP_BOOL},
+    {"OLCUC", 71, TTY_OP_BOOL},  {"ONLCR", 72, TTY_OP_BOOL},  {"OCRNL", 73, TTY_OP_BOOL},
+    {"ONOCR", 74, TTY_OP_BOOL},  {"ONLRET", 75, TTY_OP_BOOL}, {"CS7", 90, TTY_OP_BOOL},
+    {"CS8", 91, TTY_OP_BOOL},    {"PARENB", 92, TTY_OP_BOOL}, {"PARODD", 93, TTY_OP_BOOL}};
 
 static const TTYModeDecl *getModeDecl(const char *name) {
   for (auto const &mode : ssh_ttymodes)
