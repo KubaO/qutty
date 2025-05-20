@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-# Using putty 0.64 source code in puttysrc
+# Using putty 0.66 source code in puttysrc
 #
 # settings.c:
 # In QuTTY this file is only used for loading saved sessions in
