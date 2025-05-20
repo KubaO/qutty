@@ -4,7 +4,6 @@
  * See COPYING for distribution information.
  */
 
-#include "GuiTerminalWindow.hpp"
 #include "QtCommon.hpp"
 extern "C" {
 #include "network.h"
@@ -21,20 +20,6 @@ struct SockAddr_tag {
 };
 
 static void sk_tcp_flush(Socket /*s*/) {}
-
-/*
- * Each socket abstraction contains a `void *' private field in
- * which the client can keep state.
- */
-static void sk_tcp_set_private_ptr(Socket sock, void *ptr) {
-  Actual_Socket s = (Actual_Socket)sock;
-  s->private_ptr = ptr;
-}
-
-static void *sk_tcp_get_private_ptr(Socket sock) {
-  Actual_Socket s = (Actual_Socket)sock;
-  return s->private_ptr;
-}
 
 static const char *sk_tcp_socket_error(Socket sock) {
   Actual_Socket s = (Actual_Socket)sock;
@@ -84,8 +69,6 @@ Socket sk_new(char *addr, int port, int privport, int oobinline, int nodelay, in
                                                         sk_tcp_write_oob,
                                                         nullptr /* TODO write_eof */,
                                                         sk_tcp_flush,
-                                                        sk_tcp_set_private_ptr,
-                                                        sk_tcp_get_private_ptr,
                                                         sk_tcp_set_frozen,
                                                         sk_tcp_socket_error};
 
@@ -127,6 +110,8 @@ Socket sk_new(char *addr, int port, int privport, int oobinline, int nodelay, in
 
   return (Socket)ret;
 }
+
+int sk_addr_needs_port(SockAddr addr) { return TRUE; }
 
 int sk_addrtype(SockAddr addr) {
   const QHostAddress *a = addr->qtaddr;
@@ -256,8 +241,6 @@ Socket sk_new(SockAddr addr, int port, int privport, int oobinline, int nodelay,
                                                         sk_tcp_write_oob,
                                                         nullptr /* TODO write_eof */,
                                                         sk_tcp_flush,
-                                                        sk_tcp_set_private_ptr,
-                                                        sk_tcp_get_private_ptr,
                                                         sk_tcp_set_frozen,
                                                         sk_tcp_socket_error};
 
@@ -343,3 +326,11 @@ Socket platform_new_connection(SockAddr /*addr*/, char * /*hostname*/, int /*por
   // TODO not yet implemented
   return NULL;
 }
+
+int platform_ssh_share(const char *name, Conf *conf, Plug downplug, Plug upplug, Socket *sock,
+                       char **logtext, char **ds_err, char **us_err, int can_upstream,
+                       int can_downstream) {
+  return SHARE_NONE;
+}
+
+void platform_ssh_share_cleanup(const char *name) {}

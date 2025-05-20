@@ -108,7 +108,7 @@ int GuiTerminalWindow::initTerminal() {
   term_provide_logctx(term, logctx);
 
   term_size(term, this->viewport()->height() / fontHeight, this->viewport()->width() / fontWidth,
-            term->savelines);
+            conf_get_int(cfg, CONF_savelines));
 
   switch (conf_get_int(cfg, CONF_protocol)) {
     case PROT_TELNET:
@@ -737,22 +737,6 @@ void GuiTerminalWindow::getClip(wchar_t **p, int *len) {
     clipboard_contents[clipboard_length] = 0;
     *p = clipboard_contents;
     *len = clipboard_length;
-  } else {
-    // synchronous paste operation
-    while (term_paste_pending(term)) {
-      int pending = term->paste_pos;
-      do {
-        term_paste(term);
-      } while (term_paste_pending(term) && term->paste_pos - pending < 256);
-      if (!term_paste_pending(term)) break;
-
-      // QT suggests using processEvents is a bad design
-      // but hopefully it would fit our purpose
-      QCoreApplication::processEvents();
-    }
-    if (clipboard_contents) delete clipboard_contents;
-    clipboard_contents = NULL;
-    clipboard_length = 0;
   }
 }
 

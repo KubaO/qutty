@@ -14,6 +14,17 @@
 #include "client/windows/handler/exception_handler.h"
 #endif
 
+void callback_notify(void *frontend) { QTimer::singleShot(0, qApp, run_toplevel_callbacks); }
+
+extern "C" toplevel_callback_notify_fn_t notify_frontend;
+
+// Connection sharing is not implemented yet
+extern "C" const int share_can_be_downstream;
+extern "C" const int share_can_be_upstream;
+
+const int share_can_be_downstream = FALSE;
+const int share_can_be_upstream = FALSE;
+
 int main(int argc, char *argv[]) {
   QDir dumps_dir(QDir::home().filePath("qutty/dumps"));
   if (!dumps_dir.exists()) {
@@ -26,6 +37,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   QApplication app(argc, argv);
+  notify_frontend = callback_notify;
 
   // restore all settings from qutty.xml
   qutty_config.restoreConfig();
@@ -35,5 +47,7 @@ int main(int argc, char *argv[]) {
   mainWindow->on_openNewTab();
   mainWindow->show();
 
-  return app.exec();
+  int rc = app.exec();
+  notify_frontend = nullptr;
+  return rc;
 }
