@@ -7,6 +7,7 @@
 extern "C" {
 #include "putty.h"
 #include "ssh.h"
+#include "storage.h"
 }
 #include <QMessageBox>
 
@@ -68,7 +69,7 @@ int askappend(void * /*frontend*/, Filename *filename, void (* /*callback*/)(voi
   }
 }
 
-int get_userpass_input_v2(void *frontend, prompts_t *p, unsigned char *in, int inlen) {
+int get_userpass_input_v2(void *frontend, prompts_t *p, const unsigned char *in, int inlen) {
   GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
   int ret = -1;
   // ret = cmdline_get_passwd_input(p, in, inlen);
@@ -200,7 +201,7 @@ void qt_vmessage_box_no_frontend(const char *title, const char *fmt, va_list arg
   QMessageBox::critical(NULL, QString(title), msg.vasprintf(fmt, args), QMessageBox::Ok);
 }
 
-void nonfatal(char *fmt, ...) {
+void nonfatal(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   QString msg = QString::vasprintf(fmt, args);
@@ -226,7 +227,7 @@ extern "C" {
 
 void update_specials_menu(void *) {}
 
-void connection_fatal(void *frontend, char *fmt, ...) {
+void connection_fatal(void *frontend, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   char buf[1000];
@@ -235,7 +236,7 @@ void connection_fatal(void *frontend, char *fmt, ...) {
   va_end(args);
 }
 
-void fatalbox(char *fmt, ...) {
+void fatalbox(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   char buf[1000];
@@ -244,7 +245,116 @@ void fatalbox(char *fmt, ...) {
   va_end(args);
 }
 
-void modalfatalbox(char *msg, ...) { qt_message_box_no_frontend(APPNAME " Fatal Error", msg); }
+void modalfatalbox(const char *msg, ...) {
+  qt_message_box_no_frontend(APPNAME " Fatal Error", msg);
+}
 }
 
 void logevent(void *frontend, const char *string) { qDebug() << frontend << string; }
+
+// from putty-0.69/windlg.c
+int verify_ssh_host_key(void *frontend, char *host, int port, const char *keytype, char *keystr,
+                        char *fingerprint, void (*callback)(void *ctx, int result), void *ctx) {
+  int ret;
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
+
+  static const char absentmsg[] =
+      "The server's host key is not cached in the registry. You\n"
+      "have no guarantee that the server is the computer you\n"
+      "think it is.\n"
+      "The server's %s key fingerprint is:\n"
+      "%s\n"
+      "If you trust this host, hit Yes to add the key to\n"
+      "%s's cache and carry on connecting.\n"
+      "If you want to carry on connecting just once, without\n"
+      "adding the key to the cache, hit No.\n"
+      "If you do not trust this host, hit Cancel to abandon the\n"
+      "connection.\n";
+
+  static const char wrongmsg[] =
+      "WARNING - POTENTIAL SECURITY BREACH!\n"
+      "\n"
+      "The server's host key does not match the one %s has\n"
+      "cached in the registry. This means that either the\n"
+      "server administrator has changed the host key, or you\n"
+      "have actually connected to another computer pretending\n"
+      "to be the server.\n"
+      "The new %s key fingerprint is:\n"
+      "%s\n"
+      "If you were expecting this change and trust the new key,\n"
+      "hit Yes to update %s's cache and continue connecting.\n"
+      "If you want to carry on connecting but without updating\n"
+      "the cache, hit No.\n"
+      "If you want to abandon the connection completely, hit\n"
+      "Cancel. Hitting Cancel is the ONLY guaranteed safe\n"
+      "choice.\n";
+
+  static const char mbtitle[] = "%s Security Alert";
+
+  /*
+   * Verify the key against the registry.
+   */
+  ret = verify_host_key(host, port, keytype, keystr);
+
+  if (ret == 0) /* success - key matched OK */
+    return 1;
+  else if (ret == 2) { /* key was different */
+    QMessageBox::StandardButton mbret;
+    char *text = dupprintf(wrongmsg, appname, keytype, fingerprint, appname);
+    char *caption = dupprintf(mbtitle, appname);
+    mbret = QMessageBox::warning(f, caption, text,
+                                 QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+    assert(mbret == QMessageBox::Yes || mbret == QMessageBox::No || mbret == QMessageBox::Cancel);
+    sfree(text);
+    sfree(caption);
+    if (mbret == QMessageBox::Yes) {
+      store_host_key(host, port, keytype, keystr);
+      return 1;
+    } else if (mbret == QMessageBox::No)
+      return 1;
+  } else if (ret == 1) { /* key was absent */
+    int mbret;
+    char *text = dupprintf(absentmsg, keytype, fingerprint, appname);
+    char *caption = dupprintf(mbtitle, appname);
+    mbret = QMessageBox::warning(f, caption, text,
+                                 QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+    assert(mbret == QMessageBox::Yes || mbret == QMessageBox::No || mbret == QMessageBox::Cancel);
+    sfree(text);
+    sfree(caption);
+    if (mbret == QMessageBox::Yes) {
+      store_host_key(host, port, keytype, keystr);
+      return 1;
+    } else if (mbret == QMessageBox::No)
+      return 1;
+  }
+  return 0; /* abandon the connection */
+}
+
+// from putty-0.69/windlg.c
+int askhk(void *frontend, const char *algname, const char *betteralgs,
+          void (*callback)(void *ctx, int result), void *ctx) {
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
+  static const char mbtitle[] = "%s Security Alert";
+  static const char msg[] =
+      "The first host key type we have stored for this server\n"
+      "is %s, which is below the configured warning threshold.\n"
+      "The server also provides the following types of host key\n"
+      "above the threshold, which we do not have stored:\n"
+      "%s\n"
+      "Do you want to continue with this connection?\n";
+  char *message, *title;
+  int mbret;
+
+  message = dupprintf(msg, algname, betteralgs);
+  title = dupprintf(mbtitle, appname);
+  mbret = QMessageBox::warning(f, title, message, QMessageBox::Yes | QMessageBox::No);
+#if 0
+  socket_reselect_all();
+#endif
+  sfree(message);
+  sfree(title);
+  if (mbret == IDYES)
+    return 1;
+  else
+    return 0;
+}

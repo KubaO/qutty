@@ -25,8 +25,6 @@ extern "C" {
 
 using namespace Qt;
 
-char sshver[] = "PuTTY-Local: " __DATE__ " " __TIME__;
-
 int flags;
 
 int default_protocol = PROT_SSH;
@@ -570,6 +568,11 @@ FontSpec *fontspec_deserialise(void *vdata, int maxsize, int *used) {
 
 int from_backend_eof(void *frontend) { return TRUE; /* do respond to incoming EOF with outgoing */ }
 
+int frontend_is_utf8(void *frontend) {
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
+  return f->term->ucsdata->line_codepage == CP_UTF8;
+}
+
 char *get_username(void) {
   DWORD namelen;
   char *user;
@@ -712,3 +715,6 @@ char filename_char_sanitise(char c) {
   if (strchr("<>:\"/\\|?*", c)) return '.';
   return c;
 }
+
+/* Dummy routine, only required in plink. */
+void frontend_echoedit_update(void *frontend, int echo, int edit) {}

@@ -48,6 +48,7 @@ static const KeyOption &optionFor(int key) {
   static const KeyOption OPTIONS[] = {
       {CONF_colours, NCFGCOLOURS}, {CONF_wordness, 256},
       {CONF_ssh_kexlist, KEX_MAX}, {CONF_ssh_cipherlist, CIPHER_MAX},
+      {CONF_ssh_hklist, HK_MAX},
 #ifndef NO_GSSAPI
       {CONF_ssh_gsslist, 3},
 #endif
@@ -514,7 +515,7 @@ bool QtConfig::restoreFromPuttyWinRegistry() {
   qDebug() << "putty nsessions " << savedSess.nsessions;
   for (int i = 0; i < savedSess.nsessions; i++) {
     Pointer cfg(conf_new());
-    char *config_name = savedSess.sessions[i];
+    const char *config_name = savedSess.sessions[i];
 
     void *sesskey = open_settings_r(config_name);
     load_open_settings(sesskey, cfg.get());

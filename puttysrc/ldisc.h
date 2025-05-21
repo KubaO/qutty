@@ -8,6 +8,11 @@
 #ifndef PUTTY_LDISC_H
 #define PUTTY_LDISC_H
 
+#ifdef IS_QUTTY
+typedef struct backend_tag Backend;
+typedef struct terminal_tag Terminal;
+#endif
+
 typedef struct ldisc_tag {
     Terminal *term;
     Backend *back;

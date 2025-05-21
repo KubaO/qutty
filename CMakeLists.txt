@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-# Using putty 0.67 source code in puttysrc
+# Using putty 0.69 source code in puttysrc
 #
 # settings.c:
 # In QuTTY this file is only used for loading saved sessions in
@@ -64,6 +64,7 @@ set(PROJECT_SOURCES
     QtSessionTreeModel.cpp
     QtCompleterWithAdvancedCompletion.cpp
 
+    puttysrc/be_misc.c
     puttysrc/callback.c
     puttysrc/conf.c
     puttysrc/pgssapi.c
@@ -75,6 +76,7 @@ set(PROJECT_SOURCES
     puttysrc/terminal.c
     puttysrc/ldisc.c
     puttysrc/ldiscucs.c
+    puttysrc/miscucs.c
     puttysrc/timing.c
     puttysrc/sshbn.c
     puttysrc/sshpubk.c
@@ -90,7 +92,9 @@ set(PROJECT_SOURCES
     puttysrc/pinger.c
     puttysrc/sshmd5.c
     puttysrc/sshaes.c
+    puttysrc/sshccp.c
     puttysrc/sshdes.c
+    puttysrc/sshecc.c
     puttysrc/sshzlib.c
     puttysrc/sshdh.c
     puttysrc/sshblowf.c
@@ -106,6 +110,7 @@ set(PROJECT_SOURCES
     puttysrc/wildcard.c
     puttysrc/be_qutty.c
     puttysrc/settings.c
+    puttysrc/version.c
     tmux/TmuxBackend.cpp
     tmux/TmuxGateway.cpp
     tmux/TmuxWindowPane.cpp
@@ -144,17 +149,20 @@ set(PROJECT_SOURCES
     puttysrc/puttyps.h
     puttysrc/network.h
     puttysrc/misc.h
+    puttysrc/pageant.h
     puttysrc/puttymem.h
     puttysrc/terminal.h
     puttysrc/tree234.h
     puttysrc/sshgss.h
     puttysrc/pgssapi.h
+    puttysrc/sshblowf.h
     puttysrc/sshbn.h
     puttysrc/sshgssc.h
     puttysrc/proxy.h
     puttysrc/int64.h
     puttysrc/ldisc.h
     puttysrc/storage.h
+    puttysrc/version.h
     tmux/tmux.h
     tmux/TmuxGateway.hpp
     tmux/TmuxWindowPane.hpp
