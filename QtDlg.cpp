@@ -14,6 +14,7 @@ extern "C" {
 #include "GuiMainWindow.hpp"
 #include "GuiTerminalWindow.hpp"
 #include "QtConfig.hpp"
+#include "QtLogDbg.hpp"
 
 /*
  * Ask whether the selected algorithm is acceptable (since it was
@@ -69,11 +70,19 @@ int askappend(void * /*frontend*/, Filename *filename, void (* /*callback*/)(voi
   }
 }
 
-int get_userpass_input_v2(void *frontend, prompts_t *p, const unsigned char *in, int inlen) {
+struct bufchain_granule {};
+
+int get_userpass_input_v2(void *frontend, prompts_t *p, const unsigned char *in, size_t inlen) {
   GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
   int ret = -1;
+  bufchain_granule granule = {};
+  bufchain buf = {&granule, &granule, inlen, nullptr, nullptr};
+
+  void (*queue_idempotent_callback)(IdempotentCallback *ic);
+  IdempotentCallback *ic;
+
   // ret = cmdline_get_passwd_input(p, in, inlen);
-  if (ret == -1) ret = term_get_userpass_input(f->term, p, in, inlen);
+  if (ret == -1) ret = term_get_userpass_input(f->term, p, &buf);
   return ret;
 }
 
@@ -236,21 +245,53 @@ void connection_fatal(void *frontend, const char *fmt, ...) {
   va_end(args);
 }
 
-void fatalbox(const char *fmt, ...) {
+NORETURN void modalfatalbox(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  char buf[1000];
-  _snprintf(buf, sizeof(buf), fmt, args);
-  qt_message_box_no_frontend(APPNAME " Fatal Error", fmt, args);
+  qt_vmessage_box_no_frontend(APPNAME " Fatal error", fmt, args);
   va_end(args);
+  abort();
 }
 
-void modalfatalbox(const char *msg, ...) {
-  qt_message_box_no_frontend(APPNAME " Fatal Error", msg);
-}
+}  // extern "C"
+
+void log_eventlog(LogPolicy *lp, const char *event) { qDebug() << lp << event; }
+
+/*
+ * Ask what to do about the specified output log file already
+ * existing. Can return four values:
+ *  *  - 2 means overwrite the log file
+ *  - 1 means append to the log file
+ *  - 0 means cancel logging for this session
+ *  - -1 means please wait, and callback() will be called with one
+ *    of those options.
+ */
+int log_askappend(LogPolicy *lp, Filename *filename, void (*callback)(void *ctx, int result),
+                  void *ctx) {
+  return 1;
 }
 
-void logevent(void *frontend, const char *string) { qDebug() << frontend << string; }
+/*
+ * Emergency logging when the log file itself can't be opened,
+ * which typically means we want to shout about it more loudly
+ * than a mere Event Log entry.
+ *  * One reasonable option is to send it to the same place that
+ * stderr output from the main session goes (so, either a console
+ * tool's actual stderr, or a terminal window). In many cases this
+ * is unlikely to cause this error message to turn up
+ * embarrassingly in a log file of real server output, because the
+ * whole point is that we haven't managed to open any such log
+ * file :-)
+ */
+void log_logging_error(LogPolicy *lp, const char *event) {}
+
+const LogPolicyVtable qutty_logpolicy_vt = {
+    log_eventlog,
+    log_askappend,
+    log_logging_error,
+};
+
+LogPolicy qutty_logpolicy = {&qutty_logpolicy_vt};
 
 // from putty-0.69/windlg.c
 int verify_ssh_host_key(void *frontend, char *host, int port, const char *keytype, char *keystr,

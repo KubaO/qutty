@@ -13,9 +13,6 @@
 
 #include "GuiBase.hpp"
 #include "QtConfig.hpp"
-extern "C" {
-#include "putty.h"
-}
 
 namespace Ui {
 class GuiSettingsWindow;

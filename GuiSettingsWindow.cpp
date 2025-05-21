@@ -492,6 +492,7 @@ enum Type {
   TYPE_NONE,
   TYPE_STR,
   TYPE_INT,
+  TYPE_BOOL,
   TYPE_FILENAME,
   TYPE_FONT,
 };
@@ -524,8 +525,8 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
     if (opt & UI::Optional && !confKeyExists(cfg.get(), key)) continue;
     QCheckBox *cb = qobject_cast<QCheckBox *>(widget);
     if (cb) {
-      assert(type == TYPE_INT);
-      cb->setChecked(conf_get_int(cfg.get(), key));
+      assert(type == TYPE_BOOL);
+      cb->setChecked(conf_get_bool(cfg.get(), key));
       continue;
     }
     QLineEdit *le = qobject_cast<QLineEdit *>(widget);
@@ -540,14 +541,21 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
     }
     QButtonGroup *bg = qobject_cast<QButtonGroup *>(widget);
     if (bg) {
-      assert(type == TYPE_INT);
-      bg->button(conf_get_int(cfg.get(), key))->click();
+      int cv = 0;
+      if (type == TYPE_BOOL)
+        cv = conf_get_bool(cfg.get(), key);
+      else if (type == TYPE_INT)
+        cv = conf_get_int(cfg.get(), key);
+      bg->button(cv)->click();
       continue;
     }
     QRadioButton *rb = qobject_cast<QRadioButton *>(widget);
     if (rb) {
-      assert(type == TYPE_INT);
-      int cv = conf_get_int(cfg.get(), key);
+      int cv = 0;
+      if (type == TYPE_INT)
+        cv = conf_get_int(cfg.get(), key);
+      else if (type == TYPE_BOOL)
+        cv = conf_get_bool(cfg.get(), key);
       if (kv.is_bool) {
         if (cv && value || !cb && !value) rb->click();
       } else {

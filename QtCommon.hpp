@@ -11,6 +11,7 @@
 #include <QTimer>
 #include <QtNetwork/QTcpSocket>
 extern "C" {
+#include "network.h"
 #include "putty.h"
 }
 
@@ -30,26 +31,22 @@ class GuiTerminalWindow;
 extern QTimer *qtimer;
 extern long timing_next_time;
 
-typedef struct Socket_tag *Actual_Socket;
-
-struct Socket_tag {
-  const struct socket_function_table *fn;
+struct QtSocket : Socket {
   /* the above variable absolutely *must* be the first in this structure */
   const char *error;
-  // SOCKET s;
-  Plug plug;
+  Plug *plug;
   void *private_ptr;
   bufchain output_data;
-  int connected;
-  int writable;
-  int frozen;          /* this causes readability notifications to be ignored */
-  int frozen_readable; /* this means we missed at least one readability
-                        * notification while we were frozen */
-  int localhost_only;  /* for listening sockets */
+  bool connected;
+  bool writable;
+  bool frozen;          /* this causes readability notifications to be ignored */
+  bool frozen_readable; /* this means we missed at least one readability
+                         * notification while we were frozen */
+  bool localhost_only;  /* for listening sockets */
   char oobdata[1];
-  int sending_oob;
+  bool sending_oob;
   int oobinline, nodelay, keepalive, privport;
-  SockAddr addr;
+  SockAddr *addr;
   // SockAddrStep step;
   int port;
   int pending_error; /* in case send() returns error */
@@ -59,14 +56,11 @@ struct Socket_tag {
                       * example. So here we define `parent' and `child' pointers to
                       * track this link.
                       */
-  Actual_Socket parent, child;
+  QtSocket *parent, *child;
   QTcpSocket *qtsock;
 };
 
-typedef struct telnet_tag {
-  const struct plug_function_table *fn;
-  /* the above field _must_ be first in the structure */
-
+struct TelnetPlug : Plug {
   Socket s;
 
   void *frontend;
@@ -86,8 +80,8 @@ typedef struct telnet_tag {
 
   Conf *cfg;
 
-  Pinger pinger;
-} * Telnet;
+  Pinger *pinger;
+};
 
 void qstring_to_char(char *dst, const QString &src, int dstlen);
 

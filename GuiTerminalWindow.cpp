@@ -18,10 +18,14 @@
 #include "GuiMenu.hpp"
 #include "GuiSplitter.hpp"
 #include "GuiTabWidget.hpp"
+#include "QtLogDbg.hpp"
 #include "serialize/QtWebPluginMap.hpp"
 extern "C" {
 #include "puttysrc/terminal.h"
 }
+
+static Seat qutty_seat_impl = {&qutty_seat_vt};
+Seat *const qutty_seat = &qutty_seat_impl;
 
 GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, Conf *cfg)
     : QAbstractScrollArea(parent), cfgOwner(QtConfig::copy(cfg)), cfg(cfgOwner.get()) {
@@ -53,40 +57,57 @@ GuiTerminalWindow::~GuiTerminalWindow() {
     delete _tmuxGateway;
   }
 
+  if (term && term->logctx) {
+    log_free(term->logctx);
+    term->logctx = nullptr;
+  }
+
   if (ldisc) {
     ldisc_free(ldisc);
-    ldisc = NULL;
+    ldisc = nullptr;
   }
   if (backend) {
-    backend->free(backhandle);
-    backhandle = NULL;
-    backend = NULL;
-    term_provide_resize_fn(term, NULL, NULL);
+    backend->vt->free(backend);
+    backend = nullptr;
+  }
+
+  if (term) {
+    // term_provide_resize_fn(term, NULL, NULL); // FIXME
     term_free(term);
-    if (qtsock) qtsock->close();
-    term = NULL;
-    qtsock = NULL;
+    term = nullptr;
+  }
+
+  if (qtsock) {
+    qtsock->close();
+    qtsock = nullptr;
   }
 }
 
-extern "C" Socket get_ssh_socket(void *handle);
-extern "C" Socket get_telnet_socket(void *handle);
+extern "C" Socket *get_ssh_socket(Backend *be);
+extern "C" Socket *get_telnet_socket(Backend *be);
 
 int GuiTerminalWindow::initTerminal() {
   char *realhost = NULL;
   char *ip_addr = conf_get_str(cfg, CONF_host);
-  void *logctx;
 
-  set_title(this, ip_addr);
+  QuttyTermWin *win = snew(QuttyTermWin);
+  this->win = win;
+  win->vt = &qutty_term_vt;
+  win->w = this;
+
+  term = term_init(cfg, &ucsdata, win);
+  term->logctx = log_init(&qutty_logpolicy, cfg);
+  win->vt->set_title(win, ip_addr);
 
   memset(&ucsdata, 0, sizeof(struct unicode_data));
   init_ucs(cfg, &ucsdata);
   setTermFont(cfg);
   cfgtopalette(cfg);
 
-  backend = backend_from_proto(conf_get_int(cfg, CONF_protocol));
+  const BackendVtable *bvt = backend_vt_from_proto(conf_get_int(cfg, CONF_protocol));
   int port = conf_get_int(cfg, CONF_port);
-  const char *error = backend->init(this, &backhandle, cfg, (char *)ip_addr, port, &realhost, 1, 0);
+  const char *error = backend_init(bvt, qutty_seat, &backend, term->logctx, cfg, ip_addr, port,
+                                   &realhost, true, false);
   if (realhost) sfree(realhost);
 
   if (error) {
@@ -103,19 +124,15 @@ int GuiTerminalWindow::initTerminal() {
     goto cu0;
   }
 
-  term = term_init(cfg, &ucsdata, this);
-  logctx = log_init(NULL, cfg);
-  term_provide_logctx(term, logctx);
-
   term_size(term, this->viewport()->height() / fontHeight, this->viewport()->width() / fontWidth,
             conf_get_int(cfg, CONF_savelines));
 
   switch (conf_get_int(cfg, CONF_protocol)) {
     case PROT_TELNET:
-      as = (Actual_Socket)get_telnet_socket(backhandle);
+      as = static_cast<QtSocket *>(get_telnet_socket(backend));
       break;
     case PROT_SSH:
-      as = (Actual_Socket)get_ssh_socket(backhandle);
+      as = static_cast<QtSocket *>(get_ssh_socket(backend));
       break;
     default:
       assert(0);
@@ -126,15 +143,11 @@ int GuiTerminalWindow::initTerminal() {
                    SLOT(sockError(QAbstractSocket::SocketError)));
   QObject::connect(as->qtsock, SIGNAL(disconnected()), this, SLOT(sockDisconnected()));
 
-  /*
-   * Connect the terminal to the backend for resize purposes.
-   */
-  term_provide_resize_fn(term, backend->size, backhandle);
 
   /*
    * Set up a line discipline.
    */
-  ldisc = ldisc_create(cfg, term, backend, backhandle, this);
+  ldisc = ldisc_create(cfg, term, backend, qutty_seat);
 
   return 0;
 
@@ -192,10 +205,9 @@ int GuiTerminalWindow::restartTerminal() {
     ldisc = NULL;
   }
   if (backend) {
-    backend->free(backhandle);
-    backhandle = NULL;
+    backend->vt->free(backend);
     backend = NULL;
-    term_provide_resize_fn(term, NULL, NULL);
+    // term_provide_resize_fn(term, NULL, NULL);
     term_free(term);
     qtsock->close();
     term = NULL;
@@ -225,7 +237,7 @@ int GuiTerminalWindow::reconfigureTerminal(Conf *new_cfg) {
   term_reconfig(term, cfg);
 
   /* Pass new config data to the back end */
-  if (backend) backend->reconfig(backhandle, cfg);
+  if (backend) backend->vt->reconfig(backend, cfg);
 
   /* Screen size changed ? */
   if (confSizeChanged(cfg, prev_cfg.get()))
@@ -254,9 +266,8 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   setTermFont(cfg);
   cfgtopalette(cfg);
 
-  term = term_init(cfg, &ucsdata, this);
-  void *logctx = log_init(NULL, cfg);
-  term_provide_logctx(term, logctx);
+  term = term_init(cfg, &ucsdata, win);
+  term->logctx = log_init(NULL, cfg);
   int cfg_width = conf_get_int(cfg, CONF_width);
   int cfg_height = conf_get_int(cfg, CONF_height);
   // resize according to config if window is smaller
@@ -274,9 +285,9 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   conf_set_int(cfg, CONF_width, width);
   conf_set_int(cfg, CONF_height, height);
 
-  backend = backend_from_proto(conf_get_int(cfg, CONF_protocol));
+  const BackendVtable *bvt = backend_vt_from_proto(conf_get_int(cfg, CONF_protocol));
   // HACK - pass paneid in port
-  backend->init(this, &backhandle, cfg, NULL, id, NULL, 0, 0);
+  backend_init(bvt, qutty_seat, &backend, term->logctx, cfg, nullptr, id, nullptr, false, false);
   tmuxPane = new TmuxWindowPane(gateway, this);
   tmuxPane->id = id;
   tmuxPane->width = width;
@@ -286,19 +297,14 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   qtsock = NULL;
 
   /*
-   * Connect the terminal to the backend for resize purposes.
-   */
-  term_provide_resize_fn(term, backend->size, backhandle);
-
-  /*
    * Set up a line discipline.
    */
-  ldisc = ldisc_create(cfg, term, backend, backhandle, this);
+  ldisc = ldisc_create(cfg, term, backend, nullptr);
   return tmuxPane;
 }
 
 void GuiTerminalWindow::keyPressEvent(QKeyEvent *e) {
-  noise_ultralight(e->key());
+  noise_ultralight(NOISE_SOURCE_KEY, e->key());
   if (!term) return;
 
   // skip ALT SHIFT CTRL keypress events
@@ -348,13 +354,15 @@ void GuiTerminalWindow::keyPressEvent(QKeyEvent *e) {
   }
 }
 
-void GuiTerminalWindow::keyReleaseEvent(QKeyEvent *e) { noise_ultralight(e->key()); }
+void GuiTerminalWindow::keyReleaseEvent(QKeyEvent *e) {
+  noise_ultralight(NOISE_SOURCE_KEY, e->key());
+}
 
 void GuiTerminalWindow::readyRead() {
   char buf[20480];
   int len = qtsock->read(buf, sizeof(buf));
-  noise_ultralight(len);
-  (*as->plug)->receive(as->plug, 0, buf, len);
+  noise_ultralight(NOISE_SOURCE_IOLEN, len);
+  as->plug->vt->receive(as->plug, 0, buf, len);
 
   if (qtsock->bytesAvailable() > 0) readyRead();
 }
@@ -512,7 +520,7 @@ void GuiTerminalWindow::paintCursor(QPainter &painter, int row, int col, const Q
   }
 }
 
-int GuiTerminalWindow::from_backend(int is_stderr, const char *data, size_t len) {
+size_t GuiTerminalWindow::from_backend(int is_stderr, const char *data, size_t len) {
   if (_tmuxMode == TMUX_MODE_GATEWAY && _tmuxGateway) {
     size_t rc = _tmuxGateway->fromBackend(is_stderr, data, len);
     if (rc && rc < len && _tmuxMode == TMUX_MODE_GATEWAY_DETACH_INIT) {
@@ -600,7 +608,7 @@ static Mouse_Button translate_button(Conf *cfg, Mouse_Button button) {
 
 void GuiTerminalWindow::mouseDoubleClickEvent(QMouseEvent *e) {
   QPoint pos = e->position().toPoint();
-  noise_ultralight(pos.x() << 16 | pos.y());
+  noise_ultralight(NOISE_SOURCE_MOUSEPOS, pos.x() << 16 | pos.y());
   if (!term) return;
 
   int mouse_is_xterm = conf_get_int(cfg, CONF_mouse_is_xterm);
@@ -631,7 +639,7 @@ void GuiTerminalWindow::mouseDoubleClickEvent(QMouseEvent *e) {
 //#define (e) e->button()&Qt::LeftButton
 void GuiTerminalWindow::mouseMoveEvent(QMouseEvent *e) {
   QPoint pos = e->position().toPoint();
-  noise_ultralight(pos.x() << 16 | pos.y());
+  noise_ultralight(NOISE_SOURCE_MOUSEPOS, pos.x() << 16 | pos.y());
   if (e->buttons() == Qt::NoButton) {
     mainWindow->toolBarTerminalTop.processMouseMoveTerminalTop(this, e);
     return;
@@ -666,7 +674,7 @@ void GuiTerminalWindow::mouseMoveEvent(QMouseEvent *e) {
 
 void GuiTerminalWindow::mousePressEvent(QMouseEvent *e) {
   QPoint pos = e->position().toPoint();
-  noise_ultralight(pos.x() << 16 | pos.y());
+  noise_ultralight(NOISE_SOURCE_MOUSEPOS, pos.x() << 16 | pos.y());
   if (!term) return;
 
   int mouse_is_xterm = conf_get_int(cfg, CONF_mouse_is_xterm);
@@ -710,7 +718,8 @@ void GuiTerminalWindow::mousePressEvent(QMouseEvent *e) {
 
 void GuiTerminalWindow::mouseReleaseEvent(QMouseEvent *e) {
   QPoint pos = e->position().toPoint();
-  noise_ultralight(pos.x() << 16 | pos.y());
+  noise_ultralight(NOISE_SOURCE_MOUSEPOS, pos.x() << 16 | pos.y());
+  noise_ultralight(NOISE_SOURCE_MOUSEBUTTON, e->buttons());
   if (!term) return;
 
   Mouse_Button button, bcooked;
@@ -741,14 +750,25 @@ void GuiTerminalWindow::getClip(wchar_t **p, int *len) {
 }
 
 void GuiTerminalWindow::requestPaste() {
-  term_do_paste(term);
+  QString const text = QApplication::clipboard()->text();
+
+  if (sizeof(wchar_t) == sizeof(QChar))
+    term_do_paste(term, qUtf16Printable(text), text.size());
+  else {
+    size_t const maxlen = text.size();
+    wchar_t *array = new wchar_t[maxlen];
+    size_t len = text.toWCharArray(array);
+    assert(len <= maxlen);
+    term_do_paste(term, array, len);
+  }
 
   // Save the paste in our persistent list.
-  qutty_web_plugin_map.hash_map["PASTE_HISTORY"].prepend(QApplication::clipboard()->text());
+  qutty_web_plugin_map.hash_map["PASTE_HISTORY"].prepend(text);
   qutty_web_plugin_map.save();
 }
 
-void GuiTerminalWindow::writeClip(wchar_t *data, int * /*attr*/, int len, int /*must_deselect*/) {
+void GuiTerminalWindow::writeClip(wchar_t *data, int * /*attr*/, truecolour * /*colours*/, int len,
+                                  int /*must_deselect*/) {
   data[len] = 0;
   QString s = QString::fromWCharArray(data);
   QApplication::clipboard()->setText(s);
@@ -868,13 +888,13 @@ void GuiTerminalWindow::detachTmuxControllerMode() {
 void GuiTerminalWindow::sockError(QAbstractSocket::SocketError socketError) {
   char errStr[256];
   qstring_to_char(errStr, as->qtsock->errorString(), sizeof(errStr));
-  (*as->plug)->closing(as->plug, errStr, socketError, 0);
+  as->plug->vt->closing(as->plug, errStr, socketError, 0);
 }
 
 void GuiTerminalWindow::sockDisconnected() {
   char errStr[256];
   qstring_to_char(errStr, as->qtsock->errorString(), sizeof(errStr));
-  (*as->plug)->closing(as->plug, errStr, as->qtsock->error(), 0);
+  as->plug->vt->closing(as->plug, errStr, as->qtsock->error(), 0);
 }
 
 void GuiTerminalWindow::closeTerminal() {

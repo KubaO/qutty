@@ -6,6 +6,10 @@ class GuiTerminalWindow;
 class TmuxGateway;
 class TmuxWindowPane;
 
+#ifdef _WIN32
+#include <msxml.h>  // otherwise marshal.h:get_data interferes with it
+#endif
+
 extern "C" {
 #include "misc.h"
 // min/max interferes with std::min/max

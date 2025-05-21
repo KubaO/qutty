@@ -44,7 +44,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   QFont _font;
   int fontWidth, fontHeight, fontAscent;
   struct unicode_data ucsdata = {};
-  Actual_Socket as = nullptr;
+  QtSocket *as = nullptr;
   QTcpSocket *qtsock = nullptr;
   bool _any_update = false;
   QRegion termrgn;
@@ -74,8 +74,8 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
  public:
   Terminal *term = nullptr;
   Backend *backend = nullptr;
-  void *backhandle = nullptr;
-  void *ldisc = nullptr;
+  TermWin *win = nullptr;
+  Ldisc *ldisc = nullptr;
 
   bool userClosingTab = false;
   bool isSockDisconnected = false;
@@ -103,7 +103,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
 
   void keyPressEvent(QKeyEvent *e) override;
   void keyReleaseEvent(QKeyEvent *e) override;
-  int from_backend(int is_stderr, const char *data, size_t len);
+  size_t from_backend(int is_stderr, const char *data, size_t len);
   void preDrawTerm();
   void drawTerm();
   void drawText(int row, int col, wchar_t *ch, int len, unsigned long attr, int lattr);
@@ -112,7 +112,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void cfgtopalette(Conf *cfg);
   void requestPaste();
   void getClip(wchar_t **p, int *len);
-  void writeClip(wchar_t *data, int *attr, int len, int must_deselect);
+  void writeClip(wchar_t *data, int *attr, truecolour *, int len, int must_deselect);
   void paintText(QPainter &painter, int row, int col, const QString &str, unsigned long attr);
   void paintCursor(QPainter &painter, int row, int col, const QString &str, unsigned long attr);
 
@@ -176,5 +176,12 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void sockDisconnected();
   void on_sessionTitleChange(bool force = false);
 };
+
+struct QuttyTermWin : TermWin {
+  GuiTerminalWindow *w;
+};
+
+extern const TermWinVtable qutty_term_vt;
+extern const SeatVtable qutty_seat_vt;
 
 #endif  // TERMINALWINDOW_H
