@@ -13,10 +13,6 @@
 
 #include "winstuff.h"
 
-#elif defined(MACOSX)
-
-#include "osx.h"
-
 #else
 
 #include "unix.h"
