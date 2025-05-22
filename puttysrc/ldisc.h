@@ -8,10 +8,6 @@
 #ifndef PUTTY_LDISC_H
 #define PUTTY_LDISC_H
 
-#ifdef IS_QUTTY
-#include "defs.h"
-#endif
-
 struct Ldisc_tag {
     Terminal *term;
     Backend *backend;

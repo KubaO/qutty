@@ -69,7 +69,6 @@ Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline, bool nod
                                          sk_tcp_write,
                                          sk_tcp_write_oob,
                                          nullptr /* TODO write_eof */,
-                                         sk_tcp_flush,
                                          sk_tcp_set_frozen,
                                          sk_tcp_socket_error,
                                          nullptr /* TODO peer_info */};
@@ -234,7 +233,6 @@ Socket *sk_new_2(SockAddr *addr, int port, bool privport, bool oobinline, bool n
                                          sk_tcp_write,
                                          sk_tcp_write_oob,
                                          nullptr /* TODO write_eof */,
-                                         sk_tcp_flush,
                                          sk_tcp_set_frozen,
                                          sk_tcp_socket_error,
                                          nullptr /* TODO peer_info */};
