@@ -264,7 +264,7 @@
       <enum>QFrame::Shape::NoFrame</enum>
      </property>
      <property name="currentIndex">
-      <number>3</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="page_1">
       <layout class="QVBoxLayout" name="verticalLayout_25" stretch="0,1,0,0">
@@ -6477,9 +6477,6 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_39">
-          <item row="1" column="1">
-           <widget class="QListWidget" name="l_ssh_hklist"/>
-          </item>
           <item row="1" column="2">
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
@@ -6524,6 +6521,13 @@
             </item>
            </layout>
           </item>
+          <item row="0" column="0" colspan="2">
+           <widget class="QLabel" name="label_59">
+            <property name="text">
+             <string>Algorithm selection policy:</string>
+            </property>
+           </widget>
+          </item>
           <item row="1" column="0">
            <widget class="QWidget" name="widget_49" native="true">
             <property name="sizePolicy">
@@ -6546,10 +6550,13 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="0" colspan="2">
-           <widget class="QLabel" name="label_59">
+          <item row="1" column="1">
+           <widget class="QListWidget" name="l_ssh_hklist"/>
+          </item>
+          <item row="2" column="1" colspan="2">
+           <widget class="QCheckBox" name="chb_ssh_prefer_known_hostkeys">
             <property name="text">
-             <string>Algorithm selection policy:</string>
+             <string>&amp;Prefer algorithms for which a host key is known</string>
             </property>
            </widget>
           </item>
@@ -7824,7 +7831,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>323</width>
+               <width>248</width>
                <height>353</height>
               </rect>
              </property>
@@ -8723,10 +8730,10 @@
   <buttongroup name="buttonGroup_3"/>
   <buttongroup name="buttonGroup_11"/>
   <buttongroup name="gp_termopt_echo"/>
+  <buttongroup name="buttonGroup_13"/>
   <buttongroup name="buttonGroup_9"/>
   <buttongroup name="buttonGroup_7"/>
   <buttongroup name="gp_contype"/>
   <buttongroup name="buttonGroup_2"/>
-  <buttongroup name="buttonGroup_13"/>
  </buttongroups>
 </ui>
