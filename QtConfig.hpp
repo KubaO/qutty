@@ -40,13 +40,13 @@ typedef struct qutty_mainwindow_settings_t__ {
 class QtConfig : public QObject {
   Q_OBJECT
 
-  class SFreeDeleter {
+  class ConfFreeDeleter {
    public:
     void operator()(Conf *ptr) { conf_free(ptr); }
   };
 
  public:
-  using Pointer = std::unique_ptr<Conf, SFreeDeleter>;
+  using Pointer = std::unique_ptr<Conf, ConfFreeDeleter>;
 
   static Pointer copy(Conf *cfg) { return Pointer(conf_copy(cfg)); }
 
