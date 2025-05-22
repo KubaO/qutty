@@ -246,6 +246,7 @@ int QtConfig::readFromXML(QIODevice *device) {
   while (xml.readNextStartElement()) {
     if (xml.name() == "config" && xml.attributes().value("version") == "2.0") {
       Pointer cfg(conf_new());
+      load_open_settings(nullptr, cfg.get());  // pre-populate with defaults
       while (xml.readNextStartElement()) {
         if (xml.name() == "bool")
           read_BOOL(xml, cfg.get());
