@@ -18,18 +18,18 @@ Filename *platform_default_filename(const char *name)
 {
     if (!strcmp(name, "LogFileName"))
 #ifdef IS_QUTTY
-	return filename_from_str("qutty.log");
+        return filename_from_str("qutty.log");
 #else
-	return filename_from_str("putty.log");
+        return filename_from_str("putty.log");
 #endif
     else
-	return filename_from_str("");
+        return filename_from_str("");
 }
 
 char *platform_default_s(const char *name)
 {
     if (!strcmp(name, "SerialLine"))
-	return dupstr("COM1");
+        return dupstr("COM1");
     return NULL;
 }
 
