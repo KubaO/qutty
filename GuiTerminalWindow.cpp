@@ -351,7 +351,7 @@ void GuiTerminalWindow::keyPressEvent(QKeyEvent *e) {
       }
       term_nopaste(term);
       term_seen_key_event(term);
-      luni_send(ldisc, bufwchar, len, 1);
+      term_keyinputw(term, bufwchar, len);
     }
   }
 }

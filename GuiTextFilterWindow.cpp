@@ -58,7 +58,7 @@ void GuiTextFilterWindow::on_text_completion_activated(const QString &str) {
 
   wchar_t *buf = new wchar_t[str.length() + 1];
   str.toWCharArray(buf);
-  luni_send(t->term->ldisc, buf, str.length(), 0);
+  ldisc_send(t->term->ldisc, buf, str.length(), false);
   delete[] buf;
 
   on_deactivated();

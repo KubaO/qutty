@@ -358,7 +358,7 @@ int TmuxGateway::sendCommand(TmuxCmdRespReceiver *recv, tmux_cb_index_t cb,
 int TmuxGateway::sendCommand(TmuxCmdRespReceiver *recv, tmux_cb_index_t cb, const wchar_t cmd_str[],
                              size_t cmd_str_len) {
   qDebug() << __FUNCTION__ << QString::fromWCharArray(cmd_str, (int)cmd_str_len);
-  luni_send(termGatewayWnd->ldisc, (wchar_t *)cmd_str, (int)cmd_str_len, 0);
+  ldisc_send(termGatewayWnd->ldisc, (wchar_t *)cmd_str, (int)cmd_str_len, false);
   _commandQueue.push(TmuxCmdResp(recv, cb));
   return 0;
 }
