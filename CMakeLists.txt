@@ -140,6 +140,7 @@ set(PROJECT_SOURCES
     puttysrc/be_qutty.c
     puttysrc/settings.c
     puttysrc/version.c
+    puttysrc/windows/winucs.c
     tmux/TmuxBackend.cpp
     tmux/TmuxGateway.cpp
     tmux/TmuxWindowPane.cpp
@@ -240,12 +241,24 @@ set(BREAKPAD_SOURCES
     third-party/google-breakpad/google_breakpad/common/minidump_format.h
 )
 
+# winucs.c must disable functions we implement via Qt
+set(UCS_OVERRIDES
+    init_ucs=_init_ucs
+    is_dbcs_leadbyte=_is_dbcs_leadbyte
+    mb_to_wc=_mb_to_wc
+    wc_to_mb=_wc_to_mb
+)
+set_property(SOURCE
+    puttysrc/windows/winucs.c
+    PROPERTY COMPILE_DEFINITIONS "${UCS_OVERRIDES}"
+)
+
 if (WIN32)
     # winnoise.c and winstore.c must be built without UNICODE nor _UNICODE
     set_property(SOURCE
         ${PROJECT_SOURCES}
         puttysrc/windows/windefs.c
-        PROPERTY COMPILE_DEFINITIONS UNICODE _UNICODE
+        APPEND PROPERTY COMPILE_DEFINITIONS UNICODE _UNICODE
     )
     list(APPEND PROJECT_SOURCES
         qutty.rc
