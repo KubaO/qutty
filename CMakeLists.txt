@@ -78,7 +78,6 @@ set(PROJECT_SOURCES
     puttysrc/marshal.c
     puttysrc/terminal.c
     puttysrc/ldisc.c
-    puttysrc/ldiscucs.c
     puttysrc/memory.c
     puttysrc/miscucs.c
     puttysrc/mpint.c
