@@ -340,9 +340,9 @@ QString formatTTYMode(const QString &value);
   X("rb_fnkeys_sco", funky_type, FUNKY_SCO)                                    \
   X("rb_inicursorkeys_normal", app_cursor, false)                              \
   X("rb_inicursorkeys_app", app_cursor, true)                                  \
-  X("rb_ininumkeys_normal", nethack_keypad, 0)                                 \
-  X("rb_ininumkeys_app", nethack_keypad, 1)                                    \
-  X("rb_ininumkeys_nethack", nethack_keypad, 2)                                \
+  X("rb_ininumkeys_normal", app_keypad, false)                                 \
+  X("rb_ininumkeys_app", app_keypad, true)                                     \
+  X("rb_ininumkeys_nethack", nethack_keypad, true)                             \
   X("chb_altgrkey", compose_key)                                               \
   X("chb_ctrl_alt", ctrlaltkeys)                                               \
   X("chb_osx_option_meta", osx_option_meta, UI::Optional)                      \
@@ -563,9 +563,7 @@ QString formatTTYMode(const QString &value);
   X("le_config_data", serdatabits)                                             \
   X("le_config_stop", serstopbits)                                             \
   X("cb_config_parity", serparity)                                             \
-  X("cb_config_flow", serflow)                                                 \
-  /* */                                                                        \
-  X("rb_ininumkeys_app", app_keypad, true)
+  X("cb_config_flow", serflow)
 
 /*
  * These options are yet to be incorporated into the UI.
@@ -792,6 +790,15 @@ static bool setW(QListWidget *lw, Conf *conf, const KeyValue &kv) {
   return false;
 }
 
+static bool setW(QButtonGroup *bg, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_INT) {
+    int val = conf_get_int(conf, kv.key);
+    if (val > 0 && val < bg->buttons().size()) bg->button(val)->click();
+    return true;
+  }
+  return false;
+}
+
 static int conf_get_str_count(Conf *conf, config_primary_key key) {
   int rows = 0;
   char *subkey = nullptr;
@@ -811,7 +818,6 @@ static bool setW(QTableWidget *tw, Conf *conf, const KeyValue &kv) {
     UIFormatter formatter = kv.holds<UIFormatter>() ? kv.value<UIFormatter>() : nullptr;
     while ((value = conf_get_str_strs(conf, kv.key, subkey, &subkey))) {
       tw->insertRow(row);
-      qDebug() << "inserting row" << row;
       if (kv.options & UI::Col1IsFormatted)
         setTableRow(tw, row, subkey, formatter(value).toLatin1());
       else
@@ -819,7 +825,6 @@ static bool setW(QTableWidget *tw, Conf *conf, const KeyValue &kv) {
       row++;
     }
     if (kv.options & UI::Col0IsSorted) tw->sortItems(0);
-    qDebug() << "rows:" << tw->rowCount();
     return true;
   }
   return false;
@@ -842,6 +847,7 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
     if (set<QComboBox>(widget, cfg.get(), *kv)) continue;
     if (set<QListWidget>(widget, cfg.get(), *kv)) continue;
     if (set<QTableWidget>(widget, cfg.get(), *kv)) continue;
+    if (set<QButtonGroup>(widget, cfg.get(), *kv)) continue;
     unhandledEntry(widget, *kv, false);
   }
 
@@ -975,6 +981,15 @@ static bool getW(QTableWidget *tw, Conf *conf, const KeyValue &kv) {
   return false;
 }
 
+static bool getW(QButtonGroup *bg, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_INT) {
+    int val = bg->checkedId();
+    if (val > 0) conf_set_int(conf, kv.key, val);
+    return true;
+  }
+  return false;
+}
+
 Conf *GuiSettingsWindow::getConfig() {
   for (QWidget *const widget : findChildren<QWidget *>()) {
     const KeyValue *kv = kvForWidget(widget);
@@ -986,6 +1001,7 @@ Conf *GuiSettingsWindow::getConfig() {
     if (get<QTreeWidget>(widget, cfg.get(), *kv)) continue;
     if (get<QListWidget>(widget, cfg.get(), *kv)) continue;
     if (get<QTableWidget>(widget, cfg.get(), *kv)) continue;
+    if (get<QButtonGroup>(widget, cfg.get(), *kv)) continue;
     unhandledEntry(widget, *kv, true);
   }
   return cfg.get();
