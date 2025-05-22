@@ -406,39 +406,34 @@ Filename *filename_from_str(const char *str) {
 
 const char *filename_to_str(const Filename *fn) { return fn->path; }
 
-int filename_equal(const Filename *f1, const Filename *f2) { return !strcmp(f1->path, f2->path); }
+bool filename_equal(const Filename *f1, const Filename *f2) { return !strcmp(f1->path, f2->path); }
 
-int filename_is_null(const Filename *fn) { return !fn || fn->path[0] == '\0'; }
+bool filename_is_null(const Filename *fn) { return !fn || fn->path[0] == '\0'; }
 
 void filename_free(Filename *fn) {
   sfree(fn);
 }
 
-int filename_serialise(const Filename *f, void *vdata) {
-  char *data = (char *)vdata;
-  int len = strlen(f->path) + 1; /* include trailing NUL */
-  if (data) {
-    strcpy(data, f->path);
-  }
-  return len;
+void filename_serialise(BinarySink *bs, const Filename *f) { put_asciz(bs, f->path); }
+
+Filename *filename_deserialise(BinarySource *src) { return filename_from_str(get_asciz(src)); }
+
+void fontspec_serialise(BinarySink *bs, FontSpec *f) {
+  put_asciz(bs, f->name);
+  put_uint32(bs, f->isbold);
+  put_uint32(bs, f->height);
+  put_uint32(bs, f->charset);
 }
 
-Filename *filename_deserialise(void *vdata, int maxsize, int *used) {
-  char *data = (char *)vdata;
-  char *end;
-  end = (char *)memchr(data, '\0', maxsize);
-  if (!end) return NULL;
-  end++;
-  *used = end - data;
-  return filename_from_str(data);
+FontSpec *fontspec_deserialise(BinarySource *src) {
+  const char *name = get_asciz(src);
+  unsigned isbold = get_uint32(src);
+  unsigned height = get_uint32(src);
+  unsigned charset = get_uint32(src);
+  return fontspec_new(name, isbold, height, charset);
 }
 
-int from_backend_untrusted(void *frontend, const char *data, int len) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return term_data_untrusted(f->term, data, len);
-}
-
-int from_backend(void *frontend, int is_stderr, const char *data, int len) {
+size_t from_backend(void *frontend, int is_stderr, const char *data, int len) {
   GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
   return f->from_backend(is_stderr, data, (size_t)len);
 }
@@ -458,7 +453,7 @@ void qutty_connection_fatal(void *frontend, char *msg) {
 
 void notify_remote_exit(void *frontend) {
   GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  int exitcode = f->backend->exitcode(f->backhandle);
+  int exitcode = f->backend->vt->exitcode(f->backend);
 
   if (f->userClosingTab || f->isSockDisconnected) return;
 
@@ -718,3 +713,51 @@ char filename_char_sanitise(char c) {
 
 /* Dummy routine, only required in plink. */
 void frontend_echoedit_update(void *frontend, int echo, int edit) {}
+
+#ifndef NO_SECUREZEROMEMORY
+/*
+ * Windows implementation of smemclr (see misc.c) using SecureZeroMemory.
+ */
+void smemclr(void *b, size_t n) {
+  if (b && n > 0) SecureZeroMemory(b, n);
+}
+#endif
+
+extern "C" void escape_registry_key(const char *in, strbuf *out) {
+  bool candot = false;
+  static const char hex[17] = "0123456789ABCDEF";
+
+  while (*in) {
+    if (*in == ' ' || *in == '\\' || *in == '*' || *in == '?' || *in == '%' || *in < ' ' ||
+        *in > '~' || (*in == '.' && !candot)) {
+      put_byte(out, '%');
+      put_byte(out, hex[((unsigned char)*in) >> 4]);
+      put_byte(out, hex[((unsigned char)*in) & 15]);
+    } else
+      put_byte(out, *in);
+    in++;
+    candot = true;
+  }
+}
+
+extern "C" void unescape_registry_key(const char *in, strbuf *out) {
+  while (*in) {
+    if (*in == '%' && in[1] && in[2]) {
+      int i, j;
+
+      i = in[1] - '0';
+      i -= (i > 9 ? 7 : 0);
+      j = in[2] - '0';
+      j -= (j > 9 ? 7 : 0);
+
+      put_byte(out, (i << 4) + j);
+      in += 3;
+    } else {
+      put_byte(out, *in++);
+    }
+  }
+}
+
+extern "C" int has_embedded_chm(void) { return -1; /*N/A*/ }
+
+extern "C" bool open_for_write_would_lose_data(const Filename *fn) { return false; }

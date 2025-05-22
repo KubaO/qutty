@@ -93,7 +93,7 @@ void init_ucs(Conf *cfg, struct unicode_data *ucsdata) {
   if (confKeyExists(cfg, CONF_line_codepage)) line_codepage = conf_get_str(cfg, CONF_line_codepage);
 
   QTextCodec *encoder = getTextCodec(line_codepage, &ucsdata->line_codepage);
-  if (!encoder) fatalbox((char *)"Unable to get a QTextCodec for codepage %s", line_codepage);
+  if (!encoder) modalfatalbox("Unable to get a QTextCodec for codepage %s", line_codepage);
 
   ucsdata->font_codepage = ucsdata->line_codepage;
 

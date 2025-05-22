@@ -110,6 +110,17 @@ static void read_INT(QXmlStreamReader &xml, Conf *conf, int pri = -1, int sec = 
   xml.skipCurrentElement();
 }
 
+static void read_BOOL(QXmlStreamReader &xml, Conf *conf, int pri = -1) {
+  auto r = Read(xml);
+  bool ok;
+  int v = r.value.toInt(&ok);
+  if (pri < 0) pri = r.key();
+  if (ok && pri >= 0) {
+    conf_set_bool(conf, pri, v);
+  }
+  xml.skipCurrentElement();
+}
+
 static void read_COLOUR(QXmlStreamReader &xml, Conf *conf, int pri, int sec) {
   auto r = Read(xml);
   bool ok;
@@ -236,9 +247,12 @@ int QtConfig::readFromXML(QIODevice *device) {
   while (xml.readNextStartElement()) {
     if (xml.name() == "config" && xml.attributes().value("version") == "2.0") {
       Pointer cfg(conf_new());
+      load_open_settings(nullptr, cfg.get());  // pre-populate with defaults
       while (xml.readNextStartElement()) {
         if (xml.name() == "int")
           read_INT(xml, cfg.get());
+        else if (xml.name() == "bool")
+          read_BOOL(xml, cfg.get());
         else if (xml.name() == "str")
           read_STR(xml, cfg.get());
         else if (xml.name() == "Filename")
@@ -288,6 +302,13 @@ static void write_INT_NONE(QXmlStreamWriter &xml, Conf *conf, config_primary_key
   if (!confKeyExists(conf, key, std::min(0, i))) return;
   int value = (i < 0) ? conf_get_int(conf, key) : conf_get_int_int(conf, key, i);
   write(xml, "int", keyName, QString::number(value));
+}
+
+static void write_BOOL_NONE(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
+                            const char *keyName /*nullable*/) {
+  if (!confKeyExists(conf, key, 0)) return;
+  bool value = conf_get_bool(conf, key);
+  write(xml, "bool", keyName, QString::number(value));
 }
 
 static void write_COLOUR(QXmlStreamWriter &xml, Conf *conf, config_primary_key pri, int sec) {
@@ -517,7 +538,7 @@ bool QtConfig::restoreFromPuttyWinRegistry() {
     Pointer cfg(conf_new());
     const char *config_name = savedSess.sessions[i];
 
-    void *sesskey = open_settings_r(config_name);
+    settings_r *sesskey = open_settings_r(config_name);
     load_open_settings(sesskey, cfg.get());
     close_settings_r(sesskey);
 

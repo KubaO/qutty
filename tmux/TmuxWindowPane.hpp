@@ -1,5 +1,8 @@
 #ifndef TMUXWINDOWPANE_H
 #define TMUXWINDOWPANE_H
+#ifdef _WIN32
+#include <msxml.h>  // otherwise marshal.h:get_data interferes with it
+#endif
 #include "tmux/TmuxGateway.hpp"
 #include "tmux/tmux.h"
 
