@@ -14,12 +14,9 @@
 #define PROXY_ERROR_UNEXPECTED 8001
 
 typedef struct SockAddr SockAddr;
-typedef struct Socket_proxy_tag *ProxySocket;
+typedef struct ProxySocket ProxySocket;
 
-struct Socket_proxy_tag {
-    const struct SocketVtable *fn;
-    /* the above variable absolutely *must* be the first in this structure */
-
+struct ProxySocket {
     const char *error;
 
     Socket *sub_socket;
@@ -59,7 +56,7 @@ struct Socket_proxy_tag {
      * and further the proxy negotiation process.
      */
 
-    int (*negotiate)(ProxySocket /* this */, int /* change type */);
+    int (*negotiate) (ProxySocket * /* this */, int /* change type */);
 
     /* current arguments of plug handlers
      * (for use by proxy's negotiate function)
@@ -90,6 +87,8 @@ struct Socket_proxy_tag {
     int chap_num_attributes_processed;
     int chap_current_attribute;
     int chap_current_datalen;
+
+    Socket sock;
 };
 
 typedef struct Plug_proxy_tag * Proxy_Plug;
@@ -98,16 +97,16 @@ struct Plug_proxy_tag {
     const struct plug_function_table *fn;
     /* the above variable absolutely *must* be the first in this structure */
 
-    ProxySocket proxy_socket;
+    ProxySocket *proxy_socket;
 
 };
 
-extern void proxy_activate(ProxySocket);
+extern void proxy_activate (ProxySocket *);
 
-extern int proxy_http_negotiate(ProxySocket, int);
-extern int proxy_telnet_negotiate(ProxySocket, int);
-extern int proxy_socks4_negotiate(ProxySocket, int);
-extern int proxy_socks5_negotiate(ProxySocket, int);
+extern int proxy_http_negotiate (ProxySocket *, int);
+extern int proxy_telnet_negotiate (ProxySocket *, int);
+extern int proxy_socks4_negotiate (ProxySocket *, int);
+extern int proxy_socks5_negotiate (ProxySocket *, int);
 
 /*
  * This may be reused by local-command proxies on individual
@@ -120,7 +119,7 @@ char *format_telnet_command(SockAddr *addr, int port, Conf *conf);
  * whether encrypted proxy authentication is available.
  */
 extern void proxy_socks5_offerencryptedauth(char *command, int *len);
-extern int proxy_socks5_handlechap(ProxySocket p);
-extern int proxy_socks5_selectchap(ProxySocket p);
+extern int proxy_socks5_handlechap (ProxySocket *);
+extern int proxy_socks5_selectchap(ProxySocket *);
 
 #endif

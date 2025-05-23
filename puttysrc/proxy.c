@@ -23,7 +23,8 @@
  * Call this when proxy negotiation is complete, so that this
  * socket can begin working normally.
  */
-void proxy_activate(ProxySocket p) {
+void proxy_activate (ProxySocket *p)
+{
   void *data;
   int len;
   long output_before, output_after;
@@ -70,14 +71,14 @@ void proxy_activate(ProxySocket p) {
    * our set_frozen handler will flush buffered receive data before
    * unfreezing the actual underlying socket.
    */
-  if (!p->freeze) sk_set_frozen((Socket*)p, 0);
+  if (!p->freeze) sk_set_frozen(&p->sock, 0);
 }
 
 /* basic proxy socket functions */
 
 static Plug sk_proxy_plug (Socket *s, Plug p)
 {
-  ProxySocket ps = (ProxySocket)s;
+  ProxySocket *ps = container_of(s, ProxySocket, sock);
   Plug ret = ps->plug;
   if (p) ps->plug = p;
   return ret;
@@ -85,15 +86,16 @@ static Plug sk_proxy_plug (Socket *s, Plug p)
 
 static void sk_proxy_close (Socket *s)
 {
-  ProxySocket ps = (ProxySocket)s;
+  ProxySocket *ps = container_of(s, ProxySocket, sock);
 
   sk_close(ps->sub_socket);
   sk_addr_free(ps->remote_addr);
   sfree(ps);
 }
 
-static size_t sk_proxy_write(Socket *s, const void *data, size_t len) {
-  ProxySocket ps = (ProxySocket)s;
+static size_t sk_proxy_write (Socket *s, const void *data, size_t len)
+{
+  ProxySocket *ps = container_of(s, ProxySocket, sock);
 
   if (ps->state != PROXY_STATE_ACTIVE) {
     bufchain_add(&ps->pending_output_data, data, len);
@@ -104,7 +106,7 @@ static size_t sk_proxy_write(Socket *s, const void *data, size_t len) {
 
 static size_t sk_proxy_write_oob(Socket *s, const void *data, size_t len)
 {
-  ProxySocket ps = (ProxySocket)s;
+  ProxySocket *ps = container_of(s, ProxySocket, sock);
 
   if (ps->state != PROXY_STATE_ACTIVE) {
     bufchain_clear(&ps->pending_output_data);
@@ -117,7 +119,7 @@ static size_t sk_proxy_write_oob(Socket *s, const void *data, size_t len)
 
 static void sk_proxy_write_eof (Socket *s)
 {
-  ProxySocket ps = (ProxySocket)s;
+  ProxySocket *ps = container_of(s, ProxySocket, sock);
 
   if (ps->state != PROXY_STATE_ACTIVE) {
     ps->pending_eof = 1;
@@ -128,7 +130,7 @@ static void sk_proxy_write_eof (Socket *s)
 
 static void sk_proxy_flush (Socket *s)
 {
-  ProxySocket ps = (ProxySocket)s;
+  ProxySocket *ps = container_of(s, ProxySocket, sock);
 
   if (ps->state != PROXY_STATE_ACTIVE) {
     ps->pending_flush = 1;
@@ -139,7 +141,7 @@ static void sk_proxy_flush (Socket *s)
 
 static void sk_proxy_set_frozen(Socket *s, bool is_frozen)
 {
-  ProxySocket ps = (ProxySocket)s;
+  ProxySocket *ps = container_of(s, ProxySocket, sock);
 
   if (ps->state != PROXY_STATE_ACTIVE) {
     ps->freeze = is_frozen;
@@ -178,7 +180,7 @@ static void sk_proxy_set_frozen(Socket *s, bool is_frozen)
 
 static const char * sk_proxy_socket_error (Socket *s)
 {
-  ProxySocket ps = (ProxySocket)s;
+  ProxySocket *ps = container_of(s, ProxySocket, sock);
   if (ps->error != NULL || ps->sub_socket == NULL) {
     return ps->error;
   }
@@ -191,7 +193,7 @@ static void plug_proxy_log(Plug plug, int type, SockAddr *addr, int port,
 			   const char *error_msg, int error_code)
 {
     Proxy_Plug pp = (Proxy_Plug) plug;
-    ProxySocket ps = pp->proxy_socket;
+    ProxySocket *ps = pp->proxy_socket;
 
     plug_log(ps->plug, type, addr, port, error_msg, error_code);
 }
@@ -200,7 +202,7 @@ static void plug_proxy_closing (Plug p, const char *error_msg,
 				int error_code, int calling_back)
 {
     Proxy_Plug pp = (Proxy_Plug) p;
-    ProxySocket ps = pp->proxy_socket;
+    ProxySocket *ps = pp->proxy_socket;
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	ps->closing_error_msg = error_msg;
@@ -215,7 +217,7 @@ static void plug_proxy_closing (Plug p, const char *error_msg,
 static void plug_proxy_receive (Plug p, int urgent, char *data, int len)
 {
     Proxy_Plug pp = (Proxy_Plug) p;
-    ProxySocket ps = pp->proxy_socket;
+    ProxySocket *ps = pp->proxy_socket;
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	/* we will lose the urgentness of this data, but since most,
@@ -235,7 +237,7 @@ static void plug_proxy_receive (Plug p, int urgent, char *data, int len)
 static void plug_proxy_sent (Plug p, int bufsize)
 {
     Proxy_Plug pp = (Proxy_Plug) p;
-    ProxySocket ps = pp->proxy_socket;
+    ProxySocket *ps = pp->proxy_socket;
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	ps->sent_bufsize = bufsize;
@@ -249,7 +251,7 @@ static int plug_proxy_accepting(Plug p,
                                 accept_fn_t constructor, accept_ctx_t ctx)
 {
     Proxy_Plug pp = (Proxy_Plug) p;
-    ProxySocket ps = pp->proxy_socket;
+    ProxySocket *ps = pp->proxy_socket;
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	ps->accepting_constructor = constructor;
@@ -396,35 +398,35 @@ SockAddr *name_lookup(const char *host, int port, char **canonicalname,
     }
 }
 
+static const struct SocketVtable ProxySocket_sockvt = {
+    sk_proxy_plug,
+    sk_proxy_close,
+    sk_proxy_write,
+    sk_proxy_write_oob,
+    sk_proxy_write_eof,
+    sk_proxy_flush,
+    sk_proxy_set_frozen,
+    sk_proxy_socket_error,
+    NULL, /* peer_info */
+};
+
+static const struct plug_function_table plug_fn_table = {
+    plug_proxy_log,
+    plug_proxy_closing,
+    plug_proxy_receive,
+    plug_proxy_sent,
+    plug_proxy_accepting
+};
+
 Socket *new_connection(SockAddr *addr, const char *hostname,
 		               int port, int privport,
 		               int oobinline, int nodelay, int keepalive,
 		               Plug plug, Conf *conf)
 {
-    static const struct SocketVtable socket_fn_table = {
-	sk_proxy_plug,
-	sk_proxy_close,
-	sk_proxy_write,
-	sk_proxy_write_oob,
-	sk_proxy_write_eof,
-	sk_proxy_flush,
-	sk_proxy_set_frozen,
-	sk_proxy_socket_error,
-        NULL, /* peer_info */
-    };
-
-    static const struct plug_function_table plug_fn_table = {
-	plug_proxy_log,
-	plug_proxy_closing,
-	plug_proxy_receive,
-	plug_proxy_sent,
-	plug_proxy_accepting
-    };
-
     if (conf_get_int(conf, CONF_proxy_type) != PROXY_NONE &&
 	proxy_for_destination(addr, hostname, port, conf))
     {
-      ProxySocket ret;
+      ProxySocket *ret;
       Proxy_Plug pplug;
       SockAddr *proxy_addr;
       char *proxy_canonical_name;
@@ -436,8 +438,8 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
                                           keepalive, plug, conf)) != NULL)
         return sret;
 
-      ret = snew(struct Socket_proxy_tag);
-      ret->fn = &socket_fn_table;
+      ret = snew(ProxySocket);
+      ret->sock.vt = &ProxySocket_sockvt;
       ret->conf = conf_copy(conf);
       ret->plug = plug;
       ret->remote_addr = addr; /* will need to be freed on close */
@@ -471,7 +473,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
         proxy_type = "Telnet";
       } else {
         ret->error = "Proxy error: Unknown proxy method";
-        return (Socket*)ret;
+	    return &ret->sock;
       }
 
         {
@@ -506,7 +508,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
 	    ret->error = "Proxy error: Unable to resolve proxy host name";
             sfree(pplug);
             sk_addr_free(proxy_addr);
-	    return (Socket*)ret;
+	    return &ret->sock;
 	}
 	sfree(proxy_canonical_name);
 
@@ -528,20 +530,20 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
 				 privport, oobinline,
 				 nodelay, keepalive, (Plug) pplug);
 	if (sk_socket_error(ret->sub_socket) != NULL)
-	    return (Socket*) ret;
+	    return &ret->sock;
 
 	/* start the proxy negotiation process... */
 	sk_set_frozen(ret->sub_socket, 0);
 	ret->negotiate(ret, PROXY_CHANGE_NEW);
 
-	return (Socket*) ret;
+	return &ret->sock;
     }
 
     /* no proxy, so just return the direct socket */
     return sk_new(addr, port, privport, oobinline, nodelay, keepalive, plug);
 }
 
-Socket* new_listener(const char *srcaddr, int port, Plug plug,
+Socket *new_listener(const char *srcaddr, int port, Plug plug,
                      int local_host_only, Conf *conf, int addressfamily)
 {
     /* TODO: SOCKS (and potentially others) support inbound
@@ -555,7 +557,7 @@ Socket* new_listener(const char *srcaddr, int port, Plug plug,
  * HTTP CONNECT proxy type.
  */
 
-static int get_line_end (char * data, int len)
+static int get_line_end(char * data, int len)
 {
     int off = 0;
 
@@ -589,7 +591,8 @@ static int get_line_end (char * data, int len)
     return -1;
 }
 
-int proxy_http_negotiate(ProxySocket p, int change) {
+int proxy_http_negotiate (ProxySocket *p, int change)
+{
   if (p->state == PROXY_STATE_NEW) {
     /* we are just beginning the proxy negotiate process,
      * so we'll send off the initial bits of the request.
@@ -668,6 +671,7 @@ int proxy_http_negotiate(ProxySocket p, int change) {
     int eol;
 
     if (p->state == 1) {
+
       int min_ver, maj_ver, status;
 
       /* get the status line */
@@ -716,6 +720,7 @@ int proxy_http_negotiate(ProxySocket p, int change) {
     }
 
     if (p->state == 2) {
+
       /* get headers. we're done when we get a
        * header of length 2, (ie. just "\r\n")
        */
@@ -762,8 +767,10 @@ int proxy_http_negotiate(ProxySocket p, int change) {
  */
 
 /* SOCKS version 4 */
-int proxy_socks4_negotiate(ProxySocket p, int change) {
+int proxy_socks4_negotiate (ProxySocket *p, int change)
+{
   if (p->state == PROXY_CHANGE_NEW) {
+
     /* request format:
      *  version number (1 byte) = 4
      *  command code (1 byte)
@@ -915,7 +922,8 @@ int proxy_socks4_negotiate(ProxySocket p, int change) {
 }
 
 /* SOCKS version 5 */
-int proxy_socks5_negotiate(ProxySocket p, int change) {
+int proxy_socks5_negotiate(ProxySocket *p, int change)
+{
   if (p->state == PROXY_CHANGE_NEW) {
     /* initial command:
      *  version number (1 byte) = 5
@@ -1495,7 +1503,8 @@ char *format_telnet_command(SockAddr *addr, int port, Conf *conf)
 #undef ENSURE
 }
 
-int proxy_telnet_negotiate(ProxySocket p, int change) {
+int proxy_telnet_negotiate (ProxySocket *p, int change)
+{
   if (p->state == PROXY_CHANGE_NEW) {
     char *formatted_cmd;
 
