@@ -16,6 +16,7 @@
 #include "defs.h"
 
 typedef struct SocketVtable SocketVtable;
+typedef struct PlugVtable PlugVtable;
 
 struct Socket {
     const struct SocketVtable *vt;
@@ -40,7 +41,7 @@ struct SocketVtable {
 typedef union { void *p; int i; } accept_ctx_t;
 typedef Socket *(*accept_fn_t)(accept_ctx_t ctx, Plug plug);
 
-struct plug_function_table {
+struct PlugVtable {
     void (*log)(Plug p, int type, SockAddr *addr, int port,
 		const char *error_msg, int error_code);
     /*

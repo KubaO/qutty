@@ -760,7 +760,7 @@ struct queued_handler {
 };
 
 struct ssh_tag {
-    const struct plug_function_table *fn;
+    const struct PlugVtable *fn;
     /* the above field _must_ be first in the structure */
 
     char *v_c, *v_s;
@@ -3657,6 +3657,14 @@ static int ssh_test_for_upstream(const char *host, int port, Conf *conf)
     return ret;
 }
 
+static const PlugVtable Ssh_plugvt = {
+    ssh_socket_log,
+    ssh_closing,
+    ssh_receive,
+    ssh_sent,
+    NULL
+};
+
 /*
  * Connect to specified host and port.
  * Returns an error message, or NULL on success.
@@ -3666,14 +3674,6 @@ static int ssh_test_for_upstream(const char *host, int port, Conf *conf)
 static const char *connect_to_host(Ssh ssh, const char *host, int port,
 				   char **realhost, int nodelay, int keepalive)
 {
-    static const struct plug_function_table fn_table = {
-	ssh_socket_log,
-	ssh_closing,
-	ssh_receive,
-	ssh_sent,
-	NULL
-    };
-
     SockAddr *addr;
     const char *err;
     char *loghost;
@@ -3682,7 +3682,7 @@ static const char *connect_to_host(Ssh ssh, const char *host, int port,
     ssh_hostport_setup(host, port, ssh->conf,
                        &ssh->savedhost, &ssh->savedport, &loghost);
 
-    ssh->fn = &fn_table;               /* make 'ssh' usable as a Plug */
+    ssh->fn = &Ssh_plugvt;               /* make 'ssh' usable as a Plug */
 
     /*
      * Try connection-sharing, in case that means we don't open a

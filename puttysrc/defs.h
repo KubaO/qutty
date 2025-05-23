@@ -50,7 +50,7 @@ typedef struct IdempotentCallback IdempotentCallback;
 typedef struct SockAddr SockAddr;
 
 typedef struct Socket Socket;
-typedef struct plug_function_table **Plug;
+typedef struct PlugVtable **Plug;
 typedef struct SocketPeerInfo SocketPeerInfo;
 
 typedef struct backend_tag Backend;

@@ -10,6 +10,10 @@
 #ifndef PUTTY_PROXY_H
 #define PUTTY_PROXY_H
 
+#include "defs.h"
+#include "misc.h"
+#include "network.h"
+
 #define PROXY_ERROR_GENERAL 8000
 #define PROXY_ERROR_UNEXPECTED 8001
 
@@ -94,7 +98,7 @@ struct ProxySocket {
 typedef struct Plug_proxy_tag * Proxy_Plug;
 
 struct Plug_proxy_tag {
-    const struct plug_function_table *fn;
+    const struct PlugVtable *fn;
     /* the above variable absolutely *must* be the first in this structure */
 
     ProxySocket *proxy_socket;

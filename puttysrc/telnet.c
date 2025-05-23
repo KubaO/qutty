@@ -179,7 +179,7 @@ static const struct Opt *const opts[] = {
 
 typedef struct Telnet Telnet;
 struct Telnet {
-    const struct plug_function_table *fn;
+    const struct PlugVtable *fn;
     /* the above field _must_ be first in the structure */
 
     Socket *s;
@@ -700,6 +700,13 @@ static void telnet_sent(Plug plug, int bufsize)
     telnet->bufsize = bufsize;
 }
 
+static const PlugVtable Telnet_plugvt = {
+    telnet_log,
+    telnet_closing,
+    telnet_receive,
+    telnet_sent
+};
+
 /*
  * Called to set up the Telnet connection.
  *
@@ -712,12 +719,6 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
 			       Conf *conf, const char *host, int port,
 			       char **realhost, int nodelay, int keepalive)
 {
-    static const struct plug_function_table fn_table = {
-	telnet_log,
-	telnet_closing,
-	telnet_receive,
-	telnet_sent
-    };
     SockAddr *addr;
     const char *err;
     Telnet *telnet;
@@ -725,7 +726,7 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
     int addressfamily;
 
     telnet = snew(Telnet);
-    telnet->fn = &fn_table;
+    telnet->fn = &Telnet_plugvt;
     telnet->conf = conf_copy(conf);
     telnet->s = NULL;
     telnet->closed_on_socket_error = FALSE;

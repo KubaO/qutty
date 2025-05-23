@@ -140,7 +140,7 @@
 #include "ssh.h"
 
 struct ssh_sharing_state {
-    const struct plug_function_table *fn;
+    const struct PlugVtable *fn;
     /* the above variable absolutely *must* be the first in this structure */
 
     char *sockname;                  /* the socket name, kept for cleanup */
@@ -154,7 +154,7 @@ struct ssh_sharing_state {
 struct share_globreq;
 
 struct ssh_sharing_connstate {
-    const struct plug_function_table *fn;
+    const struct PlugVtable *fn;
     /* the above variable absolutely *must* be the first in this structure */
 
     unsigned id;    /* used to identify this downstream in log messages */
@@ -1931,16 +1931,17 @@ void share_activate(void *state, const char *server_verstring)
     }
 }
 
+static const PlugVtable ssh_sharing_conn_plugvt = {
+    NULL, /* no log function, because that's for outgoing connections */
+    share_closing,
+    share_receive,
+    share_sent,
+    NULL /* no accepting function, because we've already done it */
+};
+
 static int share_listen_accepting(Plug plug,
                                   accept_fn_t constructor, accept_ctx_t ctx)
 {
-    static const struct plug_function_table connection_fn_table = {
-	NULL, /* no log function, because that's for outgoing connections */
-	share_closing,
-        share_receive,
-        share_sent,
-	NULL /* no accepting function, because we've already done it */
-    };
     struct ssh_sharing_state *sharestate = (struct ssh_sharing_state *)plug;
     struct ssh_sharing_connstate *cs;
     const char *err;
@@ -1950,7 +1951,7 @@ static int share_listen_accepting(Plug plug,
      * A new downstream has connected to us.
      */
     cs = snew(struct ssh_sharing_connstate);
-    cs->fn = &connection_fn_table;
+    cs->fn = &ssh_sharing_conn_plugvt;
     cs->parent = sharestate;
 
     if ((cs->id = share_find_unused_id(sharestate, sharestate->nextid)) == 0 &&
@@ -2052,7 +2053,7 @@ static void nullplug_sent(Plug plug, int bufsize) {}
 
 int ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
 {
-    static const struct plug_function_table fn_table = {
+    static const struct PlugVtable fn_table = {
 	nullplug_socket_log,
 	nullplug_closing,
 	nullplug_receive,
@@ -2060,7 +2061,7 @@ int ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
 	NULL
     };
     struct nullplug {
-        const struct plug_function_table *fn;
+        const struct PlugVtable *fn;
     } np;
 
     char *sockname, *logtext, *ds_err, *us_err;
@@ -2091,6 +2092,14 @@ int ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
     }
 }
 
+static const PlugVtable ssh_sharing_listen_plugvt = {
+    NULL, /* no log function, because that's for outgoing connections */
+    share_listen_closing,
+    NULL, /* no receive function on a listening socket */
+    NULL, /* no sent function on a listening socket */
+    share_listen_accepting
+};
+
 /*
  * Init function for connection sharing. We either open a listening
  * socket and become an upstream, or connect to an existing one and
@@ -2104,14 +2113,6 @@ int ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
 Socket *ssh_connection_sharing_init(const char *host, int port,
                                     Conf *conf, Ssh ssh, void **state)
 {
-    static const struct plug_function_table listen_fn_table = {
-	NULL, /* no log function, because that's for outgoing connections */
-	share_listen_closing,
-        NULL, /* no receive function on a listening socket */
-        NULL, /* no sent function on a listening socket */
-	share_listen_accepting
-    };
-
     int result, can_upstream, can_downstream;
     char *logtext, *ds_err, *us_err;
     char *sockname;
@@ -2134,7 +2135,7 @@ Socket *ssh_connection_sharing_init(const char *host, int port,
      * to be an upstream.
      */
     sharestate = snew(struct ssh_sharing_state);
-    sharestate->fn = &listen_fn_table;
+    sharestate->fn = &ssh_sharing_listen_plugvt;
     sharestate->listensock = NULL;
 
     /*
