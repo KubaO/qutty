@@ -42,7 +42,8 @@ void proxy_socks5_offerencryptedauth(char *command, int *len)
     (*len)++;
 }
 
-int proxy_socks5_handlechap(ProxySocket p) {
+int proxy_socks5_handlechap (ProxySocket *p)
+{
   /* CHAP authentication reply format:
    *  version number (1 bytes) = 1
    *  number of commands (1 byte)
@@ -152,7 +153,8 @@ int proxy_socks5_handlechap(ProxySocket p) {
   return 0;
 }
 
-int proxy_socks5_selectchap(ProxySocket p) {
+int proxy_socks5_selectchap(ProxySocket *p)
+{
   char *username = conf_get_str(p->conf, CONF_proxy_username);
   char *password = conf_get_str(p->conf, CONF_proxy_password);
   if (username[0] || password[0]) {
