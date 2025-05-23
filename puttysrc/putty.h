@@ -17,16 +17,7 @@
 #endif
 #endif
 
-#ifndef DONE_TYPEDEFS
-#define DONE_TYPEDEFS
-typedef struct conf_tag Conf;
-typedef struct backend_tag Backend;
-typedef struct terminal_tag Terminal;
-#endif
-
-// Temporary
-typedef struct Ldisc_tag Ldisc;
-
+#include "defs.h"
 #include "puttyps.h"
 #include "network.h"
 #include "misc.h"

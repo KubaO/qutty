@@ -144,6 +144,7 @@ set(PROJECT_SOURCES
     QtCompleterWithAdvancedCompletion.hpp
 
     puttysrc/ssh.h
+    puttysrc/defs.h
     puttysrc/putty.h
     puttysrc/QtStuff.h
     puttysrc/puttyps.h

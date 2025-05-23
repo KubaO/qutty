@@ -13,29 +13,21 @@
 #ifndef PUTTY_NETWORK_H
 #define PUTTY_NETWORK_H
 
-#ifndef DONE_TYPEDEFS
-#define DONE_TYPEDEFS
-typedef struct conf_tag Conf;
-typedef struct backend_tag Backend;
-typedef struct terminal_tag Terminal;
-#endif
+#include "defs.h"
 
-typedef struct SockAddr SockAddr;
-/* pay attention to levels of indirection */
-typedef struct socket_function_table **Socket;
-typedef struct plug_function_table **Plug;
+typedef struct SocketVtable SocketVtable;
 
-struct socket_function_table {
+struct SocketVtable {
     Plug(*plug) (Socket s, Plug p);
     /* use a different plug (return the old one) */
     /* if p is NULL, it doesn't change the plug */
     /* but it does return the one it's using */
     void (*close) (Socket s);
-    int (*write) (Socket s, const char *data, int len);
-    int (*write_oob) (Socket s, const char *data, int len);
+    size_t (*write) (Socket s, const void *data, size_t len);
+    size_t (*write_oob) (Socket s, const void *data, size_t len);
     void (*write_eof) (Socket s);
     void (*flush) (Socket s);
-    void (*set_frozen) (Socket s, int is_frozen);
+    void (*set_frozen) (Socket s, bool is_frozen);
     /* ignored by tcp, but vital for ssl */
     const char *(*socket_error) (Socket s);
     char *(*peer_info) (Socket s);
@@ -147,12 +139,18 @@ Socket sk_new(SockAddr *addr, int port, int privport, int oobinline,
 Socket sk_newlistener(const char *srcaddr, int port, Plug plug,
                       int local_host_only, int address_family);
 
-#define sk_plug(s,p) (((*s)->plug) (s, p))
-#define sk_close(s) (((*s)->close) (s))
-#define sk_write(s,buf,len) (((*s)->write) (s, buf, len))
-#define sk_write_oob(s,buf,len) (((*s)->write_oob) (s, buf, len))
-#define sk_write_eof(s) (((*s)->write_eof) (s))
-#define sk_flush(s) (((*s)->flush) (s))
+static inline Plug sk_plug(Socket s, Plug p)
+{ return (*s)->plug(s, p); }
+static inline void sk_close(Socket s)
+{ (*s)->close(s); }
+static inline size_t sk_write(Socket s, const void *data, size_t len)
+{ return (*s)->write(s, data, len); }
+static inline size_t sk_write_oob(Socket s, const void *data, size_t len)
+{ return (*s)->write_oob(s, data, len); }
+static inline void sk_write_eof(Socket s)
+{ (*s)->write_eof(s); }
+static inline void sk_flush(Socket s)
+{ (*s)->flush(s); }
 
 #ifdef DEFINE_PLUG_METHOD_MACROS
 #define plug_log(p,type,addr,port,msg,code) (((*p)->log) (p, type, addr, port, msg, code))
@@ -168,7 +166,7 @@ Socket sk_newlistener(const char *srcaddr, int port, Plug plug,
  * or return NULL if there's no problem.
  */
 const char *sk_addr_error(SockAddr *addr);
-#define sk_socket_error(s) (((*s)->socket_error) (s))
+static inline const char *sk_socket_error(Socket s) { return (*s)->socket_error(s); }
 
 /*
  * Set the `frozen' flag on a socket. A frozen socket is one in
@@ -187,14 +185,16 @@ const char *sk_addr_error(SockAddr *addr);
  *    associated local socket in order to avoid unbounded buffer
  *    growth.
  */
-#define sk_set_frozen(s, is_frozen) (((*s)->set_frozen) (s, is_frozen))
+static inline void sk_set_frozen(Socket s, bool is_frozen)
+{ (*s)->set_frozen(s, is_frozen); }
 
 /*
  * Return a (dynamically allocated) string giving some information
  * about the other end of the socket, suitable for putting in log
  * files. May be NULL if nothing is available at all.
  */
-#define sk_peer_info(s) (((*s)->peer_info) (s))
+static inline char *sk_peer_info(Socket s)
+{ return (*s)->peer_info(s); }
 
 /*
  * Simple wrapper on getservbyname(), needed by ssh.c. Returns the

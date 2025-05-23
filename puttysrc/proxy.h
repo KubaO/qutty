@@ -17,7 +17,7 @@ typedef struct SockAddr SockAddr;
 typedef struct Socket_proxy_tag * Proxy_Socket;
 
 struct Socket_proxy_tag {
-    const struct socket_function_table *fn;
+    const struct SocketVtable *fn;
     /* the above variable absolutely *must* be the first in this structure */
 
     const char *error;

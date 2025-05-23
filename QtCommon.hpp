@@ -33,7 +33,7 @@ extern long timing_next_time;
 typedef struct Socket_tag *Actual_Socket;
 
 struct Socket_tag {
-  const struct socket_function_table *fn;
+  const struct SocketVtable *fn;
   /* the above variable absolutely *must* be the first in this structure */
   const char *error;
   // SOCKET s;

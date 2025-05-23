@@ -26,21 +26,22 @@ static const char *sk_tcp_socket_error(Socket sock) {
   return s->error;
 }
 
-static int sk_tcp_write(Socket sock, const char *data, int len) {
+static size_t sk_tcp_write(Socket sock, const void *data, size_t len) {
   Actual_Socket s = (Actual_Socket)sock;
   int i, j;
   char pr[10000];
-  for (i = 0, j = 0; i < len; i++) j += sprintf(pr + j, "%u ", (unsigned char)data[i]);
+  for (i = 0, j = 0; i < len; i++)
+    j += sprintf(pr + j, "%u ", (unsigned char)((const char *)data)[i]);
   // qDebug()<<"sk_tcp_write"<<len<<pr;
-  int ret = s->qtsock->write(data, len);
+  int ret = s->qtsock->write((const char *)data, len);
   noise_ultralight(len);
   if (ret <= 0) qDebug() << "tcp_write ret " << ret;
   return ret;
 }
 
-static int sk_tcp_write_oob(Socket sock, const char *data, int len) {
+static size_t sk_tcp_write_oob(Socket sock, const void *data, size_t len) {
   Actual_Socket s = (Actual_Socket)sock;
-  int ret = s->qtsock->write(data, len);
+  int ret = s->qtsock->write((const char *)data, len);
   qDebug() << "tcp_write_oob ret " << ret << "\n";
   return ret;
 }
@@ -50,7 +51,7 @@ static void sk_tcp_close(Socket sock) {
   if (s->qtsock) s->qtsock->disconnectFromHost();
 }
 
-static void sk_tcp_set_frozen(Socket /*sock*/, int /*is_frozen*/) {
+static void sk_tcp_set_frozen(Socket /*sock*/, bool /*is_frozen*/) {
   qDebug() << "sk_tcp_set_frozen() NOT IMPL\n";
 }
 
@@ -63,14 +64,14 @@ static Plug sk_tcp_plug(Socket sock, Plug p) {
 
 Socket sk_new(char *addr, int port, int privport, int oobinline, int nodelay, int keepalive,
               Plug plug) {
-  static const struct socket_function_table fn_table = {sk_tcp_plug,
-                                                        sk_tcp_close,
-                                                        sk_tcp_write,
-                                                        sk_tcp_write_oob,
-                                                        nullptr /* TODO write_eof */,
-                                                        sk_tcp_flush,
-                                                        sk_tcp_set_frozen,
-                                                        sk_tcp_socket_error};
+  static const struct SocketVtable fn_table = {sk_tcp_plug,
+                                               sk_tcp_close,
+                                               sk_tcp_write,
+                                               sk_tcp_write_oob,
+                                               nullptr /* TODO write_eof */,
+                                               sk_tcp_flush,
+                                               sk_tcp_set_frozen,
+                                               sk_tcp_socket_error};
 
   Actual_Socket ret;
 
@@ -235,14 +236,14 @@ int sk_address_is_special_local(SockAddr *addr) {
 
 Socket sk_new(SockAddr *addr, int port, int privport, int oobinline, int nodelay, int keepalive,
               Plug plug) {
-  static const struct socket_function_table fn_table = {sk_tcp_plug,
-                                                        sk_tcp_close,
-                                                        sk_tcp_write,
-                                                        sk_tcp_write_oob,
-                                                        nullptr /* TODO write_eof */,
-                                                        sk_tcp_flush,
-                                                        sk_tcp_set_frozen,
-                                                        sk_tcp_socket_error};
+  static const struct SocketVtable fn_table = {sk_tcp_plug,
+                                               sk_tcp_close,
+                                               sk_tcp_write,
+                                               sk_tcp_write_oob,
+                                               nullptr /* TODO write_eof */,
+                                               sk_tcp_flush,
+                                               sk_tcp_set_frozen,
+                                               sk_tcp_socket_error};
 
   Actual_Socket ret;
 

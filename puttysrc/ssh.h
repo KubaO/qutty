@@ -9,7 +9,6 @@
 #include "misc.h"
 
 struct ssh_channel;
-typedef struct ssh_tag *Ssh;
 
 extern int sshfwd_write(struct ssh_channel *c, char *, int);
 extern void sshfwd_write_eof(struct ssh_channel *c);

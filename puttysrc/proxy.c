@@ -96,15 +96,14 @@ static void sk_proxy_close (Socket s)
     sfree(ps);
 }
 
-static int sk_proxy_write (Socket s, const char *data, int len)
-{
-    Proxy_Socket ps = (Proxy_Socket) s;
+static size_t sk_proxy_write(Socket s, const char *data, int len) {
+  Proxy_Socket ps = (Proxy_Socket)s;
 
-    if (ps->state != PROXY_STATE_ACTIVE) {
-	bufchain_add(&ps->pending_output_data, data, len);
-	return bufchain_size(&ps->pending_output_data);
-    }
-    return sk_write(ps->sub_socket, data, len);
+  if (ps->state != PROXY_STATE_ACTIVE) {
+    bufchain_add(&ps->pending_output_data, data, len);
+    return bufchain_size(&ps->pending_output_data);
+  }
+  return sk_write(ps->sub_socket, data, len);
 }
 
 static int sk_proxy_write_oob (Socket s, const char *data, int len)
@@ -406,7 +405,7 @@ Socket new_connection(SockAddr *addr, const char *hostname,
 		      int oobinline, int nodelay, int keepalive,
 		      Plug plug, Conf *conf)
 {
-    static const struct socket_function_table socket_fn_table = {
+    static const struct SocketVtable socket_fn_table = {
 	sk_proxy_plug,
 	sk_proxy_close,
 	sk_proxy_write,
