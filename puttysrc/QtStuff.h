@@ -91,23 +91,19 @@ void socket_reselect_all(void);
 
 
 void qt_message_box(void * frontend, const char *title, const char *fmt, ...);
-void qt_message_box_no_frontend(const char *title, const char *fmt, ...);
-
-void qt_vmessage_box(void *frontend, const char *title, const char *fmt, va_list args);
-void qt_vmessage_box_no_frontend(const char *title, const char *fmt, va_list args);
-
-#define qt_critical_msgbox(frontend, fmt, ...) \
-    qt_message_box(frontend, APPNAME " Fatal Error", fmt, __VA_ARGS__)
+void qt_critical_msgbox(void *frontend, const char *fmt, ...);
 
 #undef assert
-#define assert(cond) do {\
-    if(!(cond)) qt_message_box_no_frontend(APPNAME " Fatal Error", "fatal assert %s(%d)"#cond, __FUNCTION__, __LINE__); \
-} while(0)
-
-void qutty_connection_fatal(void *frontend, char *msg);
+#define assert(cond)                                                                          \
+  do {                                                                                        \
+    if (!(cond))                                                                              \
+      qt_message_box(NULL, APPNAME " Fatal Error", "fatal assert %s(%d)" #cond, __FUNCTION__, \
+                     __LINE__);                                                               \
+  } while (0)
 
 #ifdef __linux
 #define _snprintf snprintf
+#define _vsnprintf snprintf
 #endif
 
 static void clear_jumplist(void) {}

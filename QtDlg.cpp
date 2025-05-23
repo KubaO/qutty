@@ -189,24 +189,25 @@ void old_keyfile_warning(void) {
                        QMessageBox::Ok);
 }
 
-void qt_message_box_no_frontend(const char *title, const char *fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-  qt_vmessage_box_no_frontend(title, fmt, args);
-  va_end(args);
-}
-
-void qt_vmessage_box_no_frontend(const char *title, const char *fmt, va_list args) {
+static void qt_vmessage_box(void *frontend, const char *title, const char *fmt, va_list args) {
   QString msg;
-  QMessageBox::critical(NULL, QString(title), msg.vasprintf(fmt, args), QMessageBox::Ok);
+  assert(frontend);
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
+  QMessageBox::critical(f, QString(title), msg.vasprintf(fmt, args), QMessageBox::Ok);
 }
 
-void nonfatal(const char *fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-  QString msg = QString::vasprintf(fmt, args);
-  QMessageBox::critical(nullptr, QStringLiteral("%1 Error").arg(appname), msg, QMessageBox::Ok);
-  va_end(args);
+static void qutty_connection_fatal(void *frontend, const char *fmt, va_list args) {
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
+  if (f->userClosingTab || f->isSockDisconnected) return;
+
+  // prevent recursive calling
+  f->isSockDisconnected = true;
+
+  QByteArray msg = QString::vasprintf(fmt, args).toLatin1();
+  qt_critical_msgbox(frontend, "%s", msg.data());
+
+  if (conf_get_int(f->getCfg(), CONF_close_on_exit) == FORCE_ON) f->closeTerminal();
+  f->setSessionTitle(f->getSessionTitle() + " (inactive)");
 }
 
 void qt_message_box(void *frontend, const char *title, const char *fmt, ...) {
@@ -216,39 +217,42 @@ void qt_message_box(void *frontend, const char *title, const char *fmt, ...) {
   va_end(args);
 }
 
-void qt_vmessage_box(void *frontend, const char *title, const char *fmt, va_list args) {
-  QString msg;
-  assert(frontend);
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  QMessageBox::critical(f, QString(title), msg.vasprintf(fmt, args), QMessageBox::Ok);
+void qt_critical_msgbox(void *frontend, const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  qt_vmessage_box(frontend, APPNAME " Fatal Error", fmt, args);
+  va_end(args);
 }
 
-extern "C" {
-
-void update_specials_menu(void *) {}
+void nonfatal(const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  qt_vmessage_box(nullptr, APPNAME " Error", fmt, args);
+  va_end(args);
+}
 
 void connection_fatal(void *frontend, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  char buf[1000];
-  _snprintf(buf, sizeof(buf), fmt, args);
-  qutty_connection_fatal(frontend, buf);
+  qutty_connection_fatal(frontend, fmt, args);
   va_end(args);
 }
 
 void fatalbox(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
-  char buf[1000];
-  _snprintf(buf, sizeof(buf), fmt, args);
-  qt_message_box_no_frontend(APPNAME " Fatal Error", fmt, args);
+  qt_vmessage_box(nullptr, APPNAME " Fatal Error", fmt, args);
   va_end(args);
 }
 
-void modalfatalbox(const char *msg, ...) {
-  qt_message_box_no_frontend(APPNAME " Fatal Error", msg);
+void modalfatalbox(const char *fmt, ...) {
+  va_list args;
+  va_start(args, fmt);
+  qt_vmessage_box(nullptr, APPNAME " Fatal Error", fmt, args);
+  va_end(args);
 }
-}
+
+void update_specials_menu(void *) {}
 
 void logevent(void *frontend, const char *string) { qDebug() << frontend << string; }
 
