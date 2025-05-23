@@ -13,7 +13,9 @@
 /*
  * Enumeration of types used in keys and values.
  */
-typedef enum { TYPE_NONE, TYPE_INT, TYPE_STR, TYPE_FILENAME, TYPE_FONT } Type;
+typedef enum {
+    TYPE_NONE, TYPE_BOOL, TYPE_INT, TYPE_STR, TYPE_FILENAME, TYPE_FONT
+} Type;
 
 /*
  * Arrays which allow us to look up the subkey and value types for a
@@ -51,6 +53,7 @@ struct constkey {
 
 struct value {
     union {
+	bool boolval;
 	int intval;
 	char *stringval;
 	Filename *fileval;
@@ -171,6 +174,9 @@ static void free_value(struct value *val, int type)
 static void copy_value(struct value *to, struct value *from, int type)
 {
     switch (type) {
+      case TYPE_BOOL:
+	to->u.boolval = from->u.boolval;
+	break;
       case TYPE_INT:
 	to->u.intval = from->u.intval;
 	break;
@@ -254,6 +260,19 @@ Conf *conf_copy(Conf *oldconf)
     conf_copy_into(newconf, oldconf);
 
     return newconf;
+}
+
+bool conf_get_bool(Conf *conf, int primary)
+{
+    struct key key;
+    struct conf_entry *entry;
+
+    assert(subkeytypes[primary] == TYPE_NONE);
+    assert(valuetypes[primary] == TYPE_BOOL);
+    key.primary = primary;
+    entry = find234(conf->tree, &key, NULL);
+    assert(entry);
+    return entry->value.u.boolval;
 }
 
 int conf_get_int(Conf *conf, int primary)
@@ -384,6 +403,17 @@ FontSpec *conf_get_fontspec(Conf *conf, int primary)
     return entry->value.u.fontval;
 }
 
+void conf_set_bool(Conf *conf, int primary, bool value)
+{
+    struct conf_entry *entry = snew(struct conf_entry);
+
+    assert(subkeytypes[primary] == TYPE_NONE);
+    assert(valuetypes[primary] == TYPE_BOOL);
+    entry->key.primary = primary;
+    entry->value.u.boolval = value;
+    conf_insert(conf, entry);
+}
+
 void conf_set_int(Conf *conf, int primary, int value)
 {
     struct conf_entry *entry = snew(struct conf_entry);
@@ -391,11 +421,12 @@ void conf_set_int(Conf *conf, int primary, int value)
     assert(subkeytypes[primary] == TYPE_NONE);
     assert(valuetypes[primary] == TYPE_INT);
     entry->key.primary = primary;
-    entry->value.u.intval = value; 
+    entry->value.u.intval = value;
     conf_insert(conf, entry);
 }
 
-void conf_set_int_int(Conf *conf, int primary, int secondary, int value)
+void conf_set_int_int(Conf *conf, int primary,
+                      int secondary, int value)
 {
     struct conf_entry *entry = snew(struct conf_entry);
 
@@ -486,6 +517,9 @@ int conf_serialised_size(Conf *conf)
 	    break;
 	}
 	switch (valuetypes[entry->key.primary]) {
+	  case TYPE_BOOL:
+	    size += 1;
+	    break;
 	  case TYPE_INT:
 	    size += 4;
 	    break;
@@ -529,6 +563,10 @@ void conf_serialise(Conf *conf, void *vdata)
 	    break;
 	}
 	switch (valuetypes[entry->key.primary]) {
+	  case TYPE_BOOL:
+	    *data = entry->value.u.boolval ? 1 : 0;
+	    data += 1;
+	    break;	
 	  case TYPE_INT:
 	    PUT_32BIT_MSB_FIRST(data, entry->value.u.intval);
 	    data += 4;
@@ -592,6 +630,16 @@ int conf_deserialise(Conf *conf, void *vdata, int maxsize)
 	}
 
 	switch (valuetypes[entry->key.primary]) {
+	  case TYPE_BOOL:
+	    if (maxsize < 1) {
+	      if (subkeytypes[entry->key.primary] == TYPE_STR)
+	        sfree(entry->key.secondary.s);
+	      sfree(entry);
+	      goto done;
+	    }
+            entry->value.u.boolval = (*data) ? true : false;
+            data += 1, maxsize -= 1;
+	    break;
 	  case TYPE_INT:
 	    if (maxsize < 4) {
 		if (subkeytypes[entry->key.primary] == TYPE_STR)

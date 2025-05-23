@@ -1307,14 +1307,14 @@ static void ssh1_log_outgoing_packet(Ssh ssh, struct Packet *pkt)
     if ((pkt->type == SSH1_CMSG_AUTH_PASSWORD ||
          pkt->type == SSH1_CMSG_AUTH_TIS_RESPONSE ||
          pkt->type == SSH1_CMSG_AUTH_CCARD_RESPONSE) &&
-        conf_get_int(ssh->conf, CONF_logomitpass)) {
+        conf_get_bool(ssh->conf, CONF_logomitpass)) {
         /* If this is a password or similar packet, blank the password(s). */
         blanks[nblanks].offset = 0;
         blanks[nblanks].len = pkt->length;
         blanks[nblanks].type = PKTLOG_BLANK;
         nblanks++;
     } else if (pkt->type == SSH1_CMSG_X11_REQUEST_FORWARDING &&
-               conf_get_int(ssh->conf, CONF_logomitpass)) {
+               conf_get_bool(ssh->conf, CONF_logomitpass)) {
         /*
          * If this is an X forwarding request packet, blank the fake
          * auth data.
@@ -1530,7 +1530,7 @@ static void ssh2_log_outgoing_packet(Ssh ssh, struct Packet *pkt)
     }
 
     if (pkt->type == SSH2_MSG_USERAUTH_REQUEST &&
-        conf_get_int(ssh->conf, CONF_logomitpass)) {
+        conf_get_bool(ssh->conf, CONF_logomitpass)) {
         /* If this is a password packet, blank the password(s). */
         pkt->savedpos = 0;
         ssh_pkt_getstring(pkt, &str, &slen);
@@ -1555,7 +1555,7 @@ static void ssh2_log_outgoing_packet(Ssh ssh, struct Packet *pkt)
         }
     } else if (ssh->pkt_actx == SSH2_PKTCTX_KBDINTER &&
                pkt->type == SSH2_MSG_USERAUTH_INFO_RESPONSE &&
-               conf_get_int(ssh->conf, CONF_logomitpass)) {
+               conf_get_bool(ssh->conf, CONF_logomitpass)) {
         /* If this is a keyboard-interactive response packet, blank
          * the responses. */
         pkt->savedpos = 0;
@@ -1570,7 +1570,7 @@ static void ssh2_log_outgoing_packet(Ssh ssh, struct Packet *pkt)
         blanks[nblanks].len = pkt->savedpos - blanks[nblanks].offset;
         nblanks++;
     } else if (pkt->type == SSH2_MSG_CHANNEL_REQUEST &&
-               conf_get_int(ssh->conf, CONF_logomitpass)) {
+               conf_get_bool(ssh->conf, CONF_logomitpass)) {
         /*
          * If this is an X forwarding request packet, blank the fake
          * auth data.
@@ -4474,7 +4474,7 @@ static int do_ssh1_login(Ssh ssh, const unsigned char *in, int inlen,
     while (pktin->type == SSH1_SMSG_FAILURE) {
 	s->pwpkt_type = SSH1_CMSG_AUTH_PASSWORD;
 
-	if (conf_get_int(ssh->conf, CONF_tryagent) && agent_exists() && !s->tried_agent) {
+	if (conf_get_bool(ssh->conf, CONF_tryagent) && agent_exists() && !s->tried_agent) {
 	    /*
 	     * Attempt RSA authentication using Pageant.
 	     */
@@ -4806,7 +4806,7 @@ static int do_ssh1_login(Ssh ssh, const unsigned char *in, int inlen,
 	 */
 	s->cur_prompt = new_prompts(ssh->frontend);
 
-	if (conf_get_int(ssh->conf, CONF_try_tis_auth) &&
+    if (conf_get_bool(ssh->conf, CONF_try_tis_auth) &&
 	    (s->supported_auths_mask & (1 << SSH1_AUTH_TIS)) &&
 	    !s->tis_auth_refused) {
 	    s->pwpkt_type = SSH1_CMSG_AUTH_TIS_RESPONSE;
@@ -4849,7 +4849,7 @@ static int do_ssh1_login(Ssh ssh, const unsigned char *in, int inlen,
 		sfree(instr_suf);
 	    }
 	}
-	if (conf_get_int(ssh->conf, CONF_try_tis_auth) &&
+    if (conf_get_bool(ssh->conf, CONF_try_tis_auth) &&
 	    (s->supported_auths_mask & (1 << SSH1_AUTH_CCARD)) &&
 	    !s->ccard_auth_refused) {
 	    s->pwpkt_type = SSH1_CMSG_AUTH_CCARD_RESPONSE;
@@ -5461,7 +5461,7 @@ static void ssh_setup_portfwd(Ssh ssh, Conf *conf)
 		    ssh2_pkt_addbool(pktout, 0);/* _don't_ want reply */
 		    if (epf->saddr) {
 			ssh2_pkt_addstring(pktout, epf->saddr);
-		    } else if (conf_get_int(conf, CONF_rport_acceptall)) {
+            } else if (conf_get_bool(conf, CONF_rport_acceptall)) {
 			/* XXX: rport_acceptall may not represent
 			 * what was used to open the original connection,
 			 * since it's reconfigurable. */
@@ -5553,7 +5553,7 @@ static void ssh_setup_portfwd(Ssh ssh, Conf *conf)
 		pf->dport = epf->dport;
                 if (epf->saddr) {
                     pf->shost = dupstr(epf->saddr);
-                } else if (conf_get_int(conf, CONF_rport_acceptall)) {
+                } else if (conf_get_bool(conf, CONF_rport_acceptall)) {
                     pf->shost = dupstr("");
                 } else {
                     pf->shost = dupstr("localhost");
@@ -5894,7 +5894,7 @@ static void ssh1_send_ttymode(void *data,
 
 int ssh_agent_forwarding_permitted(Ssh ssh)
 {
-    return conf_get_int(ssh->conf, CONF_agentfwd) && agent_exists();
+    return conf_get_bool(ssh->conf, CONF_agentfwd) && agent_exists();
 }
 
 static void do_ssh1_connection(Ssh ssh, const unsigned char *in, int inlen,
@@ -5935,7 +5935,7 @@ static void do_ssh1_connection(Ssh ssh, const unsigned char *in, int inlen,
 	}
     }
 
-    if (conf_get_int(ssh->conf, CONF_x11_forward)) {
+    if (conf_get_bool(ssh->conf, CONF_x11_forward)) {
         ssh->x11disp =
             x11_setup_display(conf_get_str(ssh->conf, CONF_x11_display),
                               ssh->conf);
@@ -5981,7 +5981,7 @@ static void do_ssh1_connection(Ssh ssh, const unsigned char *in, int inlen,
     ssh_setup_portfwd(ssh, ssh->conf);
     ssh->packet_dispatch[SSH1_MSG_PORT_OPEN] = ssh1_msg_port_open;
 
-    if (!conf_get_int(ssh->conf, CONF_nopty)) {
+    if (!conf_get_bool(ssh->conf, CONF_nopty)) {
 	struct Packet *pkt;
 	/* Unpick the terminal-speed string. */
 	/* XXX perhaps we should allow no speeds to be sent. */
@@ -6021,7 +6021,7 @@ static void do_ssh1_connection(Ssh ssh, const unsigned char *in, int inlen,
 	ssh->editing = ssh->echoing = 1;
     }
 
-    if (conf_get_int(ssh->conf, CONF_compression)) {
+    if (conf_get_bool(ssh->conf, CONF_compression)) {
 	send_packet(ssh, SSH1_CMSG_REQUEST_COMPRESSION, PKT_INT, 6, PKT_END);
 	do {
 	    crReturnV;
@@ -6051,7 +6051,7 @@ static void do_ssh1_connection(Ssh ssh, const unsigned char *in, int inlen,
     {
 	char *cmd = conf_get_str(ssh->conf, CONF_remote_cmd);
 	
-	if (conf_get_int(ssh->conf, CONF_ssh_subsys) &&
+    if (conf_get_bool(ssh->conf, CONF_ssh_subsys) &&
 	    conf_get_str(ssh->conf, CONF_remote_cmd2)) {
 	    cmd = conf_get_str(ssh->conf, CONF_remote_cmd2);
 	    ssh->fallback_cmd = TRUE;
@@ -6477,7 +6477,7 @@ static void do_ssh2_transport(Ssh ssh, const void *vin, int inlen,
 		s->preferred_ciphers[s->n_preferred_ciphers++] = &ssh2_blowfish;
 		break;
 	      case CIPHER_DES:
-		if (conf_get_int(ssh->conf, CONF_ssh2_des_cbc)) {
+        if (conf_get_bool(ssh->conf, CONF_ssh2_des_cbc)) {
 		    s->preferred_ciphers[s->n_preferred_ciphers++] = &ssh2_des;
 		}
 		break;
@@ -6506,7 +6506,7 @@ static void do_ssh2_transport(Ssh ssh, const void *vin, int inlen,
 	/*
 	 * Set up preferred compression.
 	 */
-	if (conf_get_int(ssh->conf, CONF_compression))
+    if (conf_get_bool(ssh->conf, CONF_compression))
 	    s->preferred_comp = &ssh_zlib;
 	else
 	    s->preferred_comp = &ssh_comp_none;
@@ -7841,7 +7841,7 @@ static int ssh_is_simple(Ssh ssh)
      * tunnelled over ourselves), since then the assumption that we
      * have only one channel to worry about is not true after all.
      */
-    return (conf_get_int(ssh->conf, CONF_ssh_simple) &&
+    return (conf_get_bool(ssh->conf, CONF_ssh_simple) &&
             !ssh->bare_connection && !ssh->connshare);
 }
 
@@ -8180,7 +8180,7 @@ static void ssh2_msg_channel_data(Ssh ssh, struct Packet *pktin)
 static void ssh_check_termination(Ssh ssh)
 {
     if (ssh->version == 2 &&
-        !conf_get_int(ssh->conf, CONF_ssh_no_shell) &&
+        !conf_get_bool(ssh->conf, CONF_ssh_no_shell) &&
         (ssh->channels && count234(ssh->channels) == 0) &&
         !(ssh->connshare && share_ndownstreams(ssh->connshare) > 0)) {
         /*
@@ -8988,7 +8988,7 @@ void sshfwd_x11_is_local(struct ssh_channel *c)
 static void ssh2_msg_userauth_banner(Ssh ssh, struct Packet *pktin)
 {
     /* Arbitrary limit to prevent unbounded inflation of buffer */
-    if (conf_get_int(ssh->conf, CONF_ssh_show_banner) &&
+    if (conf_get_bool(ssh->conf, CONF_ssh_show_banner) &&
 	bufchain_size(&ssh->banner) <= 131072) {
 	char *banner = NULL;
 	int size = 0;
@@ -9305,7 +9305,7 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 #endif
 
     if (!ssh->bare_connection) {
-        if (!conf_get_int(ssh->conf, CONF_ssh_no_userauth)) {
+        if (!conf_get_bool(ssh->conf, CONF_ssh_no_userauth)) {
             /*
              * Request userauth protocol, and await a response to it.
              */
@@ -9404,7 +9404,7 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 	s->nkeys = 0;
 	s->agent_response = NULL;
 	s->pkblob_in_agent = NULL;
-	if (conf_get_int(ssh->conf, CONF_tryagent) && agent_exists()) {
+	if (conf_get_bool(ssh->conf, CONF_tryagent) && agent_exists()) {
 
 	    void *r;
 
@@ -9539,7 +9539,7 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 	/*
 	 * Get a username.
 	 */
-	if (s->got_username && !conf_get_int(ssh->conf, CONF_change_username)) {
+	if (s->got_username && !conf_get_bool(ssh->conf, CONF_change_username)) {
 	    /*
 	     * We got a username last time round this loop, and
 	     * with change_username turned off we don't try to get
@@ -9717,7 +9717,7 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
                         logevent("Password authentication failed");
 			c_write_str(ssh, "Access denied\r\n");
 
-			if (conf_get_int(ssh->conf, CONF_change_username)) {
+			if (conf_get_bool(ssh->conf, CONF_change_username)) {
 			    /* XXX perhaps we should allow
 			     * keyboard-interactive to do this too? */
 			    s->we_are_in = FALSE;
@@ -9733,10 +9733,10 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 		    in_commasep_string("publickey", methods, methlen);
 		s->can_passwd =
 		    in_commasep_string("password", methods, methlen);
-		s->can_keyb_inter = conf_get_int(ssh->conf, CONF_try_ki_auth) &&
+		s->can_keyb_inter = conf_get_bool(ssh->conf, CONF_try_ki_auth) &&
 		    in_commasep_string("keyboard-interactive", methods, methlen);
 #ifndef NO_GSSAPI
-                if (conf_get_int(ssh->conf, CONF_try_gssapi_auth) &&
+                if (conf_get_bool(ssh->conf, CONF_try_gssapi_auth) &&
 		    in_commasep_string("gssapi-with-mic", methods, methlen)) {
                     /* Try loading the GSS libraries and see if we
                      * have any. */
@@ -10202,7 +10202,7 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 			(s->gsslib,
 			 &s->gss_ctx,
 			 s->gss_srv_name,
-			 conf_get_int(ssh->conf, CONF_gssapifwd),
+			 conf_get_bool(ssh->conf, CONF_gssapifwd),
 			 &s->gss_rcvtok,
 			 &s->gss_sndtok);
 
@@ -10717,7 +10717,7 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
     /*
      * Create the main session channel.
      */
-    if (conf_get_int(ssh->conf, CONF_ssh_no_shell)) {
+    if (conf_get_bool(ssh->conf, CONF_ssh_no_shell)) {
 	ssh->mainchan = NULL;
     } else {
 	ssh->mainchan = snew(struct ssh_channel);
@@ -10822,7 +10822,7 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 	 */
 
 	/* Potentially enable X11 forwarding. */
-	if (conf_get_int(ssh->conf, CONF_x11_forward)) {
+    if (conf_get_bool(ssh->conf, CONF_x11_forward)) {
             ssh->x11disp =
                 x11_setup_display(conf_get_str(ssh->conf, CONF_x11_display),
                                   ssh->conf);
@@ -10844,7 +10844,7 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 	    ssh2_setup_agent(ssh->mainchan, NULL, NULL);
 
 	/* Now allocate a pty for the session. */
-	if (!conf_get_int(ssh->conf, CONF_nopty))
+    if (!conf_get_bool(ssh->conf, CONF_nopty))
 	    ssh2_setup_pty(ssh->mainchan, NULL, NULL);
 
 	/* Send environment variables. */
@@ -10860,10 +10860,10 @@ static void do_ssh2_authconn(Ssh ssh, const unsigned char *in, int inlen,
 	    char *cmd;
 
 	    if (ssh->fallback_cmd) {
-		subsys = conf_get_int(ssh->conf, CONF_ssh_subsys2);
+        subsys = conf_get_bool(ssh->conf, CONF_ssh_subsys2);
 		cmd = conf_get_str(ssh->conf, CONF_remote_cmd2);
 	    } else {
-		subsys = conf_get_int(ssh->conf, CONF_ssh_subsys);
+        subsys = conf_get_bool(ssh->conf, CONF_ssh_subsys);
 		cmd = conf_get_str(ssh->conf, CONF_remote_cmd);
 	    }
 
@@ -11179,7 +11179,7 @@ static void ssh2_bare_connection_protocol(Ssh ssh, const void *vin, int inlen,
 
 static void ssh_cache_conf_values(Ssh ssh)
 {
-    ssh->logomitdata = conf_get_int(ssh->conf, CONF_logomitdata);
+    ssh->logomitdata = conf_get_bool(ssh->conf, CONF_logomitdata);
 }
 
 /*
@@ -11474,8 +11474,8 @@ static void ssh_reconfig(void *handle, Conf *conf)
 	    rekeying = "data limit lowered";
     }
 
-    if (conf_get_int(ssh->conf, CONF_compression) !=
-	conf_get_int(conf, CONF_compression)) {
+    if (conf_get_bool(ssh->conf, CONF_compression) !=
+    conf_get_bool(conf, CONF_compression)) {
 	rekeying = "compression setting changed";
 	rekey_mandatory = TRUE;
     }
@@ -11486,8 +11486,8 @@ static void ssh_reconfig(void *handle, Conf *conf)
 	rekeying = "cipher settings changed";
 	rekey_mandatory = TRUE;
     }
-    if (conf_get_int(ssh->conf, CONF_ssh2_des_cbc) !=
-	conf_get_int(conf, CONF_ssh2_des_cbc)) {
+    if (conf_get_bool(ssh->conf, CONF_ssh2_des_cbc) !=
+    conf_get_bool(conf, CONF_ssh2_des_cbc)) {
 	rekeying = "cipher settings changed";
 	rekey_mandatory = TRUE;
     }
@@ -11572,7 +11572,7 @@ static void ssh_size(void *handle, int width, int height)
 	ssh->size_needed = TRUE;       /* buffer for later */
 	break;
       case SSH_STATE_SESSION:
-	if (!conf_get_int(ssh->conf, CONF_nopty)) {
+    if (!conf_get_bool(ssh->conf, CONF_nopty)) {
 	    if (ssh->version == 1) {
 		send_packet(ssh, SSH1_CMSG_WINDOW_SIZE,
 			    PKT_INT, ssh->term_height,

@@ -429,7 +429,7 @@ static void process_subneg(Telnet telnet)
 	    logevent(telnet->frontend, logbuf);
 	    sfree(logbuf);
 	    if (telnet->sb_opt == TELOPT_OLD_ENVIRON) {
-		if (conf_get_int(telnet->conf, CONF_rfc_environ)) {
+		if (conf_get_bool(telnet->conf, CONF_rfc_environ)) {
 		    value = RFC_VALUE;
 		    var = RFC_VAR;
 		} else {
@@ -768,7 +768,7 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
     /*
      * Initialise option states.
      */
-    if (conf_get_int(telnet->conf, CONF_passive_telnet)) {
+    if (conf_get_bool(telnet->conf, CONF_passive_telnet)) {
 	const struct Opt *const *o;
 
 	for (o = opts; *o; o++)

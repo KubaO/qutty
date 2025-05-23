@@ -108,8 +108,8 @@ void ldisc_configure(void *handle, Conf *conf)
 {
     Ldisc ldisc = (Ldisc) handle;
 
-    ldisc->telnet_keyboard = conf_get_int(conf, CONF_telnet_keyboard);
-    ldisc->telnet_newline = conf_get_int(conf, CONF_telnet_newline);
+    ldisc->telnet_keyboard = conf_get_bool(conf, CONF_telnet_keyboard);
+    ldisc->telnet_newline = conf_get_bool(conf, CONF_telnet_newline);
     ldisc->protocol = conf_get_int(conf, CONF_protocol);
     ldisc->localecho = conf_get_int(conf, CONF_localecho);
     ldisc->localedit = conf_get_int(conf, CONF_localedit);

@@ -146,6 +146,10 @@ static bool confUnequalInt(Conf *a, Conf *b, config_primary_key key) {
   return conf_get_int(a, key) != conf_get_int(b, key);
 }
 
+static bool confUnequalBool(Conf *a, Conf *b, config_primary_key key) {
+  return conf_get_bool(a, key) != conf_get_bool(b, key);
+}
+
 static bool confUnequalStr(Conf *a, Conf *b, config_primary_key key) {
   return strcmp(conf_get_str(a, key), conf_get_str(b, key)) != 0;
 }
@@ -232,7 +236,7 @@ int GuiTerminalWindow::reconfigureTerminal(Conf *new_cfg) {
     term_size(term, conf_get_int(cfg, CONF_height), conf_get_int(cfg, CONF_width),
               conf_get_int(cfg, CONF_savelines));
 
-  if (confUnequalInt(cfg, prev_cfg.get(), CONF_alwaysontop)) {
+  if (confUnequalBool(cfg, prev_cfg.get(), CONF_alwaysontop)) {
     // TODO
   }
 
@@ -890,7 +894,7 @@ void GuiTerminalWindow::closeTerminal() {
 
 void GuiTerminalWindow::reqCloseTerminal(bool userConfirm) {
   userClosingTab = true;
-  if (!userConfirm && conf_get_int(cfg, CONF_warn_on_close) && !isSockDisconnected &&
+  if (!userConfirm && conf_get_bool(cfg, CONF_warn_on_close) && !isSockDisconnected &&
       QMessageBox::No == QMessageBox::question(this, "Exit Confirmation?",
                                                "Are you sure you want to close this session?",
                                                QMessageBox::Yes | QMessageBox::No))
