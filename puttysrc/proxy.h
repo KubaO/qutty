@@ -14,7 +14,7 @@
 #define PROXY_ERROR_UNEXPECTED 8001
 
 typedef struct SockAddr SockAddr;
-typedef struct Socket_proxy_tag * Proxy_Socket;
+typedef struct Socket_proxy_tag *ProxySocket;
 
 struct Socket_proxy_tag {
     const struct SocketVtable *fn;
@@ -59,7 +59,7 @@ struct Socket_proxy_tag {
      * and further the proxy negotiation process.
      */
 
-    int (*negotiate) (Proxy_Socket /* this */, int /* change type */);
+    int (*negotiate)(ProxySocket /* this */, int /* change type */);
 
     /* current arguments of plug handlers
      * (for use by proxy's negotiate function)
@@ -98,16 +98,16 @@ struct Plug_proxy_tag {
     const struct plug_function_table *fn;
     /* the above variable absolutely *must* be the first in this structure */
 
-    Proxy_Socket proxy_socket;
+    ProxySocket proxy_socket;
 
 };
 
-extern void proxy_activate (Proxy_Socket);
+extern void proxy_activate(ProxySocket);
 
-extern int proxy_http_negotiate (Proxy_Socket, int);
-extern int proxy_telnet_negotiate (Proxy_Socket, int);
-extern int proxy_socks4_negotiate (Proxy_Socket, int);
-extern int proxy_socks5_negotiate (Proxy_Socket, int);
+extern int proxy_http_negotiate(ProxySocket, int);
+extern int proxy_telnet_negotiate(ProxySocket, int);
+extern int proxy_socks4_negotiate(ProxySocket, int);
+extern int proxy_socks5_negotiate(ProxySocket, int);
 
 /*
  * This may be reused by local-command proxies on individual
@@ -120,7 +120,7 @@ char *format_telnet_command(SockAddr *addr, int port, Conf *conf);
  * whether encrypted proxy authentication is available.
  */
 extern void proxy_socks5_offerencryptedauth(char *command, int *len);
-extern int proxy_socks5_handlechap (Proxy_Socket p);
-extern int proxy_socks5_selectchap(Proxy_Socket p);
+extern int proxy_socks5_handlechap(ProxySocket p);
+extern int proxy_socks5_selectchap(ProxySocket p);
 
 #endif
