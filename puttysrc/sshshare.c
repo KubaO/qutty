@@ -2043,7 +2043,7 @@ char *ssh_share_sockname(const char *host, int port, Conf *conf)
     return sockname;
 }
 
-static void nullplug_socket_log(Plug plug, int type, SockAddr addr, int port,
+static void nullplug_socket_log(Plug plug, int type, SockAddr *addr, int port,
                                 const char *error_msg, int error_code) {}
 static void nullplug_closing(Plug plug, const char *error_msg, int error_code,
 			     int calling_back) {}

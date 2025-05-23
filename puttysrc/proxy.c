@@ -192,7 +192,7 @@ static const char * sk_proxy_socket_error (Socket s)
 
 /* basic proxy plug functions */
 
-static void plug_proxy_log(Plug plug, int type, SockAddr addr, int port,
+static void plug_proxy_log(Plug plug, int type, SockAddr *addr, int port,
 			   const char *error_msg, int error_code)
 {
     Proxy_Plug pp = (Proxy_Plug) plug;
@@ -268,7 +268,7 @@ static int plug_proxy_accepting(Plug p,
  * This function can accept a NULL pointer as `addr', in which case
  * it will only check the host name.
  */
-int proxy_for_destination (SockAddr addr, const char *hostname,
+int proxy_for_destination (SockAddr *addr, const char *hostname,
                            int port, Conf *conf)
 {
     int s = 0, e = 0;
@@ -372,7 +372,7 @@ static char *dns_log_msg(const char *host, int addressfamily,
                       ""), reason);
 }
 
-SockAddr name_lookup(const char *host, int port, char **canonicalname,
+SockAddr *name_lookup(const char *host, int port, char **canonicalname,
 		     Conf *conf, int addressfamily, void *frontend,
                      const char *reason)
 {
@@ -401,7 +401,7 @@ SockAddr name_lookup(const char *host, int port, char **canonicalname,
     }
 }
 
-Socket new_connection(SockAddr addr, const char *hostname,
+Socket new_connection(SockAddr *addr, const char *hostname,
 		      int port, int privport,
 		      int oobinline, int nodelay, int keepalive,
 		      Plug plug, Conf *conf)
@@ -431,7 +431,7 @@ Socket new_connection(SockAddr addr, const char *hostname,
     {
 	Proxy_Socket ret;
 	Proxy_Plug pplug;
-	SockAddr proxy_addr;
+	SockAddr *proxy_addr;
 	char *proxy_canonical_name;
         const char *proxy_type;
 	Socket sret;
@@ -1289,7 +1289,7 @@ int proxy_socks5_negotiate (Proxy_Socket p, int change)
  * standardised or at all well-defined.)
  */
 
-char *format_telnet_command(SockAddr addr, int port, Conf *conf)
+char *format_telnet_command(SockAddr *addr, int port, Conf *conf)
 {
     char *fmt = conf_get_str(conf, CONF_proxy_telnet_command);
     char *ret = NULL;

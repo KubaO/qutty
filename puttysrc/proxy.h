@@ -13,6 +13,7 @@
 #define PROXY_ERROR_GENERAL 8000
 #define PROXY_ERROR_UNEXPECTED 8001
 
+typedef struct SockAddr SockAddr;
 typedef struct Socket_proxy_tag * Proxy_Socket;
 
 struct Socket_proxy_tag {
@@ -23,7 +24,7 @@ struct Socket_proxy_tag {
 
     Socket sub_socket;
     Plug plug;
-    SockAddr remote_addr;
+    SockAddr *remote_addr;
     int remote_port;
 
     bufchain pending_output_data;
@@ -112,7 +113,7 @@ extern int proxy_socks5_negotiate (Proxy_Socket, int);
  * This may be reused by local-command proxies on individual
  * platforms.
  */
-char *format_telnet_command(SockAddr addr, int port, Conf *conf);
+char *format_telnet_command(SockAddr *addr, int port, Conf *conf);
 
 /*
  * These are implemented in cproxy.c or nocproxy.c, depending on

@@ -651,7 +651,7 @@ static void do_telnet_read(Telnet *telnet, char *buf, int len)
     sfree(outbuf);
 }
 
-static void telnet_log(Plug plug, int type, SockAddr addr, int port,
+static void telnet_log(Plug plug, int type, SockAddr *addr, int port,
 		       const char *error_msg, int error_code)
 {
     Telnet *telnet = (Telnet*) plug;
@@ -718,7 +718,7 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
 	telnet_receive,
 	telnet_sent
     };
-    SockAddr addr;
+    SockAddr *addr;
     const char *err;
     Telnet *telnet;
     char *loghost;

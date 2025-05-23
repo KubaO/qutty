@@ -20,7 +20,7 @@ typedef struct backend_tag Backend;
 typedef struct terminal_tag Terminal;
 #endif
 
-typedef struct SockAddr_tag *SockAddr;
+typedef struct SockAddr SockAddr;
 /* pay attention to levels of indirection */
 typedef struct socket_function_table **Socket;
 typedef struct plug_function_table **Plug;
@@ -45,7 +45,7 @@ typedef union { void *p; int i; } accept_ctx_t;
 typedef Socket (*accept_fn_t)(accept_ctx_t ctx, Plug plug);
 
 struct plug_function_table {
-    void (*log)(Plug p, int type, SockAddr addr, int port,
+    void (*log)(Plug p, int type, SockAddr *addr, int port,
 		const char *error_msg, int error_code);
     /*
      * Passes the client progress reports on the process of setting
@@ -98,21 +98,21 @@ struct plug_function_table {
 /* proxy indirection layer */
 /* NB, control of 'addr' is passed via new_connection, which takes
  * responsibility for freeing it */
-Socket new_connection(SockAddr addr, const char *hostname,
+Socket new_connection(SockAddr *addr, const char *hostname,
 		      int port, int privport,
 		      int oobinline, int nodelay, int keepalive,
 		      Plug plug, Conf *conf);
 Socket new_listener(const char *srcaddr, int port, Plug plug,
                     int local_host_only, Conf *conf, int addressfamily);
-SockAddr name_lookup(const char *host, int port, char **canonicalname,
+SockAddr *name_lookup(const char *host, int port, char **canonicalname,
 		     Conf *conf, int addressfamily, void *frontend_for_logging,
                      const char *lookup_reason_for_logging);
-int proxy_for_destination (SockAddr addr, const char *hostname, int port,
+int proxy_for_destination (SockAddr *addr, const char *hostname, int port,
                            Conf *conf);
 
 /* platform-dependent callback from new_connection() */
 /* (same caveat about addr as new_connection()) */
-Socket platform_new_connection(SockAddr addr, const char *hostname,
+Socket platform_new_connection(SockAddr *addr, const char *hostname,
 			       int port, int privport,
 			       int oobinline, int nodelay, int keepalive,
 			       Plug plug, Conf *conf);
@@ -122,26 +122,26 @@ Socket platform_new_connection(SockAddr addr, const char *hostname,
 void sk_init(void);		       /* called once at program startup */
 void sk_cleanup(void);		       /* called just before program exit */
 
-SockAddr sk_namelookup(const char *host, char **canonicalname, int address_family);
-SockAddr sk_nonamelookup(const char *host);
-void sk_getaddr(SockAddr addr, char *buf, int buflen);
-int sk_addr_needs_port(SockAddr addr);
+SockAddr *sk_namelookup(const char *host, char **canonicalname, int address_family);
+SockAddr *sk_nonamelookup(const char *host);
+void sk_getaddr(SockAddr *addr, char *buf, int buflen);
+int sk_addr_needs_port(SockAddr *addr);
 int sk_hostname_is_local(const char *name);
-int sk_address_is_local(SockAddr addr);
-int sk_address_is_special_local(SockAddr addr);
-int sk_addrtype(SockAddr addr);
-void sk_addrcopy(SockAddr addr, char *buf);
-void sk_addr_free(SockAddr addr);
+int sk_address_is_local(SockAddr *addr);
+int sk_address_is_special_local(SockAddr *addr);
+int sk_addrtype(SockAddr *addr);
+void sk_addrcopy(SockAddr *addr, char *buf);
+void sk_addr_free(SockAddr *addr);
 /* sk_addr_dup generates another SockAddr which contains the same data
  * as the original one and can be freed independently. May not actually
  * physically _duplicate_ it: incrementing a reference count so that
  * one more free is required before it disappears is an acceptable
  * implementation. */
-SockAddr sk_addr_dup(SockAddr addr);
+SockAddr *sk_addr_dup(SockAddr *addr);
 
 /* NB, control of 'addr' is passed via sk_new, which takes responsibility
  * for freeing it, as for new_connection() */
-Socket sk_new(SockAddr addr, int port, int privport, int oobinline,
+Socket sk_new(SockAddr *addr, int port, int privport, int oobinline,
 	      int nodelay, int keepalive, Plug p);
 
 Socket sk_newlistener(const char *srcaddr, int port, Plug plug,
@@ -167,7 +167,7 @@ Socket sk_newlistener(const char *srcaddr, int port, Plug plug,
  * if there's a problem. These functions extract an error message,
  * or return NULL if there's no problem.
  */
-const char *sk_addr_error(SockAddr addr);
+const char *sk_addr_error(SockAddr *addr);
 #define sk_socket_error(s) (((*s)->socket_error) (s))
 
 /*
@@ -226,7 +226,7 @@ Socket new_error_socket(const char *errmsg, Plug plug);
 /*
  * Exports from be_misc.c.
  */
-void backend_socket_log(void *frontend, int type, SockAddr addr, int port,
+void backend_socket_log(void *frontend, int type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
                         int session_started);
 #ifndef BUFCHAIN_TYPEDEF

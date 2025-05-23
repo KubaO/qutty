@@ -56,7 +56,7 @@ static int xdmseen_cmp(void *a, void *b)
  * creates a trial connection (and then immediately closes it).
  * XXX: bit out of place here, could in principle live in a platform-
  *      independent network.c or something */
-static void dummy_plug_log(Plug p, int type, SockAddr addr, int port,
+static void dummy_plug_log(Plug p, int type, SockAddr *addr, int port,
 			   const char *error_msg, int error_code) { }
 static void dummy_plug_closing
      (Plug p, const char *error_msg, int error_code, int calling_back) { }
@@ -301,7 +301,7 @@ struct X11Display *x11_setup_display(const char *display, Conf *conf)
      * display (as the standard X connection libraries do).
      */
     if (!disp->unixdomain && sk_address_is_local(disp->addr)) {
-	SockAddr ux = platform_get_x11_unix_address(NULL, disp->displaynum);
+	SockAddr *ux = platform_get_x11_unix_address(NULL, disp->displaynum);
 	const char *err = sk_addr_error(ux);
 	if (!err) {
 	    /* Create trial connection to see if there is a useful Unix-domain
@@ -605,7 +605,7 @@ void x11_get_auth_from_authfile(struct X11Display *disp,
     sfree(ourhostname);
 }
 
-static void x11_log(Plug p, int type, SockAddr addr, int port,
+static void x11_log(Plug p, int type, SockAddr *addr, int port,
 		    const char *error_msg, int error_code)
 {
     /* We have no interface to the logging module here, so we drop these. */

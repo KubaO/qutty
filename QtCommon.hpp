@@ -49,8 +49,8 @@ struct Socket_tag {
   char oobdata[1];
   int sending_oob;
   int oobinline, nodelay, keepalive, privport;
-  SockAddr addr;
-  // SockAddrStep step;
+  SockAddr *addr;
+  // SockAddrStep *step;
   int port;
   int pending_error; /* in case send() returns error */
                      /*

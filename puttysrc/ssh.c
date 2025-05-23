@@ -3507,7 +3507,7 @@ static int ssh_do_close(Ssh ssh, int notify_exit)
     return ret;
 }
 
-static void ssh_socket_log(Plug plug, int type, SockAddr addr, int port,
+static void ssh_socket_log(Plug plug, int type, SockAddr *addr, int port,
                            const char *error_msg, int error_code)
 {
     Ssh ssh = (Ssh) plug;
@@ -3674,7 +3674,7 @@ static const char *connect_to_host(Ssh ssh, const char *host, int port,
 	NULL
     };
 
-    SockAddr addr;
+    SockAddr *addr;
     const char *err;
     char *loghost;
     int addressfamily, sshprot;

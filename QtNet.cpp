@@ -14,7 +14,7 @@ extern "C" {
 #include <QHostInfo>
 #include <QNetworkInterface>
 
-struct SockAddr_tag {
+struct SockAddr {
   QHostAddress *qtaddr;
   const char *error;
 };
@@ -111,9 +111,9 @@ Socket sk_new(char *addr, int port, int privport, int oobinline, int nodelay, in
   return (Socket)ret;
 }
 
-int sk_addr_needs_port(SockAddr addr) { return TRUE; }
+int sk_addr_needs_port(SockAddr *addr) { return TRUE; }
 
-int sk_addrtype(SockAddr addr) {
+int sk_addrtype(SockAddr *addr) {
   const QHostAddress *a = addr->qtaddr;
   switch (a->protocol()) {
     case QAbstractSocket::IPv4Protocol:
@@ -125,7 +125,7 @@ int sk_addrtype(SockAddr addr) {
   }
 }
 
-void sk_addrcopy(SockAddr addr, char *buf) {
+void sk_addrcopy(SockAddr *addr, char *buf) {
   QHostAddress *a = addr->qtaddr;
   QString str = a->toString();
   QByteArray bstr = str.toUtf8();
@@ -133,23 +133,23 @@ void sk_addrcopy(SockAddr addr, char *buf) {
   memcpy(buf, cstr, bstr.length());
 }
 
-SockAddr sk_addr_dup(SockAddr addr) {
+SockAddr *sk_addr_dup(SockAddr *addr) {
   if (!addr) return NULL;
-  SockAddr ret = new SockAddr_tag;
+  SockAddr *ret = new SockAddr;
   ret->qtaddr = new QHostAddress(*addr->qtaddr);
   ret->error = addr->error;
   return ret;
 }
 
-void sk_addr_free(SockAddr addr) {
+void sk_addr_free(SockAddr *addr) {
   if (!addr) return;
   if (addr->qtaddr) delete addr->qtaddr;
   addr->qtaddr = NULL;
   addr->error = NULL;
 }
 
-SockAddr sk_namelookup(const char *host, char **canonicalname, int address_family) {
-  SockAddr ret = new SockAddr_tag;
+SockAddr *sk_namelookup(const char *host, char **canonicalname, int address_family) {
+  SockAddr *ret = new SockAddr;
   ret->error = NULL;
   QHostInfo info = QHostInfo::fromName(host);
   if (info.error() == QHostInfo::NoError) {
@@ -193,15 +193,15 @@ SockAddr sk_namelookup(const char *host, char **canonicalname, int address_famil
   return ret;
 }
 
-SockAddr sk_nonamelookup(const char * /*host*/) {
+SockAddr *sk_nonamelookup(const char * /*host*/) {
   // TODO not supported for now
-  SockAddr ret = new SockAddr_tag;
+  SockAddr *ret = new SockAddr;
   ret->qtaddr = new QHostAddress();
   ret->error = "Not supported";
   return ret;
 }
 
-const char *sk_addr_error(SockAddr addr) {
+const char *sk_addr_error(SockAddr *addr) {
   if (!addr) return NULL;
   return addr->error;
 }
@@ -210,7 +210,7 @@ int sk_hostname_is_local(const char *name) {
   return !strcmp(name, "localhost") || !strcmp(name, "::1") || !strncmp(name, "127.", 4);
 }
 
-void sk_getaddr(SockAddr addr, char *buf, int buflen) {
+void sk_getaddr(SockAddr *addr, char *buf, int buflen) {
   QHostAddress *a = addr->qtaddr;
   QString str = a->toString();
   QByteArray bstr = str.toUtf8();
@@ -220,7 +220,7 @@ void sk_getaddr(SockAddr addr, char *buf, int buflen) {
   buf[buflen - 1] = '\0';
 }
 
-int sk_address_is_local(SockAddr addr) {
+int sk_address_is_local(SockAddr *addr) {
   const QHostAddress *a = addr->qtaddr;
   if (*a == QHostAddress::LocalHost || *a == QHostAddress::LocalHostIPv6) return 1;
   foreach (const QHostAddress &locaddr, QNetworkInterface::allAddresses()) {
@@ -229,11 +229,11 @@ int sk_address_is_local(SockAddr addr) {
   return 0;
 }
 
-int sk_address_is_special_local(SockAddr addr) {
+int sk_address_is_special_local(SockAddr *addr) {
   return 0; /* no Unix-domain socket analogue here */
 }
 
-Socket sk_new(SockAddr addr, int port, int privport, int oobinline, int nodelay, int keepalive,
+Socket sk_new(SockAddr *addr, int port, int privport, int oobinline, int nodelay, int keepalive,
               Plug plug) {
   static const struct socket_function_table fn_table = {sk_tcp_plug,
                                                         sk_tcp_close,
@@ -309,9 +309,9 @@ Socket sk_register(void * /*sock*/, Plug /*plug*/) {
   return NULL;
 }
 
-SockAddr platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*/) {
+SockAddr *platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*/) {
   /*
-  SockAddr ret = snew(struct SockAddr_tag);
+  SockAddr *ret = snew(struct SockAddr_tag);
   memset(ret, 0, sizeof(struct SockAddr_tag));
   ret->error = "unix sockets not supported on this platform";
   ret->refcount = 1;
@@ -320,7 +320,7 @@ SockAddr platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*/
   return NULL;
 }
 
-Socket platform_new_connection(SockAddr /*addr*/, const char * /*hostname*/, int /*port*/,
+Socket platform_new_connection(SockAddr * /*addr*/, const char * /*hostname*/, int /*port*/,
                                int /*privport*/, int /*oobinline*/, int /*nodelay*/,
                                int /*keepalive*/, Plug /*plug*/, Conf * /*cfg*/) {
   // TODO not yet implemented

@@ -547,7 +547,7 @@ struct X11Display {
 
     /* PuTTY networking SockAddr to connect to the display, and associated
      * gubbins */
-    SockAddr addr;
+    SockAddr *addr;
     int port;
     char *realhost;
 
@@ -610,7 +610,7 @@ extern void platform_get_x11_auth(struct X11Display *display, Conf *);
     /* examine a mostly-filled-in X11Display and fill in localauth* */
 extern const int platform_uses_x11_unix_by_default;
     /* choose default X transport in the absence of a specified one */
-SockAddr platform_get_x11_unix_address(const char *path, int displaynum);
+SockAddr *platform_get_x11_unix_address(const char *path, int displaynum);
     /* make up a SockAddr naming the address for displaynum */
 char *platform_get_x_display(void);
     /* allocated local X display string, if any */

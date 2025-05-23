@@ -17,7 +17,7 @@ typedef struct __tmux_window_pane_t {
 } tmux_window_pane_t;
 }
 
-extern "C" void tmux_log(Plug /*plug*/, int /*type*/, SockAddr /*addr*/, int /*port*/,
+extern "C" void tmux_log(Plug /*plug*/, int /*type*/, SockAddr * /*addr*/, int /*port*/,
                          const char * /*error_msg*/, int /*error_code*/) {
   qDebug() << __FUNCTION__;
 }
