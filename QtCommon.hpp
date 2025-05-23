@@ -30,10 +30,10 @@ class GuiTerminalWindow;
 extern QTimer *qtimer;
 extern long timing_next_time;
 
-typedef struct Socket_tag *Actual_Socket;
+typedef struct QtSocket QtSocket;
 
-struct Socket_tag {
-  const struct SocketVtable *fn;
+struct QtSocket {
+  Socket sock;
   /* the above variable absolutely *must* be the first in this structure */
   const char *error;
   // SOCKET s;
@@ -59,7 +59,7 @@ struct Socket_tag {
                       * example. So here we define `parent' and `child' pointers to
                       * track this link.
                       */
-  Actual_Socket parent, child;
+  QtSocket *parent, *child;
   QTcpSocket *qtsock;
 };
 

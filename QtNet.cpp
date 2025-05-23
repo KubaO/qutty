@@ -19,15 +19,22 @@ struct SockAddr {
   const char *error;
 };
 
-static void sk_tcp_flush(Socket /*s*/) {}
+static void sk_tcp_flush(Socket * /*s*/) {}
 
-static const char *sk_tcp_socket_error(Socket sock) {
-  Actual_Socket s = (Actual_Socket)sock;
+#if 0
+/* Return a pointer to the object of structure type 'type' whose field
+ * with name 'field' is pointed at by 'object'. */
+#define container_of(object, type, field)
+
+#endif
+
+static const char *sk_tcp_socket_error(Socket *sock) {
+  QtSocket *s = container_of(sock, QtSocket, sock);
   return s->error;
 }
 
-static size_t sk_tcp_write(Socket sock, const void *data, size_t len) {
-  Actual_Socket s = (Actual_Socket)sock;
+static size_t sk_tcp_write(Socket *sock, const void *data, size_t len) {
+  QtSocket *s = container_of(sock, QtSocket, sock);
   int i, j;
   char pr[10000];
   for (i = 0, j = 0; i < len; i++)
@@ -39,31 +46,31 @@ static size_t sk_tcp_write(Socket sock, const void *data, size_t len) {
   return ret;
 }
 
-static size_t sk_tcp_write_oob(Socket sock, const void *data, size_t len) {
-  Actual_Socket s = (Actual_Socket)sock;
+static size_t sk_tcp_write_oob(Socket *sock, const void *data, size_t len) {
+  QtSocket *s = container_of(sock, QtSocket, sock);
   int ret = s->qtsock->write((const char *)data, len);
   qDebug() << "tcp_write_oob ret " << ret << "\n";
   return ret;
 }
 
-static void sk_tcp_close(Socket sock) {
-  Actual_Socket s = (Actual_Socket)sock;
+static void sk_tcp_close(Socket *sock) {
+  QtSocket *s = container_of(sock, QtSocket, sock);
   if (s->qtsock) s->qtsock->disconnectFromHost();
 }
 
-static void sk_tcp_set_frozen(Socket /*sock*/, bool /*is_frozen*/) {
+static void sk_tcp_set_frozen(Socket * /*sock*/, bool /*is_frozen*/) {
   qDebug() << "sk_tcp_set_frozen() NOT IMPL\n";
 }
 
-static Plug sk_tcp_plug(Socket sock, Plug p) {
-  Actual_Socket s = (Actual_Socket)sock;
+static Plug sk_tcp_plug(Socket *sock, Plug p) {
+  QtSocket *s = container_of(sock, QtSocket, sock);
   Plug ret = s->plug;
   if (p) s->plug = p;
   return ret;
 }
 
-Socket sk_new(char *addr, int port, int privport, int oobinline, int nodelay, int keepalive,
-              Plug plug) {
+Socket *sk_new(char *addr, int port, int privport, int oobinline, int nodelay, int keepalive,
+               Plug plug) {
   static const struct SocketVtable fn_table = {sk_tcp_plug,
                                                sk_tcp_close,
                                                sk_tcp_write,
@@ -73,13 +80,13 @@ Socket sk_new(char *addr, int port, int privport, int oobinline, int nodelay, in
                                                sk_tcp_set_frozen,
                                                sk_tcp_socket_error};
 
-  Actual_Socket ret;
+  QtSocket *ret;
 
   /*
    * Create Socket structure.
    */
-  ret = snew(struct Socket_tag);
-  ret->fn = &fn_table;
+  ret = snew(QtSocket);
+  ret->sock.vt = &fn_table;
   ret->error = NULL;
   ret->plug = plug;
   bufchain_init(&ret->output_data);
@@ -109,7 +116,7 @@ Socket sk_new(char *addr, int port, int privport, int oobinline, int nodelay, in
 
   if (nodelay) ret->qtsock->setSocketOption(QAbstractSocket::LowDelayOption, 1);
 
-  return (Socket)ret;
+  return &ret->sock;
 }
 
 int sk_addr_needs_port(SockAddr *addr) { return TRUE; }
@@ -234,8 +241,8 @@ int sk_address_is_special_local(SockAddr *addr) {
   return 0; /* no Unix-domain socket analogue here */
 }
 
-Socket sk_new(SockAddr *addr, int port, int privport, int oobinline, int nodelay, int keepalive,
-              Plug plug) {
+Socket *sk_new(SockAddr *addr, int port, int privport, int oobinline, int nodelay, int keepalive,
+               Plug plug) {
   static const struct SocketVtable fn_table = {sk_tcp_plug,
                                                sk_tcp_close,
                                                sk_tcp_write,
@@ -245,13 +252,13 @@ Socket sk_new(SockAddr *addr, int port, int privport, int oobinline, int nodelay
                                                sk_tcp_set_frozen,
                                                sk_tcp_socket_error};
 
-  Actual_Socket ret;
+  QtSocket *ret;
 
   /*
    * Create Socket structure.
    */
-  ret = snew(struct Socket_tag);
-  ret->fn = &fn_table;
+  ret = snew(QtSocket);
+  ret->sock.vt = &fn_table;
   ret->error = NULL;
   ret->plug = plug;
   bufchain_init(&ret->output_data);
@@ -282,11 +289,11 @@ Socket sk_new(SockAddr *addr, int port, int privport, int oobinline, int nodelay
   if (nodelay) ret->qtsock->setSocketOption(QAbstractSocket::LowDelayOption, 1);
 
 cu0:
-  return (Socket)ret;
+  return &ret->sock;
 }
 
-Socket sk_newlistener(const char * /*srcaddr*/, int /*port*/, Plug /*plug*/,
-                      int /*local_host_only*/, int /*orig_address_family*/) {
+Socket *sk_newlistener(const char * /*srcaddr*/, int /*port*/, Plug /*plug*/,
+                       int /*local_host_only*/, int /*orig_address_family*/) {
   // TODO not implemented
   return NULL;
 }
@@ -305,7 +312,7 @@ int net_service_lookup(char * /*service*/) {
   return 0;
 }
 
-Socket sk_register(void * /*sock*/, Plug /*plug*/) {
+Socket *sk_register(void * /*sock*/, Plug /*plug*/) {
   // TODO not implemented
   return NULL;
 }
@@ -321,14 +328,14 @@ SockAddr *platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*
   return NULL;
 }
 
-Socket platform_new_connection(SockAddr * /*addr*/, const char * /*hostname*/, int /*port*/,
-                               int /*privport*/, int /*oobinline*/, int /*nodelay*/,
-                               int /*keepalive*/, Plug /*plug*/, Conf * /*cfg*/) {
+Socket *platform_new_connection(SockAddr * /*addr*/, const char * /*hostname*/, int /*port*/,
+                                int /*privport*/, int /*oobinline*/, int /*nodelay*/,
+                                int /*keepalive*/, Plug /*plug*/, Conf * /*cfg*/) {
   // TODO not yet implemented
   return NULL;
 }
 
-int platform_ssh_share(const char *name, Conf *conf, Plug downplug, Plug upplug, Socket *sock,
+int platform_ssh_share(const char *name, Conf *conf, Plug downplug, Plug upplug, Socket **sock,
                        char **logtext, char **ds_err, char **us_err, int can_upstream,
                        int can_downstream) {
   return SHARE_NONE;

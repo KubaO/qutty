@@ -22,7 +22,7 @@ struct Socket_proxy_tag {
 
     const char *error;
 
-    Socket sub_socket;
+    Socket *sub_socket;
     Plug plug;
     SockAddr *remote_addr;
     int remote_port;

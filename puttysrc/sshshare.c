@@ -144,7 +144,7 @@ struct ssh_sharing_state {
     /* the above variable absolutely *must* be the first in this structure */
 
     char *sockname;                  /* the socket name, kept for cleanup */
-    Socket listensock;               /* the master listening Socket */
+    Socket *listensock;               /* the master listening Socket */
     tree234 *connections;            /* holds ssh_sharing_connstates */
     unsigned nextid;                 /* preferred id for next connstate */
     Ssh ssh;                         /* instance of the ssh backend */
@@ -159,7 +159,7 @@ struct ssh_sharing_connstate {
 
     unsigned id;    /* used to identify this downstream in log messages */
 
-    Socket sock;                     /* the Socket for this connection */
+    Socket *sock;                     /* the Socket for this connection */
     struct ssh_sharing_state *parent;
 
     int crLine;                        /* coroutine state for share_receive */
@@ -2065,7 +2065,7 @@ int ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
 
     char *sockname, *logtext, *ds_err, *us_err;
     int result;
-    Socket sock;
+    Socket *sock;
 
     np.fn = &fn_table;
 
@@ -2101,8 +2101,8 @@ int ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
  * to the upstream; otherwise (whether or not we have established an
  * upstream) we return NULL.
  */
-Socket ssh_connection_sharing_init(const char *host, int port,
-                                   Conf *conf, Ssh ssh, void **state)
+Socket *ssh_connection_sharing_init(const char *host, int port,
+                                    Conf *conf, Ssh ssh, void **state)
 {
     static const struct plug_function_table listen_fn_table = {
 	NULL, /* no log function, because that's for outgoing connections */
@@ -2115,7 +2115,7 @@ Socket ssh_connection_sharing_init(const char *host, int port,
     int result, can_upstream, can_downstream;
     char *logtext, *ds_err, *us_err;
     char *sockname;
-    Socket sock;
+    Socket *sock;
     struct ssh_sharing_state *sharestate;
 
     if (!conf_get_bool(conf, CONF_ssh_connection_sharing))

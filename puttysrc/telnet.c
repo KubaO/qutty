@@ -182,7 +182,7 @@ struct Telnet {
     const struct plug_function_table *fn;
     /* the above field _must_ be first in the structure */
 
-    Socket s;
+    Socket *s;
     int closed_on_socket_error;
 
     void *frontend;
@@ -1123,9 +1123,9 @@ Backend telnet_backend = {
 };
 
 #ifdef IS_QUTTY
-Socket get_telnet_socket(void *handle)
+Socket *get_telnet_socket(void *handle)
 {
-    Telnet *h = (Telnet*) handle;
-    return h->s;
+  Telnet *h = (Telnet *)handle;
+  return h->s;
 }
 #endif

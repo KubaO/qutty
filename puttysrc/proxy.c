@@ -70,12 +70,12 @@ void proxy_activate(ProxySocket p) {
    * our set_frozen handler will flush buffered receive data before
    * unfreezing the actual underlying socket.
    */
-  if (!p->freeze) sk_set_frozen((Socket)p, 0);
+  if (!p->freeze) sk_set_frozen((Socket*)p, 0);
 }
 
 /* basic proxy socket functions */
 
-static Plug sk_proxy_plug (Socket s, Plug p)
+static Plug sk_proxy_plug (Socket *s, Plug p)
 {
   ProxySocket ps = (ProxySocket)s;
   Plug ret = ps->plug;
@@ -83,7 +83,7 @@ static Plug sk_proxy_plug (Socket s, Plug p)
   return ret;
 }
 
-static void sk_proxy_close (Socket s)
+static void sk_proxy_close (Socket *s)
 {
   ProxySocket ps = (ProxySocket)s;
 
@@ -92,7 +92,7 @@ static void sk_proxy_close (Socket s)
   sfree(ps);
 }
 
-static size_t sk_proxy_write(Socket s, const char *data, int len) {
+static size_t sk_proxy_write(Socket *s, const void *data, size_t len) {
   ProxySocket ps = (ProxySocket)s;
 
   if (ps->state != PROXY_STATE_ACTIVE) {
@@ -102,7 +102,7 @@ static size_t sk_proxy_write(Socket s, const char *data, int len) {
   return sk_write(ps->sub_socket, data, len);
 }
 
-static int sk_proxy_write_oob (Socket s, const char *data, int len)
+static size_t sk_proxy_write_oob(Socket *s, const void *data, size_t len)
 {
   ProxySocket ps = (ProxySocket)s;
 
@@ -115,7 +115,7 @@ static int sk_proxy_write_oob (Socket s, const char *data, int len)
     return sk_write_oob(ps->sub_socket, data, len);
 }
 
-static void sk_proxy_write_eof (Socket s)
+static void sk_proxy_write_eof (Socket *s)
 {
   ProxySocket ps = (ProxySocket)s;
 
@@ -126,7 +126,7 @@ static void sk_proxy_write_eof (Socket s)
     sk_write_eof(ps->sub_socket);
 }
 
-static void sk_proxy_flush (Socket s)
+static void sk_proxy_flush (Socket *s)
 {
   ProxySocket ps = (ProxySocket)s;
 
@@ -137,7 +137,7 @@ static void sk_proxy_flush (Socket s)
     sk_flush(ps->sub_socket);
 }
 
-static void sk_proxy_set_frozen (Socket s, int is_frozen)
+static void sk_proxy_set_frozen(Socket *s, bool is_frozen)
 {
   ProxySocket ps = (ProxySocket)s;
 
@@ -176,7 +176,7 @@ static void sk_proxy_set_frozen (Socket s, int is_frozen)
     sk_set_frozen(ps->sub_socket, is_frozen);
 }
 
-static const char * sk_proxy_socket_error (Socket s)
+static const char * sk_proxy_socket_error (Socket *s)
 {
   ProxySocket ps = (ProxySocket)s;
   if (ps->error != NULL || ps->sub_socket == NULL) {
@@ -396,10 +396,10 @@ SockAddr *name_lookup(const char *host, int port, char **canonicalname,
     }
 }
 
-Socket new_connection(SockAddr *addr, const char *hostname,
-		      int port, int privport,
-		      int oobinline, int nodelay, int keepalive,
-		      Plug plug, Conf *conf)
+Socket *new_connection(SockAddr *addr, const char *hostname,
+		               int port, int privport,
+		               int oobinline, int nodelay, int keepalive,
+		               Plug plug, Conf *conf)
 {
     static const struct SocketVtable socket_fn_table = {
 	sk_proxy_plug,
@@ -429,7 +429,7 @@ Socket new_connection(SockAddr *addr, const char *hostname,
       SockAddr *proxy_addr;
       char *proxy_canonical_name;
       const char *proxy_type;
-      Socket sret;
+      Socket *sret;
       int type;
 
       if ((sret = platform_new_connection(addr, hostname, port, privport, oobinline, nodelay,
@@ -471,7 +471,7 @@ Socket new_connection(SockAddr *addr, const char *hostname,
         proxy_type = "Telnet";
       } else {
         ret->error = "Proxy error: Unknown proxy method";
-        return (Socket)ret;
+        return (Socket*)ret;
       }
 
         {
@@ -506,7 +506,7 @@ Socket new_connection(SockAddr *addr, const char *hostname,
 	    ret->error = "Proxy error: Unable to resolve proxy host name";
             sfree(pplug);
             sk_addr_free(proxy_addr);
-	    return (Socket)ret;
+	    return (Socket*)ret;
 	}
 	sfree(proxy_canonical_name);
 
@@ -528,21 +528,21 @@ Socket new_connection(SockAddr *addr, const char *hostname,
 				 privport, oobinline,
 				 nodelay, keepalive, (Plug) pplug);
 	if (sk_socket_error(ret->sub_socket) != NULL)
-	    return (Socket) ret;
+	    return (Socket*) ret;
 
 	/* start the proxy negotiation process... */
 	sk_set_frozen(ret->sub_socket, 0);
 	ret->negotiate(ret, PROXY_CHANGE_NEW);
 
-	return (Socket) ret;
+	return (Socket*) ret;
     }
 
     /* no proxy, so just return the direct socket */
     return sk_new(addr, port, privport, oobinline, nodelay, keepalive, plug);
 }
 
-Socket new_listener(const char *srcaddr, int port, Plug plug,
-                    int local_host_only, Conf *conf, int addressfamily)
+Socket* new_listener(const char *srcaddr, int port, Plug plug,
+                     int local_host_only, Conf *conf, int addressfamily)
 {
     /* TODO: SOCKS (and potentially others) support inbound
      * TODO: connections via the proxy. support them.

@@ -22,8 +22,8 @@ void sshfwd_x11_sharing_handover(struct ssh_channel *c,
                                  const void *initial_data, int initial_len);
 void sshfwd_x11_is_local(struct ssh_channel *c);
 
-extern Socket ssh_connection_sharing_init(const char *host, int port,
-                                          Conf *conf, Ssh ssh, void **state);
+extern Socket *ssh_connection_sharing_init(const char *host, int port,
+                                           Conf *conf, Ssh ssh, void **state);
 int ssh_share_test_for_upstream(const char *host, int port, Conf *conf);
 void share_got_pkt_from_server(void *ctx, int type,
                                unsigned char *pkt, int pktlen);
@@ -845,7 +845,7 @@ int zlib_decompress_block(void *, unsigned char *block, int len,
  */
 enum { SHARE_NONE, SHARE_DOWNSTREAM, SHARE_UPSTREAM };
 int platform_ssh_share(const char *name, Conf *conf,
-                       Plug downplug, Plug upplug, Socket *sock,
+                       Plug downplug, Plug upplug, Socket **sock,
                        char **logtext, char **ds_err, char **us_err,
                        int can_upstream, int can_downstream);
 void platform_ssh_share_cleanup(const char *name);

@@ -15,13 +15,13 @@
 #define TRUE 1
 #endif
 
-struct PortForwarding {
+typedef struct PortForwarding {
     const struct plug_function_table *fn;
     /* the above variable absolutely *must* be the first in this structure */
     struct ssh_channel *c;        /* channel structure held by ssh.c */
-    void *backhandle;		       /* instance of SSH backend itself */
+    void *backhandle;		      /* instance of SSH backend itself */
     /* Note that backhandle need not be filled in if c is non-NULL */
-    Socket s;
+    Socket *s;
     int throttled, throttle_override;
     int ready;
     /*
@@ -50,13 +50,13 @@ struct PortForwarding {
      */
     void *buffer;
     int buflen;
-};
+} PortForwarding;
 
 struct PortListener {
     const struct plug_function_table *fn;
     /* the above variable absolutely *must* be the first in this structure */
     void *backhandle;		       /* instance of SSH backend itself */
-    Socket s;
+    Socket *s;
     /*
      * `dynamic' is set to 0 for an ordinary forwarded port, and
      * nonzero for SOCKS-style dynamic port forwarding.
@@ -155,7 +155,7 @@ static void pfl_closing(Plug plug, const char *error_msg, int error_code,
 }
 
 static void wrap_send_port_open(void *channel, const char *hostname, int port,
-                                Socket s)
+                                Socket *s)
 {
     char *peerinfo, *description;
     peerinfo = sk_peer_info(s);
@@ -488,7 +488,7 @@ static int pfl_accepting(Plug p, accept_fn_t constructor, accept_ctx_t ctx)
     };
     struct PortForwarding *pf;
     struct PortListener *pl;
-    Socket s;
+    Socket *s;
     const char *err;
 
     pl = (struct PortListener *)p;

@@ -44,7 +44,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   QFont _font;
   int fontWidth, fontHeight, fontAscent;
   struct unicode_data ucsdata = {};
-  Actual_Socket as = nullptr;
+  QtSocket *as = nullptr;
   QTcpSocket *qtsock = nullptr;
   bool _any_update = false;
   QRegion termrgn;

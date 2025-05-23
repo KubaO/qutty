@@ -69,10 +69,11 @@ GuiTerminalWindow::~GuiTerminalWindow() {
   }
 }
 
-extern "C" Socket get_ssh_socket(void *handle);
-extern "C" Socket get_telnet_socket(void *handle);
+extern "C" Socket *get_ssh_socket(void *handle);
+extern "C" Socket *get_telnet_socket(void *handle);
 
 int GuiTerminalWindow::initTerminal() {
+  Socket *sock = nullptr;
   char *realhost = NULL;
   char *ip_addr = conf_get_str(cfg, CONF_host);
   void *logctx;
@@ -112,10 +113,12 @@ int GuiTerminalWindow::initTerminal() {
 
   switch (conf_get_int(cfg, CONF_protocol)) {
     case PROT_TELNET:
-      as = (Actual_Socket)get_telnet_socket(backhandle);
+      sock = get_telnet_socket(backhandle);
+      as = container_of(sock, QtSocket, sock);
       break;
     case PROT_SSH:
-      as = (Actual_Socket)get_ssh_socket(backhandle);
+      sock = get_ssh_socket(backhandle);
+      as = container_of(sock, QtSocket, sock);
       break;
     default:
       assert(0);
