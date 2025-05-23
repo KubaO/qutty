@@ -23,7 +23,7 @@ void sshfwd_x11_sharing_handover(struct ssh_channel *c,
 void sshfwd_x11_is_local(struct ssh_channel *c);
 
 extern Socket *ssh_connection_sharing_init(const char *host, int port,
-                                           Conf *conf, Ssh ssh, void **state);
+                                           Conf *conf, Ssh *ssh, void **state);
 int ssh_share_test_for_upstream(const char *host, int port, Conf *conf);
 void share_got_pkt_from_server(void *ctx, int type,
                                unsigned char *pkt, int pktlen);
@@ -31,25 +31,25 @@ void share_activate(void *state, const char *server_verstring);
 void sharestate_free(void *state);
 int share_ndownstreams(void *state);
 
-void ssh_connshare_log(Ssh ssh, int event, const char *logtext,
+void ssh_connshare_log(Ssh *ssh, int event, const char *logtext,
                        const char *ds_err, const char *us_err);
-unsigned ssh_alloc_sharing_channel(Ssh ssh, void *sharing_ctx);
-void ssh_delete_sharing_channel(Ssh ssh, unsigned localid);
-int ssh_alloc_sharing_rportfwd(Ssh ssh, const char *shost, int sport,
+unsigned ssh_alloc_sharing_channel(Ssh *ssh, void *sharing_ctx);
+void ssh_delete_sharing_channel(Ssh *ssh, unsigned localid);
+int ssh_alloc_sharing_rportfwd(Ssh *ssh, const char *shost, int sport,
                                void *share_ctx);
-void ssh_sharing_queue_global_request(Ssh ssh, void *share_ctx);
-struct X11FakeAuth *ssh_sharing_add_x11_display(Ssh ssh, int authtype,
+void ssh_sharing_queue_global_request(Ssh *ssh, void *share_ctx);
+struct X11FakeAuth *ssh_sharing_add_x11_display(Ssh *ssh, int authtype,
                                                 void *share_cs,
                                                 void *share_chan);
-void ssh_sharing_remove_x11_display(Ssh ssh, struct X11FakeAuth *auth);
-void ssh_send_packet_from_downstream(Ssh ssh, unsigned id, int type,
+void ssh_sharing_remove_x11_display(Ssh *ssh, struct X11FakeAuth *auth);
+void ssh_send_packet_from_downstream(Ssh *ssh, unsigned id, int type,
                                      const void *pkt, int pktlen,
                                      const char *additional_log_text);
-void ssh_sharing_downstream_connected(Ssh ssh, unsigned id,
+void ssh_sharing_downstream_connected(Ssh *ssh, unsigned id,
                                       const char *peerinfo);
-void ssh_sharing_downstream_disconnected(Ssh ssh, unsigned id);
-void ssh_sharing_logf(Ssh ssh, unsigned id, const char *logfmt, ...);
-int ssh_agent_forwarding_permitted(Ssh ssh);
+void ssh_sharing_downstream_disconnected(Ssh *ssh, unsigned id);
+void ssh_sharing_logf(Ssh *ssh, unsigned id, const char *logfmt, ...);
+int ssh_agent_forwarding_permitted(Ssh *ssh);
 void share_setup_x11_channel(void *csv, void *chanv,
                              unsigned upstream_id, unsigned server_id,
                              unsigned server_currwin, unsigned server_maxpkt,

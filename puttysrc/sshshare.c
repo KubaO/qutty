@@ -147,7 +147,7 @@ struct ssh_sharing_state {
     Socket *listensock;               /* the master listening Socket */
     tree234 *connections;            /* holds ssh_sharing_connstates */
     unsigned nextid;                 /* preferred id for next connstate */
-    Ssh ssh;                         /* instance of the ssh backend */
+    Ssh *ssh;                        /* instance of the ssh backend */
     char *server_verstring;          /* server version string after "SSH-" */
 };
 
@@ -2111,7 +2111,7 @@ static const PlugVtable ssh_sharing_listen_plugvt = {
  * upstream) we return NULL.
  */
 Socket *ssh_connection_sharing_init(const char *host, int port,
-                                    Conf *conf, Ssh ssh, void **state)
+                                    Conf *conf, Ssh *ssh, void **state)
 {
     int result, can_upstream, can_downstream;
     char *logtext, *ds_err, *us_err;

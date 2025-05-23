@@ -67,7 +67,7 @@ typedef struct SeatVtable SeatVtable;
 typedef struct TermWin TermWin;
 typedef struct TermWinVtable TermWinVtable;
 
-typedef struct ssh_tag *Ssh;
+typedef struct Ssh Ssh;
 
 typedef struct mp_int mp_int;
 typedef struct MontyContext MontyContext;
