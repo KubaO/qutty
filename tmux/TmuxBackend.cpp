@@ -9,7 +9,7 @@ extern "C" {
 
 extern "C" {
 typedef struct __tmux_window_pane_t {
-  const struct plug_function_table *fn;
+  const struct PlugVtable *fn;
   /* the above field _must_ be first in the structure */
 
   TmuxGateway *gateway;
@@ -41,8 +41,7 @@ extern "C" void tmux_sent(Plug /*plug*/, int /*bufsize*/) { qDebug() << __FUNCTI
 extern "C" const char *tmux_client_init(void *frontend_handle, void **backend_handle,
                                         Conf * /*cfg*/, const char * /*host*/, int port,
                                         char ** /*realhost*/, int /*nodelay*/, int /*keepalive*/) {
-  static const struct plug_function_table fn_table = {tmux_log, tmux_closing, tmux_receive,
-                                                      tmux_sent, NULL};
+  static const struct PlugVtable vtable = {tmux_log, tmux_closing, tmux_receive, tmux_sent, NULL};
 
   GuiTerminalWindow *termWnd = static_cast<GuiTerminalWindow *>(frontend_handle);
   assert(termWnd->tmuxGateway());
@@ -51,7 +50,7 @@ extern "C" const char *tmux_client_init(void *frontend_handle, void **backend_ha
   *backend_handle = handle;
   handle->gateway = termWnd->tmuxGateway();
   handle->paneid = port;  // HACK - port is actually paneid
-  handle->fn = &fn_table;
+  handle->fn = &vtable;
 
   return NULL;
 }

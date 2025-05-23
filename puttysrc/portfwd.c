@@ -16,7 +16,7 @@
 #endif
 
 typedef struct PortForwarding {
-    const struct plug_function_table *fn;
+    const struct PlugVtable *fn;
     /* the above variable absolutely *must* be the first in this structure */
     struct ssh_channel *c;        /* channel structure held by ssh.c */
     void *backhandle;		      /* instance of SSH backend itself */
@@ -53,7 +53,7 @@ typedef struct PortForwarding {
 } PortForwarding;
 
 struct PortListener {
-    const struct plug_function_table *fn;
+    const struct PlugVtable *fn;
     /* the above variable absolutely *must* be the first in this structure */
     void *backhandle;		       /* instance of SSH backend itself */
     Socket *s;
@@ -413,6 +413,14 @@ static void pfd_sent(Plug plug, int bufsize)
 	sshfwd_unthrottle(pf->c, bufsize);
 }
 
+static const PlugVtable PortForwarding_plugvt = {
+    pfd_log,
+    pfd_closing,
+    pfd_receive,
+    pfd_sent,
+    NULL
+};
+
 /*
  * Called when receiving a PORT OPEN from the server to make a
  * connection to a destination host.
@@ -423,14 +431,6 @@ static void pfd_sent(Plug plug, int bufsize)
 char *pfd_connect(struct PortForwarding **pf_ret, char *hostname,int port,
                   void *c, Conf *conf, int addressfamily)
 {
-    static const struct plug_function_table fn_table = {
-	pfd_log,
-	pfd_closing,
-	pfd_receive,
-	pfd_sent,
-	NULL
-    };
-
     SockAddr *addr;
     const char *err;
     char *dummy_realhost;
@@ -452,7 +452,7 @@ char *pfd_connect(struct PortForwarding **pf_ret, char *hostname,int port,
      * Open socket.
      */
     pf = *pf_ret = new_portfwd_state();
-    pf->fn = &fn_table;
+    pf->fn = &PortForwarding_plugvt;
     pf->throttled = pf->throttle_override = 0;
     pf->ready = 1;
     pf->c = c;
@@ -479,13 +479,6 @@ char *pfd_connect(struct PortForwarding **pf_ret, char *hostname,int port,
 
 static int pfl_accepting(Plug p, accept_fn_t constructor, accept_ctx_t ctx)
 {
-    static const struct plug_function_table fn_table = {
-	pfd_log,
-	pfd_closing,
-	pfd_receive,
-	pfd_sent,
-	NULL
-    };
     struct PortForwarding *pf;
     struct PortListener *pl;
     Socket *s;
@@ -493,7 +486,7 @@ static int pfl_accepting(Plug p, accept_fn_t constructor, accept_ctx_t ctx)
 
     pl = (struct PortListener *)p;
     pf = new_portfwd_state();
-    pf->fn = &fn_table;
+    pf->fn = &PortForwarding_plugvt;
 
     pf->c = NULL;
     pf->backhandle = pl->backhandle;
@@ -540,14 +533,6 @@ char *pfl_listen(char *desthost, int destport, char *srcaddr,
                  int port, void *backhandle, Conf *conf,
                  struct PortListener **pl_ret, int address_family)
 {
-    static const struct plug_function_table fn_table = {
-	pfl_log,
-	pfl_closing,
-        NULL,                          /* recv */
-        NULL,                          /* send */
-	pfl_accepting
-    };
-
     const char *err;
     struct PortListener *pl;
 
@@ -555,7 +540,7 @@ char *pfl_listen(char *desthost, int destport, char *srcaddr,
      * Open socket.
      */
     pl = *pl_ret = new_portlistener_state();
-    pl->fn = &fn_table;
+    pl->fn = &PortForwarding_plugvt;
     if (desthost) {
 	pl->hostname = dupstr(desthost);
 	pl->port = destport;

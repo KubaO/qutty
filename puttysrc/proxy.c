@@ -410,7 +410,7 @@ static const struct SocketVtable ProxySocket_sockvt = {
     NULL, /* peer_info */
 };
 
-static const struct plug_function_table plug_fn_table = {
+static const struct PlugVtable ProxySocket_plugvt = {
     plug_proxy_log,
     plug_proxy_closing,
     plug_proxy_receive,
@@ -489,7 +489,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
 	/* create the proxy plug to map calls from the actual
 	 * socket into our proxy socket layer */
 	pplug = snew(struct Plug_proxy_tag);
-	pplug->fn = &plug_fn_table;
+	pplug->fn = &ProxySocket_plugvt;
 	pplug->proxy_socket = ret;
 
         {
