@@ -766,7 +766,7 @@ struct ssh_tag {
     char *v_c, *v_s;
     void *exhash;
 
-    Socket s;
+    Socket *s;
 
     void *ldisc;
     void *logctx;
@@ -11997,7 +11997,7 @@ Backend ssh_backend = {
 };
 
 #ifdef IS_QUTTY
-Socket get_ssh_socket(void *handle)
+Socket *get_ssh_socket(void *handle)
 {
     Ssh h = (Ssh) handle;
     return h->s;

@@ -17,24 +17,28 @@
 
 typedef struct SocketVtable SocketVtable;
 
+struct Socket {
+    const struct SocketVtable *vt;
+};
+
 struct SocketVtable {
-    Plug(*plug) (Socket s, Plug p);
+    Plug(*plug) (Socket *s, Plug p);
     /* use a different plug (return the old one) */
     /* if p is NULL, it doesn't change the plug */
     /* but it does return the one it's using */
-    void (*close) (Socket s);
-    size_t (*write) (Socket s, const void *data, size_t len);
-    size_t (*write_oob) (Socket s, const void *data, size_t len);
-    void (*write_eof) (Socket s);
-    void (*flush) (Socket s);
-    void (*set_frozen) (Socket s, bool is_frozen);
+    void (*close) (Socket *s);
+    size_t (*write) (Socket *s, const void *data, size_t len);
+    size_t (*write_oob) (Socket *s, const void *data, size_t len);
+    void (*write_eof) (Socket *s);
+    void (*flush) (Socket *s);
+    void (*set_frozen) (Socket *s, bool is_frozen);
     /* ignored by tcp, but vital for ssl */
-    const char *(*socket_error) (Socket s);
-    char *(*peer_info) (Socket s);
+    const char *(*socket_error) (Socket *s);
+    char *(*peer_info) (Socket *s);
 };
 
 typedef union { void *p; int i; } accept_ctx_t;
-typedef Socket (*accept_fn_t)(accept_ctx_t ctx, Plug plug);
+typedef Socket *(*accept_fn_t)(accept_ctx_t ctx, Plug plug);
 
 struct plug_function_table {
     void (*log)(Plug p, int type, SockAddr *addr, int port,
@@ -90,24 +94,24 @@ struct plug_function_table {
 /* proxy indirection layer */
 /* NB, control of 'addr' is passed via new_connection, which takes
  * responsibility for freeing it */
-Socket new_connection(SockAddr *addr, const char *hostname,
-		      int port, int privport,
-		      int oobinline, int nodelay, int keepalive,
-		      Plug plug, Conf *conf);
-Socket new_listener(const char *srcaddr, int port, Plug plug,
-                    int local_host_only, Conf *conf, int addressfamily);
+Socket *new_connection(SockAddr *addr, const char *hostname,
+                       int port, int privport,
+                       int oobinline, int nodelay, int keepalive,
+                       Plug plug, Conf *conf);
+Socket *new_listener(const char *srcaddr, int port, Plug plug,
+                     int local_host_only, Conf *conf, int addressfamily);
 SockAddr *name_lookup(const char *host, int port, char **canonicalname,
-		     Conf *conf, int addressfamily, void *frontend_for_logging,
-                     const char *lookup_reason_for_logging);
+                      Conf *conf, int addressfamily, void *frontend_for_logging,
+                      const char *lookup_reason_for_logging);
 int proxy_for_destination (SockAddr *addr, const char *hostname, int port,
                            Conf *conf);
 
 /* platform-dependent callback from new_connection() */
 /* (same caveat about addr as new_connection()) */
-Socket platform_new_connection(SockAddr *addr, const char *hostname,
-			       int port, int privport,
-			       int oobinline, int nodelay, int keepalive,
-			       Plug plug, Conf *conf);
+Socket *platform_new_connection(SockAddr *addr, const char *hostname,
+                                int port, int privport,
+                                int oobinline, int nodelay, int keepalive,
+                                Plug plug, Conf *conf);
 
 /* socket functions */
 
@@ -133,24 +137,24 @@ SockAddr *sk_addr_dup(SockAddr *addr);
 
 /* NB, control of 'addr' is passed via sk_new, which takes responsibility
  * for freeing it, as for new_connection() */
-Socket sk_new(SockAddr *addr, int port, int privport, int oobinline,
-	      int nodelay, int keepalive, Plug p);
+Socket *sk_new(SockAddr *addr, int port, int privport, int oobinline,
+               int nodelay, int keepalive, Plug p);
 
-Socket sk_newlistener(const char *srcaddr, int port, Plug plug,
-                      int local_host_only, int address_family);
+Socket *sk_newlistener(const char *srcaddr, int port, Plug plug,
+                       int local_host_only, int address_family);
 
-static inline Plug sk_plug(Socket s, Plug p)
-{ return (*s)->plug(s, p); }
-static inline void sk_close(Socket s)
-{ (*s)->close(s); }
-static inline size_t sk_write(Socket s, const void *data, size_t len)
-{ return (*s)->write(s, data, len); }
-static inline size_t sk_write_oob(Socket s, const void *data, size_t len)
-{ return (*s)->write_oob(s, data, len); }
-static inline void sk_write_eof(Socket s)
-{ (*s)->write_eof(s); }
-static inline void sk_flush(Socket s)
-{ (*s)->flush(s); }
+static inline Plug sk_plug(Socket *s, Plug p)
+{ return s->vt->plug(s, p); }
+static inline void sk_close(Socket *s)
+{ s->vt->close(s); }
+static inline size_t sk_write(Socket *s, const void *data, size_t len)
+{ return s->vt->write(s, data, len); }
+static inline size_t sk_write_oob(Socket *s, const void *data, size_t len)
+{ return s->vt->write_oob(s, data, len); }
+static inline void sk_write_eof(Socket *s)
+{ s->vt->write_eof(s); }
+static inline void sk_flush(Socket *s)
+{ s->vt->flush(s); }
 
 #ifdef DEFINE_PLUG_METHOD_MACROS
 #define plug_log(p,type,addr,port,msg,code) (((*p)->log) (p, type, addr, port, msg, code))
@@ -166,7 +170,8 @@ static inline void sk_flush(Socket s)
  * or return NULL if there's no problem.
  */
 const char *sk_addr_error(SockAddr *addr);
-static inline const char *sk_socket_error(Socket s) { return (*s)->socket_error(s); }
+static inline const char *sk_socket_error(Socket *s)
+{ return s->vt->socket_error(s); }
 
 /*
  * Set the `frozen' flag on a socket. A frozen socket is one in
@@ -185,16 +190,17 @@ static inline const char *sk_socket_error(Socket s) { return (*s)->socket_error(
  *    associated local socket in order to avoid unbounded buffer
  *    growth.
  */
-static inline void sk_set_frozen(Socket s, bool is_frozen)
-{ (*s)->set_frozen(s, is_frozen); }
+static inline void sk_set_frozen(Socket *s, bool is_frozen)
+{ s->vt->set_frozen(s, is_frozen); }
 
 /*
- * Return a (dynamically allocated) string giving some information
- * about the other end of the socket, suitable for putting in log
- * files. May be NULL if nothing is available at all.
+ * Return a structure giving some information about the other end of
+ * the socket. May be NULL, if nothing is available at all. If it is
+ * not NULL, then it is dynamically allocated, and should be freed by
+ * a call to sk_free_peer_info(). See below for the definition.
  */
-static inline char *sk_peer_info(Socket s)
-{ return (*s)->peer_info(s); }
+static inline char *sk_peer_info(Socket *s)
+{ return s->vt->peer_info(s); }
 
 /*
  * Simple wrapper on getservbyname(), needed by ssh.c. Returns the
@@ -215,7 +221,7 @@ char *get_hostname(void);
  * Trivial socket implementation which just stores an error. Found in
  * errsock.c.
  */
-Socket new_error_socket(const char *errmsg, Plug plug);
+Socket *new_error_socket(const char *errmsg, Plug plug);
 
 /* ----------------------------------------------------------------------
  * Functions defined outside the network code, which have to be

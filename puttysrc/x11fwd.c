@@ -41,7 +41,7 @@ struct X11Connection {
     char *peer_addr;
     int peer_port;
     struct ssh_channel *c;        /* channel structure held by ssh.c */
-    Socket s;
+    Socket *s;
 };
 
 static int xdmseen_cmp(void *a, void *b)
@@ -307,7 +307,7 @@ struct X11Display *x11_setup_display(const char *display, Conf *conf)
 	    /* Create trial connection to see if there is a useful Unix-domain
 	     * socket */
 	    const struct plug_function_table *dummy = &dummy_plug;
-	    Socket s = sk_new(sk_addr_dup(ux), 0, 0, 0, 0, 0, (Plug)&dummy);
+	    Socket *s = sk_new(sk_addr_dup(ux), 0, 0, 0, 0, 0, (Plug)&dummy);
 	    err = sk_socket_error(s);
 	    sk_close(s);
 	}
@@ -653,7 +653,7 @@ static void x11_receive(Plug plug, int urgent, char *data, int len)
     if (sshfwd_write(xconn->c, data, len) > 0) {
 	xconn->throttled = 1;
         xconn->no_data_sent_to_x_client = FALSE;
-	sk_set_frozen(xconn->s, 1);
+        sk_set_frozen(xconn->s, 1);
     }
 }
 
