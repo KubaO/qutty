@@ -63,32 +63,6 @@ struct Socket_tag {
   QTcpSocket *qtsock;
 };
 
-typedef struct telnet_tag {
-  const struct plug_function_table *fn;
-  /* the above field _must_ be first in the structure */
-
-  Socket s;
-
-  void *frontend;
-  void *ldisc;
-  int term_width, term_height;
-
-  int opt_states[20];
-
-  int echoing, editing;
-  int activated;
-  int bufsize;
-  int in_synch;
-  int sb_opt, sb_len;
-  unsigned char *sb_buf;
-  int sb_size;
-  int state;
-
-  Conf *cfg;
-
-  Pinger pinger;
-} * Telnet;
-
 void qstring_to_char(char *dst, const QString &src, int dstlen);
 
 class QTextCodec;
