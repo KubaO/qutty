@@ -22,15 +22,13 @@ extern "C" void tmux_log(Plug /*plug*/, int /*type*/, SockAddr /*addr*/, int /*p
   qDebug() << __FUNCTION__;
 }
 
-extern "C" int tmux_closing(Plug /*plug*/, const char * /*error_msg*/, int /*error_code*/,
-                            int /*calling_back*/) {
+extern "C" void tmux_closing(Plug /*plug*/, const char * /*error_msg*/, int /*error_code*/,
+                             int /*calling_back*/) {
   qDebug() << __FUNCTION__;
-  return 0;
 }
 
-extern "C" int tmux_receive(Plug /*plug*/, int /*urgent*/, char * /*data*/, int /*len*/) {
+extern "C" void tmux_receive(Plug /*plug*/, int /*urgent*/, char * /*data*/, int /*len*/) {
   qDebug() << __FUNCTION__;
-  return 1;
 }
 
 extern "C" void tmux_sent(Plug /*plug*/, int /*bufsize*/) { qDebug() << __FUNCTION__; }

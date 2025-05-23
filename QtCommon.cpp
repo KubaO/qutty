@@ -443,19 +443,6 @@ int from_backend(void *frontend, int is_stderr, const char *data, int len) {
   return f->from_backend(is_stderr, data, (size_t)len);
 }
 
-void qutty_connection_fatal(void *frontend, char *msg) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  if (f->userClosingTab || f->isSockDisconnected) return;
-
-  // prevent recursive calling
-  f->isSockDisconnected = true;
-
-  qt_critical_msgbox(frontend, msg, NULL);
-
-  if (conf_get_int(f->getCfg(), CONF_close_on_exit) == FORCE_ON) f->closeTerminal();
-  f->setSessionTitle(f->getSessionTitle() + " (inactive)");
-}
-
 void notify_remote_exit(void *frontend) {
   GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
   int exitcode = f->backend->exitcode(f->backhandle);
