@@ -497,7 +497,7 @@ extern const char sshver[];
  * that fails. This variable is the means by which scp.c can reach
  * into the SSH code and find out which one it got.
  */
-extern int ssh_fallback_cmd(void *handle);
+extern bool ssh_fallback_cmd(Backend *backend);
 
 #ifndef MSCRYPTOAPI
 void SHATransform(word32 * digest, word32 * data);
@@ -512,7 +512,7 @@ void logevent(void *, const char *);
 struct PortForwarding;
 
 /* Allocate and register a new channel for port forwarding */
-void *new_sock_channel(void *handle, struct PortForwarding *pf);
+void *new_sock_channel(Backend *be, struct PortForwarding *pf);
 void ssh_send_port_open(void *channel, const char *hostname, int port,
                         const char *org);
 

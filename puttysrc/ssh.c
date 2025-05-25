@@ -709,14 +709,14 @@ static void ssh2_bare_connection_protocol(Ssh *ssh, const void *vin, int inlen,
 static void ssh1_protocol_setup(Ssh *ssh);
 static void ssh2_protocol_setup(Ssh *ssh);
 static void ssh2_bare_connection_protocol_setup(Ssh *ssh);
-static void ssh_size(void *handle, int width, int height);
-static void ssh_special(void *handle, Telnet_Special);
+static void ssh_size(Backend *be, int width, int height);
+static void ssh_special(Backend *be, Telnet_Special);
 static int ssh2_try_send(struct ssh_channel *c);
 static int ssh_send_channel_data(struct ssh_channel *c,
 				 const char *buf, int len);
 static void ssh_throttle_all(Ssh *ssh, int enable, int bufsize);
 static void ssh2_set_window(struct ssh_channel *c, int newwin);
-static int ssh_sendbuffer(void *handle);
+static size_t ssh_sendbuffer(Backend *be);
 static int ssh_do_close(Ssh *ssh, int notify_exit);
 static unsigned long ssh_pkt_getuint32(struct Packet *pkt);
 static int ssh2_pkt_getbool(struct Packet *pkt);
@@ -764,10 +764,13 @@ struct Ssh {
     void *exhash;
 
     Socket *s;
+    void *frontend;
+    Conf *conf;
 
     Plug plug;
+    Backend backend;
 
-    void *ldisc;
+    Ldisc *ldisc;
     void *logctx;
 
     unsigned char session_key[32];
@@ -804,7 +807,6 @@ struct Ssh {
     int echoing, editing;
 
     int session_started;
-    void *frontend;
 
     int ospeed, ispeed;		       /* temporaries */
     int term_width, term_height;
@@ -882,16 +884,8 @@ struct Ssh {
     void (*protocol) (Ssh *ssh, const void *vin, int inlen,
 		      struct Packet *pkt);
     struct Packet *(*s_rdpkt) (Ssh *ssh, const unsigned char **data,
-                               int *datalen);
+                               size_t *datalen);
     int (*do_ssh_init)(Ssh *ssh, unsigned char c);
-
-    /*
-     * We maintain our own copy of a Conf structure here. That way,
-     * when we're passed a new one for reconfiguration, we can check
-     * the differences and potentially reconfigure port forwardings
-     * etc in mid-session.
-     */
-    Conf *conf;
 
     /*
      * Values cached out of conf so as to avoid the tree234 lookup
@@ -942,7 +936,7 @@ struct Ssh {
     /*
      * This module deals with sending keepalives.
      */
-    Pinger pinger;
+    Pinger *pinger;
 
     /*
      * Track incoming and outgoing data sizes and time, for
@@ -1355,7 +1349,7 @@ static void ssh1_log_outgoing_packet(Ssh *ssh, struct Packet *pkt)
  * Return a Packet structure when a packet is completed.
  */
 static struct Packet *ssh1_rdpkt(Ssh *ssh, const unsigned char **data,
-                                 int *datalen)
+                                 size_t *datalen)
 {
     struct rdpkt1_state_tag *st = &ssh->rdpkt1_state;
 
@@ -1611,7 +1605,7 @@ static void ssh2_log_outgoing_packet(Ssh *ssh, struct Packet *pkt)
 }
 
 static struct Packet *ssh2_rdpkt(Ssh *ssh, const unsigned char **data,
-                                 int *datalen)
+                                 size_t *datalen)
 {
     struct rdpkt2_state_tag *st = &ssh->rdpkt2_state;
 
@@ -1919,7 +1913,7 @@ static struct Packet *ssh2_rdpkt(Ssh *ssh, const unsigned char **data,
 
 static struct Packet *ssh2_bare_connection_rdpkt(Ssh *ssh,
                                                  const unsigned char **data,
-                                                 int *datalen)
+                                                 size_t *datalen)
 {
     struct rdpkt2_bare_state_tag *st = &ssh->rdpkt2_bare_state;
 
@@ -3226,7 +3220,7 @@ static int do_ssh_init(Ssh *ssh, unsigned char c)
 
     update_specials_menu(ssh->frontend);
     ssh->state = SSH_STATE_BEFORE_SIZE;
-    ssh->pinger = pinger_new(ssh->conf, &ssh_backend, ssh);
+    ssh->pinger = pinger_new(ssh->conf, &ssh->backend);
 
     sfree(s->vstring);
 
@@ -3332,7 +3326,7 @@ static int do_ssh_connection_init(Ssh *ssh, unsigned char c)
 
     update_specials_menu(ssh->frontend);
     ssh->state = SSH_STATE_BEFORE_SIZE;
-    ssh->pinger = pinger_new(ssh->conf, &ssh_backend, ssh);
+    ssh->pinger = pinger_new(ssh->conf, &ssh->backend);
 
     /*
      * Get authconn (really just conn) under way.
@@ -3345,7 +3339,7 @@ static int do_ssh_connection_init(Ssh *ssh, unsigned char c)
 }
 
 static void ssh_process_incoming_data(Ssh *ssh,
-				      const unsigned char **data, int *datalen)
+				      const unsigned char **data, size_t *datalen)
 {
     struct Packet *pktin;
 
@@ -3357,7 +3351,7 @@ static void ssh_process_incoming_data(Ssh *ssh,
 }
 
 static void ssh_queue_incoming_data(Ssh *ssh,
-				    const unsigned char **data, int *datalen)
+				    const unsigned char **data, size_t *datalen)
 {
     bufchain_add(&ssh->queued_incoming_data, *data, *datalen);
     *data += *datalen;
@@ -3368,7 +3362,7 @@ static void ssh_process_queued_incoming_data(Ssh *ssh)
 {
     void *vdata;
     const unsigned char *data;
-    int len, origlen;
+    size_t len, origlen;
 
     while (!ssh->frozen && bufchain_size(&ssh->queued_incoming_data)) {
 	bufchain_prefix(&ssh->queued_incoming_data, &vdata, &len);
@@ -3390,7 +3384,7 @@ static void ssh_set_frozen(Ssh *ssh, int frozen)
     ssh->frozen = frozen;
 }
 
-static void ssh_gotdata(Ssh *ssh, const unsigned char *data, int datalen)
+static void ssh_gotdata(Ssh *ssh, const unsigned char *data, size_t datalen)
 {
     /* Log raw data, if we're in that mode. */
     if (ssh->logctx)
@@ -3641,11 +3635,11 @@ static void ssh_hostport_setup(const char *host, int port, Conf *conf,
     }
 }
 
-static int ssh_test_for_upstream(const char *host, int port, Conf *conf)
+static bool ssh_test_for_upstream(const char *host, int port, Conf *conf)
 {
     char *savedhost;
     int savedport;
-    int ret;
+    bool ret;
 
     random_ref(); /* platform may need this to determine share socket name */
     ssh_hostport_setup(host, port, conf, &savedhost, &savedport, NULL);
@@ -6064,9 +6058,9 @@ static void do_ssh1_connection(Ssh *ssh, const unsigned char *in, int inlen,
 
     ssh->state = SSH_STATE_SESSION;
     if (ssh->size_needed)
-	ssh_size(ssh, ssh->term_width, ssh->term_height);
+    ssh_size(&ssh->backend, ssh->term_width, ssh->term_height);
     if (ssh->eof_needed)
-	ssh_special(ssh, TS_EOF);
+    ssh_special(&ssh->backend, TS_EOF);
 
     if (ssh->ldisc)
 	ldisc_echoedit_update(ssh->ldisc);  /* cause ldisc to notice changes */
@@ -7772,7 +7766,7 @@ static int ssh2_try_send(struct ssh_channel *c)
     int ret;
 
     while (c->v.v2.remwindow > 0 && bufchain_size(&c->v.v2.outbuffer) > 0) {
-	int len;
+	size_t len;
 	void *data;
 	bufchain_prefix(&c->v.v2.outbuffer, &data, &len);
 	if ((unsigned)len > c->v.v2.remwindow)
@@ -10913,9 +10907,9 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 
     ssh->state = SSH_STATE_SESSION;
     if (ssh->size_needed)
-	ssh_size(ssh, ssh->term_width, ssh->term_height);
+    ssh_size(&ssh->backend, ssh->term_width, ssh->term_height);
     if (ssh->eof_needed)
-	ssh_special(ssh, TS_EOF);
+    ssh_special(&ssh->backend, TS_EOF);
 
     /*
      * Transfer data!
@@ -11186,10 +11180,10 @@ static void ssh_cache_conf_values(Ssh *ssh)
  *
  * Returns an error message, or NULL on success.
  */
-static const char *ssh_init(void *frontend_handle, void **backend_handle,
-			    Conf *conf,
+static const char *ssh_init(void *frontend, Backend **backend_handle,
+                            Conf *conf,
                             const char *host, int port, char **realhost,
-			    int nodelay, int keepalive)
+			    bool nodelay, bool keepalive)
 {
     const char *p;
     Ssh *ssh;
@@ -11206,14 +11200,15 @@ static const char *ssh_init(void *frontend_handle, void **backend_handle,
     ssh->x11authtree = newtree234(x11_authcmp);
     bufchain_init(&ssh->queued_incoming_data);
 
-    *backend_handle = ssh;
+    ssh->backend.vt = &ssh_backend;
+    *backend_handle = &ssh->backend;
 
 #ifdef MSCRYPTOAPI
     if (crypto_startup() == 0)
 	return "Microsoft high encryption pack not installed!";
 #endif
 
-    ssh->frontend = frontend_handle;
+    ssh->frontend = frontend;
     ssh->term_width = conf_get_int(ssh->conf, CONF_width);
     ssh->term_height = conf_get_int(ssh->conf, CONF_height);
 
@@ -11230,9 +11225,9 @@ static const char *ssh_init(void *frontend_handle, void **backend_handle,
     return NULL;
 }
 
-static void ssh_free(void *handle)
+static void ssh_free(Backend *be)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     struct ssh_channel *c;
     struct ssh_rportfwd *pf;
     struct X11FakeAuth *auth;
@@ -11346,9 +11341,9 @@ static void ssh_free(void *handle)
 /*
  * Reconfigure the SSH backend.
  */
-static void ssh_reconfig(void *handle, Conf *conf)
+static void ssh_reconfig(Backend *be, Conf *conf)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     const char *rekeying = NULL;
     int rekey_mandatory = FALSE;
     unsigned long old_max_data_size;
@@ -11415,24 +11410,24 @@ static void ssh_reconfig(void *handle, Conf *conf)
 /*
  * Called to send data down the SSH connection.
  */
-static int ssh_send(void *handle, const char *buf, int len)
+static size_t ssh_send(Backend *be, const char *buf, size_t len)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
 
     if (ssh == NULL || ssh->s == NULL || ssh->protocol == NULL)
 	return 0;
 
     ssh->protocol(ssh, (const unsigned char *)buf, len, 0);
 
-    return ssh_sendbuffer(ssh);
+    return ssh_sendbuffer(&ssh->backend);
 }
 
 /*
  * Called to query the current amount of buffered stdin data.
  */
-static int ssh_sendbuffer(void *handle)
+static size_t ssh_sendbuffer(Backend *be)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     int override_value;
 
     if (ssh == NULL || ssh->s == NULL || ssh->protocol == NULL)
@@ -11462,9 +11457,9 @@ static int ssh_sendbuffer(void *handle)
 /*
  * Called to set the size of the window from SSH's POV.
  */
-static void ssh_size(void *handle, int width, int height)
+static void ssh_size(Backend *be, int width, int height)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     struct Packet *pktout;
 
     ssh->term_width = width;
@@ -11503,7 +11498,7 @@ static void ssh_size(void *handle, int width, int height)
  * Return a list of the special codes that make sense in this
  * protocol.
  */
-static const struct telnet_special *ssh_get_specials(void *handle)
+static const struct telnet_special *ssh_get_specials(Backend *be)
 {
     static const struct telnet_special ssh1_ignore_special[] = {
 	{"IGNORE message", TS_NOP}
@@ -11539,7 +11534,7 @@ static const struct telnet_special *ssh_get_specials(void *handle)
     struct telnet_special *specials = NULL;
     int nspecials = 0, specialsize = 0;
 
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
 
     sfree(ssh->specials);
 
@@ -11609,9 +11604,9 @@ static const struct telnet_special *ssh_get_specials(void *handle)
  * can send an EOF and collect resulting output (e.g. `plink
  * hostname sort').
  */
-static void ssh_special(void *handle, Telnet_Special code)
+static void ssh_special(Backend *be, Telnet_Special code)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     struct Packet *pktout;
 
     if (code == TS_EOF) {
@@ -11698,9 +11693,9 @@ static void ssh_special(void *handle, Telnet_Special code)
     }
 }
 
-void *new_sock_channel(void *handle, struct PortForwarding *pf)
+void *new_sock_channel(Backend *be, struct PortForwarding *pf)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     struct ssh_channel *c;
     c = snew(struct ssh_channel);
 
@@ -11750,9 +11745,9 @@ void ssh_send_packet_from_downstream(Ssh *ssh, unsigned id, int type,
  * This is called when stdout/stderr (the entity to which
  * from_backend sends data) manages to clear some backlog.
  */
-static void ssh_unthrottle(void *handle, int bufsize)
+static void ssh_unthrottle(Backend *be, size_t bufsize)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
 
     if (ssh->version == 1) {
 	if (ssh->v1_stdout_throttling && bufsize < SSH1_BUFFER_LIMIT) {
@@ -11810,21 +11805,21 @@ void ssh_send_port_open(void *channel, const char *hostname, int port,
     }
 }
 
-static int ssh_connected(void *handle)
+static bool ssh_connected(Backend *be)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     return ssh->s != NULL;
 }
 
-static int ssh_sendok(void *handle)
+static bool ssh_sendok(Backend *be)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     return ssh->send_ok;
 }
 
-static int ssh_ldisc(void *handle, int option)
+static bool ssh_ldisc(Backend *be, int option)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     if (option == LD_ECHO)
 	return ssh->echoing;
     if (option == LD_EDIT)
@@ -11832,21 +11827,21 @@ static int ssh_ldisc(void *handle, int option)
     return FALSE;
 }
 
-static void ssh_provide_ldisc(void *handle, void *ldisc)
+static void ssh_provide_ldisc(Backend *be, Ldisc *ldisc)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     ssh->ldisc = ldisc;
 }
 
-static void ssh_provide_logctx(void *handle, void *logctx)
+static void ssh_provide_logctx(Backend *be, void *logctx)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     ssh->logctx = logctx;
 }
 
-static int ssh_return_exitcode(void *handle)
+static int ssh_return_exitcode(Backend *be)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     if (ssh->s != NULL)
         return -1;
     else
@@ -11858,9 +11853,9 @@ static int ssh_return_exitcode(void *handle)
  * (1 or 2 for the full SSH-1 or SSH-2 protocol; -1 for the bare
  * SSH-2 connection protocol, i.e. a downstream; 0 for not-decided-yet.)
  */
-static int ssh_cfg_info(void *handle)
+static int ssh_cfg_info(Backend *be)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     if (ssh->version == 0)
 	return 0; /* don't know yet */
     else if (ssh->bare_connection)
@@ -11874,13 +11869,13 @@ static int ssh_cfg_info(void *handle)
  * that fails. This variable is the means by which scp.c can reach
  * into the SSH code and find out which one it got.
  */
-extern int ssh_fallback_cmd(void *handle)
+extern bool ssh_fallback_cmd(Backend *be)
 {
-    Ssh *ssh = (Ssh*) handle;
+    Ssh *ssh = container_of(be, Ssh, backend);
     return ssh->fallback_cmd;
 }
 
-Backend ssh_backend = {
+const struct BackendVtable ssh_backend = {
     ssh_init,
     ssh_free,
     ssh_reconfig,
@@ -11904,10 +11899,10 @@ Backend ssh_backend = {
 };
 
 #ifdef IS_QUTTY
-Socket *get_ssh_socket(void *handle)
+Socket *get_ssh_socket(Backend *be)
 {
-    Ssh *h = (Ssh*) handle;
-    return h->s;
+    Ssh *ssh = container_of(be, Ssh, backend);
+    return ssh->s;
 }
 #endif
 

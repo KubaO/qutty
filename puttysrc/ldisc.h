@@ -14,17 +14,18 @@
 
 struct Ldisc_tag {
     Terminal *term;
-    Backend *back;
-    void *backhandle;
+    Backend *backend;
     void *frontend;
 
     /*
      * Values cached out of conf.
      */
-    int telnet_keyboard, telnet_newline, protocol, localecho, localedit;
+    bool telnet_keyboard, telnet_newline;
+    int protocol, localecho, localedit;
 
     char *buf;
-    int buflen, bufsiz, quotenext;
+    size_t buflen, bufsiz;
+    bool quotenext;
 };
 
 #endif /* PUTTY_LDISC_H */

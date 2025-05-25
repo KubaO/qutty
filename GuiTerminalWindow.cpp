@@ -58,8 +58,7 @@ GuiTerminalWindow::~GuiTerminalWindow() {
     ldisc = NULL;
   }
   if (backend) {
-    backend->free(backhandle);
-    backhandle = NULL;
+    backend_free(backend);
     backend = NULL;
     term_provide_resize_fn(term, NULL, NULL);
     term_free(term);
@@ -85,9 +84,9 @@ int GuiTerminalWindow::initTerminal() {
   setTermFont(cfg);
   cfgtopalette(cfg);
 
-  backend = backend_from_proto(conf_get_int(cfg, CONF_protocol));
+  const BackendVtable *vt = backend_vt_from_proto(conf_get_int(cfg, CONF_protocol));
   int port = conf_get_int(cfg, CONF_port);
-  const char *error = backend->init(this, &backhandle, cfg, (char *)ip_addr, port, &realhost, 1, 0);
+  const char *error = backend_init(vt, this, &backend, cfg, (char *)ip_addr, port, &realhost, 1, 0);
   if (realhost) sfree(realhost);
 
   if (error) {
@@ -113,11 +112,11 @@ int GuiTerminalWindow::initTerminal() {
 
   switch (conf_get_int(cfg, CONF_protocol)) {
     case PROT_TELNET:
-      sock = get_telnet_socket(backhandle);
+      sock = get_telnet_socket(backend);
       as = container_of(sock, QtSocket, sock);
       break;
     case PROT_SSH:
-      sock = get_ssh_socket(backhandle);
+      sock = get_ssh_socket(backend);
       as = container_of(sock, QtSocket, sock);
       break;
     default:
@@ -132,12 +131,12 @@ int GuiTerminalWindow::initTerminal() {
   /*
    * Connect the terminal to the backend for resize purposes.
    */
-  term_provide_resize_fn(term, backend->size, backhandle);
+  term_provide_resize_fn(term, backend->vt->size, backend);
 
   /*
    * Set up a line discipline.
    */
-  ldisc = ldisc_create(cfg, term, backend, backhandle, this);
+  ldisc = ldisc_create(cfg, term, backend, this);
 
   return 0;
 
@@ -199,8 +198,7 @@ int GuiTerminalWindow::restartTerminal() {
     ldisc = NULL;
   }
   if (backend) {
-    backend->free(backhandle);
-    backhandle = NULL;
+    backend_free(backend);
     backend = NULL;
     term_provide_resize_fn(term, NULL, NULL);
     term_free(term);
@@ -232,7 +230,7 @@ int GuiTerminalWindow::reconfigureTerminal(Conf *new_cfg) {
   term_reconfig(term, cfg);
 
   /* Pass new config data to the back end */
-  if (backend) backend->reconfig(backhandle, cfg);
+  if (backend) backend_reconfig(backend, cfg);
 
   /* Screen size changed ? */
   if (confSizeChanged(cfg, prev_cfg.get()))
@@ -281,9 +279,9 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   conf_set_int(cfg, CONF_width, width);
   conf_set_int(cfg, CONF_height, height);
 
-  backend = backend_from_proto(conf_get_int(cfg, CONF_protocol));
+  const BackendVtable *vt = backend_vt_from_proto(conf_get_int(cfg, CONF_protocol));
   // HACK - pass paneid in port
-  backend->init(this, &backhandle, cfg, NULL, id, NULL, 0, 0);
+  backend_init(vt, this, &backend, cfg, NULL, id, NULL, 0, 0);
   tmuxPane = new TmuxWindowPane(gateway, this);
   tmuxPane->id = id;
   tmuxPane->width = width;
@@ -295,12 +293,12 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   /*
    * Connect the terminal to the backend for resize purposes.
    */
-  term_provide_resize_fn(term, backend->size, backhandle);
+  term_provide_resize_fn(term, backend->vt->size, backend);
 
   /*
    * Set up a line discipline.
    */
-  ldisc = ldisc_create(cfg, term, backend, backhandle, this);
+  ldisc = ldisc_create(cfg, term, backend, this);
   return tmuxPane;
 }
 

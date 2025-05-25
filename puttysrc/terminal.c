@@ -110,18 +110,18 @@ static termline *lineptr(Terminal *, int, int, int);
 static void unlineptr(termline *);
 static void check_line_size(Terminal *, termline *);
 static void do_paint(Terminal *, Context, int);
-static void erase_lots(Terminal *, int, int, int);
+static void erase_lots(Terminal *, bool, bool, bool);
 static int find_last_nonempty_line(Terminal *, tree234 *);
-static void swap_screen(Terminal *, int, int, int);
+static void swap_screen(Terminal *, int, bool, bool);
 static void update_sbar(Terminal *);
 static void deselect(Terminal *);
 static void term_print_finish(Terminal *);
-static void scroll(Terminal *, int, int, int, int);
+static void scroll(Terminal *, int, int, int, bool);
 #ifdef OPTIMISE_SCROLL
 static void scroll_display(Terminal *, int, int, int);
 #endif /* OPTIMISE_SCROLL */
 
-static termline *newline(Terminal *term, int cols, int bce)
+static termline *newline(Terminal *term, int cols, bool bce)
 {
     termline *line;
     int j;
@@ -132,13 +132,13 @@ static termline *newline(Terminal *term, int cols, int bce)
 	line->chars[j] = (bce ? term->erase_char : term->basic_erase_char);
     line->cols = line->size = cols;
     line->lattr = LATTR_NORM;
-    line->temporary = FALSE;
+    line->temporary = false;
     line->cc_free = 0;
 
     return line;
 }
 
-static void freeline(termline *line)
+static void freetermline(termline *line)
 {
     if (line) {
 	sfree(line->chars);
@@ -149,7 +149,7 @@ static void freeline(termline *line)
 static void unlineptr(termline *line)
 {
     if (line->temporary)
-	freeline(line);
+	freetermline(line);
 }
 
 #ifdef TERM_CC_DIAGS
@@ -288,8 +288,8 @@ static void clear_cc(termline *line, int col)
  * in do_paint() where we override what we expect the chr and attr
  * fields to be.
  */
-static int termchars_equal_override(termchar *a, termchar *b,
-				    unsigned long bchr, unsigned long battr)
+static bool termchars_equal_override(termchar *a, termchar *b,
+                                     unsigned long bchr, unsigned long battr)
 {
     /* FULL-TERMCHAR */
     if (a->chr != bchr)
@@ -307,7 +307,7 @@ static int termchars_equal_override(termchar *a, termchar *b,
     return TRUE;
 }
 
-static int termchars_equal(termchar *a, termchar *b)
+static bool termchars_equal(termchar *a, termchar *b)
 {
     return termchars_equal_override(a, b, b->chr, b->attr);
 }
@@ -1209,7 +1209,7 @@ static void term_reset_cblink(Terminal *term)
 /*
  * Call to begin a visual bell.
  */
-static void term_schedule_vbell(Terminal *term, int already_started,
+static void term_schedule_vbell(Terminal *term, bool already_started,
 				long startpoint)
 {
     long ticks_already_gone;
@@ -1234,7 +1234,7 @@ static void term_schedule_vbell(Terminal *term, int already_started,
  * position the cursor below the last non-blank line (scrolling if
  * necessary).
  */
-static void power_on(Terminal *term, int clear)
+static void power_on(Terminal *term, bool clear)
 {
     term->alt_x = term->alt_y = 0;
     term->savecurs.x = term->savecurs.y = 0;
@@ -1682,15 +1682,12 @@ void term_free(Terminal *term)
     while ((line = delpos234(term->scrollback, 0)) != NULL)
 	sfree(line);		       /* compressed data, not a termline */
     freetree234(term->scrollback);
-    while ((line = delpos234(term->screen, 0)) != NULL)
-	freeline(line);
+    while ((line = delpos234(term->screen, 0)) != NULL) freetermline(line);
     freetree234(term->screen);
-    while ((line = delpos234(term->alt_screen, 0)) != NULL)
-	freeline(line);
+    while ((line = delpos234(term->alt_screen, 0)) != NULL) freetermline(line);
     freetree234(term->alt_screen);
     if (term->disptext) {
-	for (i = 0; i < term->rows; i++)
-	    freeline(term->disptext[i]);
+      for (i = 0; i < term->rows; i++) freetermline(term->disptext[i]);
     }
     sfree(term->disptext);
     while (term->beephead) {
@@ -1826,13 +1823,13 @@ void term_size(Terminal *term, int newrows, int newcols, int newsavelines)
 	if (term->curs.y < term->rows - 1) {
 	    /* delete bottom row, unless it contains the cursor */
             line = delpos234(term->screen, term->rows - 1);
-            freeline(line);
-	} else {
+            freetermline(line);
+        } else {
 	    /* push top row to scrollback */
 	    line = delpos234(term->screen, 0);
 	    addpos234(term->scrollback, compressline(line), sblen++);
-	    freeline(line);
-	    term->tempsblines += 1;
+            freetermline(line);
+            term->tempsblines += 1;
 	    term->curs.y -= 1;
 	    term->savecurs.y -= 1;
 	    term->alt_y -= 1;
@@ -1863,8 +1860,7 @@ void term_size(Terminal *term, int newrows, int newcols, int newsavelines)
 	    newdisp[i]->chars[j].attr = ATTR_INVALID;
     }
     if (term->disptext) {
-	for (i = 0; i < oldrows; i++)
-	    freeline(term->disptext[i]);
+      for (i = 0; i < oldrows; i++) freetermline(term->disptext[i]);
     }
     sfree(term->disptext);
     term->disptext = newdisp;
@@ -1877,9 +1873,8 @@ void term_size(Terminal *term, int newrows, int newcols, int newsavelines)
 	addpos234(newalt, line, i);
     }
     if (term->alt_screen) {
-	while (NULL != (line = delpos234(term->alt_screen, 0)))
-	    freeline(line);
-	freetree234(term->alt_screen);
+      while (NULL != (line = delpos234(term->alt_screen, 0))) freetermline(line);
+      freetree234(term->alt_screen);
     }
     term->alt_screen = newalt;
     term->alt_sblines = 0;
@@ -1936,8 +1931,8 @@ void term_size(Terminal *term, int newrows, int newcols, int newsavelines)
  * use to notify a back end of resizes.
  */
 void term_provide_resize_fn(Terminal *term,
-			    void (*resize_fn)(void *, int, int),
-			    void *resize_ctx)
+			    void (*resize_fn)(Backend *, int, int),
+			    Backend *resize_ctx)
 {
     term->resize_fn = resize_fn;
     term->resize_ctx = resize_ctx;
@@ -1970,7 +1965,8 @@ static int find_last_nonempty_line(Terminal * term, tree234 * screen)
  * alternate screen completely. (This is even true if we're already
  * on it! Blame xterm.)
  */
-static void swap_screen(Terminal *term, int which, int reset, int keep_cur_pos)
+static void swap_screen(Terminal *term, int which,
+                        bool reset, bool keep_cur_pos)
 {
     int t;
     pos tp;
@@ -2082,10 +2078,11 @@ static void check_selection(Terminal *term, pos from, pos to)
 
 /*
  * Scroll the screen. (`lines' is +ve for scrolling forward, -ve
- * for backward.) `sb' is TRUE if the scrolling is permitted to
+ * for backward.) `sb' is true if the scrolling is permitted to
  * affect the scrollback buffer.
  */
-static void scroll(Terminal *term, int topline, int botline, int lines, int sb)
+static void scroll(Terminal *term, int topline, int botline,
+                   int lines, bool sb)
 {
     termline *line;
     int i, seltop, scrollwinsize;
@@ -2328,7 +2325,7 @@ static void move(Terminal *term, int x, int y, int marg_clip)
 /*
  * Save or restore the cursor and SGR mode.
  */
-static void save_cursor(Terminal *term, int save)
+static void save_cursor(Terminal *term, bool save)
 {
     if (save) {
 	term->savecurs = term->curs;
@@ -2408,7 +2405,7 @@ static void check_boundary(Terminal *term, int x, int y)
  * whole line, or parts thereof.
  */
 static void erase_lots(Terminal *term,
-		       int line_only, int from_begin, int to_end)
+		       bool line_only, bool from_begin, bool to_end)
 {
     pos start, end;
     int erase_lattr;
@@ -2561,7 +2558,7 @@ static void insch(Terminal *term, int n)
  * Toggle terminal mode `mode' to state `state'. (`query' indicates
  * whether the mode is a DEC private one or a normal one.)
  */
-static void toggle_mode(Terminal *term, int mode, int query, int state)
+static void toggle_mode(Terminal *term, int mode, int query, bool state)
 {
     if (query)
 	switch (mode) {
@@ -2731,8 +2728,8 @@ static void term_print_setup(Terminal *term, char *printer)
 static void term_print_flush(Terminal *term)
 {
     void *data;
-    int len;
-    int size;
+    size_t len;
+    size_t size;
     while ((size = bufchain_size(&term->printer_buf)) > 5) {
 	bufchain_prefix(&term->printer_buf, &data, &len);
 	if (len > size-5)
@@ -2744,7 +2741,7 @@ static void term_print_flush(Terminal *term)
 static void term_print_finish(Terminal *term)
 {
     void *data;
-    int len, size;
+    size_t len, size;
     char c;
 
     if (!term->printing && !term->only_printing)
@@ -2777,7 +2774,7 @@ static void term_out(Terminal *term)
     unsigned long c;
     int unget;
     unsigned char localbuf[256], *chars;
-    int nchars = 0;
+    size_t nchars = 0;
 
     unget = -1;
 

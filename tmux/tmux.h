@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include "putty.h"
-extern Backend tmux_client_backend;
+extern BackendVtable tmux_client_backend;
 
 enum tmux_mode_t {
   TMUX_MODE_NONE,

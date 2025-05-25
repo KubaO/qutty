@@ -435,42 +435,81 @@ enum {
 };
 
 struct Backend {
-    const char *(*init) (void *frontend_handle, void **backend_handle,
-			 Conf *conf, const char *host, int port,
-                         char **realhost, int nodelay, int keepalive);
-    void (*free) (void *handle);
-    /* back->reconfig() passes in a replacement configuration. */
-    void (*reconfig) (void *handle, Conf *conf);
-    /* back->send() returns the current amount of buffered data. */
-    int (*send) (void *handle, const char *buf, int len);
-    /* back->sendbuffer() does the same thing but without attempting a send */
-    int (*sendbuffer) (void *handle);
-    void (*size) (void *handle, int width, int height);
-    void (*special) (void *handle, Telnet_Special code);
-    const struct telnet_special *(*get_specials) (void *handle);
-    int (*connected) (void *handle);
-    int (*exitcode) (void *handle);
-    /* If back->sendok() returns FALSE, data sent to it from the frontend
-     * may be lost. */
-    int (*sendok) (void *handle);
-    int (*ldisc) (void *handle, int);
-    void (*provide_ldisc) (void *handle, void *ldisc);
-    void (*provide_logctx) (void *handle, void *logctx);
-    /*
-     * back->unthrottle() tells the back end that the front end
-     * buffer is clearing.
-     */
-    void (*unthrottle) (void *handle, int);
-    int (*cfg_info) (void *handle);
+    const BackendVtable *vt;
+};
+struct BackendVtable {
+    const char *(*init) (void *frontend, Backend **backend_out,
+                         Conf *conf,
+                         const char *host, int port,
+                         char **realhost, bool nodelay, bool keepalive);
+
+    void (*free) (Backend *be);
+    /* Pass in a replacement configuration. */
+    void (*reconfig) (Backend *be, Conf *conf);
+    /* send() returns the current amount of buffered data. */
+    size_t (*send) (Backend *be, const char *buf, size_t len);
+    /* sendbuffer() does the same thing but without attempting a send */
+    size_t (*sendbuffer) (Backend *be);
+    void (*size) (Backend *be, int width, int height);
+    void (*special) (Backend *be, Telnet_Special code);
+    const struct telnet_special *(*get_specials) (Backend *be);
+    bool (*connected) (Backend *be);
+    int (*exitcode) (Backend *be);
+    /* If back->sendok() returns false, the backend doesn't currently
+     * want input data, so the frontend should avoid acquiring any if
+     * possible (passing back-pressure on to its sender). */
+    bool (*sendok) (Backend *be);
+    bool (*ldisc_option_state) (Backend *be, int);
+    void (*provide_ldisc) (Backend *be, Ldisc *ldisc);
+    void (*provide_logctx) (Backend *be, void *logctx);
+    /* Tells the back end that the front end  buffer is clearing. */
+    void (*unthrottle) (Backend *be, size_t bufsize);
+    int (*cfg_info) (Backend *be);
+
     /* Only implemented in the SSH protocol: check whether a
      * connection-sharing upstream exists for a given configuration. */
-    int (*test_for_upstream)(const char *host, int port, Conf *conf);
+    bool (*test_for_upstream)(const char *host, int port, Conf *conf);
+
     const char *name;
     int protocol;
     int default_port;
 };
 
-extern Backend *backends[];
+static inline const char *backend_init(
+    const BackendVtable *vt, void *frontend, Backend **out,
+    Conf *conf, const char *host, int port, char **rhost, bool nd, bool ka)
+{ return vt->init(frontend, out, conf, host, port, rhost, nd, ka); }
+static inline void backend_free(Backend *be)
+{ be->vt->free(be); }
+static inline void backend_reconfig(Backend *be, Conf *conf)
+{ be->vt->reconfig(be, conf); }
+static inline size_t backend_send(Backend *be, const char *buf, size_t len)
+{ return be->vt->send(be, buf, len); }
+static inline size_t backend_sendbuffer(Backend *be)
+{ return be->vt->sendbuffer(be); }
+static inline void backend_size(Backend *be, int width, int height)
+{ be->vt->size(be, width, height); }
+static inline void backend_special(
+    Backend *be, Telnet_Special code)
+{ be->vt->special(be, code); }
+static inline const struct telnet_special *backend_get_specials(Backend *be)
+{ return be->vt->get_specials(be); }
+static inline bool backend_connected(Backend *be)
+{ return be->vt->connected(be); }
+static inline int backend_exitcode(Backend *be)
+{ return be->vt->exitcode(be); }
+static inline bool backend_sendok(Backend *be)
+{ return be->vt->sendok(be); }
+static inline bool backend_ldisc_option_state(Backend *be, int state)
+{ return be->vt->ldisc_option_state(be, state); }
+static inline void backend_provide_ldisc(Backend *be, Ldisc *ldisc)
+{ be->vt->provide_ldisc(be, ldisc); }
+static inline void backend_unthrottle(Backend *be, size_t bufsize)
+{ be->vt->unthrottle(be, bufsize); }
+static inline int backend_cfg_info(Backend *be)
+{ return be->vt->cfg_info(be); }
+
+extern const struct BackendVtable *const backends[];
 
 /*
  * Suggested default protocol provided by the backend link module.
@@ -989,8 +1028,8 @@ void random_destroy_seed(void);
 /*
  * Exports from settings.c.
  */
-Backend *backend_from_name(const char *name);
-Backend *backend_from_proto(int proto);
+const struct BackendVtable *backend_vt_from_name(const char *name);
+const struct BackendVtable *backend_vt_from_proto(int proto);
 char *get_remote_username(Conf *conf); /* dynamically allocated */
 char *save_settings(const char *section, Conf *conf);
 void save_open_settings(void *sesskey, Conf *conf);
@@ -1049,9 +1088,8 @@ void term_reconfig(Terminal *, Conf *);
 void term_seen_key_event(Terminal *); 
 int term_data(Terminal *, int is_stderr, const char *data, int len);
 int term_data_untrusted(Terminal *, const char *data, int len);
-void term_provide_resize_fn(Terminal *term,
-			    void (*resize_fn)(void *, int, int),
-			    void *resize_ctx);
+void term_provide_resize_fn(Terminal *term, void (*resize_fn)(Backend *, int, int),
+                            Backend *resize_ctx);
 void term_provide_logctx(Terminal *term, void *logctx);
 void term_set_focus(Terminal *term, int has_focus);
 char *term_get_ttymode(Terminal *term, const char *mode);
@@ -1088,47 +1126,47 @@ void log_packet(void *logctx, int direction, int type,
  * Exports from testback.c
  */
 
-extern Backend null_backend;
-extern Backend loop_backend;
+extern const struct BackendVtable null_backend;
+extern const struct BackendVtable loop_backend;
 
 /*
  * Exports from raw.c.
  */
 
-extern Backend raw_backend;
+extern const struct BackendVtable raw_backend;
 
 /*
  * Exports from rlogin.c.
  */
 
-extern Backend rlogin_backend;
+extern const struct BackendVtable rlogin_backend;
 
 /*
  * Exports from telnet.c.
  */
 
-extern Backend telnet_backend;
+extern const struct BackendVtable telnet_backend;
 
 /*
  * Exports from ssh.c.
  */
-extern Backend ssh_backend;
+extern const struct BackendVtable ssh_backend;
 
 /*
  * Exports from ldisc.c.
  */
-Ldisc *ldisc_create(Conf *, Terminal *, Backend *, void *, void *);
+Ldisc *ldisc_create(Conf *, Terminal *, Backend *, void *);
 void ldisc_configure(Ldisc *, Conf *);
 void ldisc_free(Ldisc *);
-void ldisc_send(Ldisc *, const char *buf, int len, int interactive);
+void ldisc_send(Ldisc *, const void *buf, int len, bool interactive);
 void ldisc_echoedit_update(Ldisc *);
 
 /*
  * Exports from ldiscucs.c.
  */
 void lpage_send(Ldisc *, int codepage, const char *buf, int len,
-                int interactive);
-void luni_send(Ldisc *, const wchar_t * widebuf, int len, int interactive);
+                bool interactive);
+void luni_send(Ldisc *, const wchar_t * widebuf, int len, bool interactive);
 
 /*
  * Exports from sshrand.c.
@@ -1147,10 +1185,10 @@ void random_unref(void);
 /*
  * Exports from pinger.c.
  */
-typedef struct pinger_tag *Pinger;
-Pinger pinger_new(Conf *conf, Backend *back, void *backhandle);
-void pinger_reconfig(Pinger, Conf *oldconf, Conf *newconf);
-void pinger_free(Pinger);
+typedef struct Pinger Pinger;
+Pinger *pinger_new(Conf *conf, Backend *backend);
+void pinger_reconfig(Pinger *, Conf *oldconf, Conf *newconf);
+void pinger_free(Pinger *);
 
 /*
  * Exports from misc.c.

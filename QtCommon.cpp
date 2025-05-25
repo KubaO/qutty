@@ -445,7 +445,7 @@ int from_backend(void *frontend, int is_stderr, const char *data, int len) {
 
 void notify_remote_exit(void *frontend) {
   GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  int exitcode = f->backend->exitcode(f->backhandle);
+  int exitcode = backend_exitcode(f->backend);
 
   if (f->userClosingTab || f->isSockDisconnected) return;
 

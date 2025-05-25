@@ -148,7 +148,7 @@ static void logfopen_callback(void *handle, int mode)
     assert(ctx->state != L_OPENING);   /* make _sure_ it won't be requeued */
     while (bufchain_size(&ctx->queue)) {
 	void *data;
-	int len;
+	size_t len;
 	bufchain_prefix(&ctx->queue, &data, &len);
 	logwrite(ctx, data, len);
 	bufchain_consume(&ctx->queue, len);

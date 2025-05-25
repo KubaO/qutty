@@ -667,7 +667,7 @@ int bufchain_size(bufchain *ch)
     return ch->buffersize;
 }
 
-void bufchain_add(bufchain *ch, const void *data, int len)
+void bufchain_add(bufchain *ch, const void *data, size_t len)
 {
     const char *buf = (const char *)data;
 
@@ -701,7 +701,7 @@ void bufchain_add(bufchain *ch, const void *data, int len)
     }
 }
 
-void bufchain_consume(bufchain *ch, int len)
+void bufchain_consume(bufchain *ch, size_t len)
 {
     struct bufchain_granule *tmp;
 
@@ -723,13 +723,13 @@ void bufchain_consume(bufchain *ch, int len)
     }
 }
 
-void bufchain_prefix(bufchain *ch, void **data, int *len)
+void bufchain_prefix(bufchain *ch, void **data, size_t *len)
 {
     *len = ch->head->bufend - ch->head->bufpos;
     *data = ch->head->bufpos;
 }
 
-void bufchain_fetch(bufchain *ch, void *data, int len)
+void bufchain_fetch(bufchain *ch, void *data, size_t len)
 {
     struct bufchain_granule *tmp;
     char *data_c = (char *)data;

@@ -75,7 +75,6 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
  public:
   Terminal *term = nullptr;
   Backend *backend = nullptr;
-  void *backhandle = nullptr;
   Ldisc *ldisc = nullptr;
 
   bool userClosingTab = false;

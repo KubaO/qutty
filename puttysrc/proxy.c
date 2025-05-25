@@ -26,7 +26,7 @@
 void proxy_activate (ProxySocket *p)
 {
   void *data;
-  int len;
+  size_t len;
   long output_before, output_after;
 
   p->state = PROXY_STATE_ACTIVE;
@@ -160,7 +160,7 @@ static void sk_proxy_set_frozen(Socket *s, bool is_frozen)
         while (!ps->freeze && bufchain_size(&ps->pending_input_data) > 0) {
 	    void *data;
 	    char databuf[512];
-	    int len;
+	    size_t len;
 	    bufchain_prefix(&ps->pending_input_data, &data, &len);
 	    if (len > lenof(databuf))
 		len = lenof(databuf);
