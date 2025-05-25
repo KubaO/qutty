@@ -53,7 +53,7 @@ typedef struct Socket Socket;
 typedef struct Plug Plug;
 typedef struct SocketPeerInfo SocketPeerInfo;
 
-typedef struct backend_tag Backend;
+typedef struct Backend Backend;
 typedef struct BackendVtable BackendVtable;
 
 typedef struct Ldisc_tag Ldisc;

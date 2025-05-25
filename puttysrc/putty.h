@@ -434,7 +434,7 @@ enum {
     ADDRTYPE_UNSPEC, ADDRTYPE_IPV4, ADDRTYPE_IPV6, ADDRTYPE_NAME
 };
 
-struct backend_tag {
+struct Backend {
     const char *(*init) (void *frontend_handle, void **backend_handle,
 			 Conf *conf, const char *host, int port,
                          char **realhost, int nodelay, int keepalive);
