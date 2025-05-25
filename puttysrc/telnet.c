@@ -179,9 +179,6 @@ static const struct Opt *const opts[] = {
 
 typedef struct Telnet Telnet;
 struct Telnet {
-    const struct PlugVtable *fn;
-    /* the above field _must_ be first in the structure */
-
     Socket *s;
     int closed_on_socket_error;
 
@@ -208,6 +205,8 @@ struct Telnet {
     Conf *conf;
 
     Pinger pinger;
+
+    Plug plug;
 };
 
 #define TELNET_MAX_BACKLOG 4096
@@ -533,7 +532,7 @@ static void process_subneg(Telnet *telnet)
     }
 }
 
-static void do_telnet_read(Telnet *telnet, char *buf, int len)
+static void do_telnet_read(Telnet *telnet, const char *buf, size_t len)
 {
     char *outbuf = NULL;
     int outbuflen = 0, outbufsize = 0;
@@ -651,19 +650,19 @@ static void do_telnet_read(Telnet *telnet, char *buf, int len)
     sfree(outbuf);
 }
 
-static void telnet_log(Plug plug, int type, SockAddr *addr, int port,
+static void telnet_log(Plug *plug, int type, SockAddr *addr, int port,
 		       const char *error_msg, int error_code)
 {
-    Telnet *telnet = (Telnet*) plug;
+    Telnet *telnet = container_of(plug, Telnet, plug);
     backend_socket_log(telnet->frontend, type, addr, port,
                        error_msg, error_code, telnet->conf,
                        telnet->session_started);
 }
 
-static void telnet_closing(Plug plug, const char *error_msg, int error_code,
-			   int calling_back)
+static void telnet_closing(Plug *plug, const char *error_msg, int error_code,
+			   bool calling_back)
 {
-    Telnet *telnet = (Telnet*) plug;
+    Telnet *telnet = container_of(plug, Telnet, plug);
 
     /*
      * We don't implement independent EOF in each direction for Telnet
@@ -685,7 +684,7 @@ static void telnet_closing(Plug plug, const char *error_msg, int error_code,
     /* Otherwise, the remote side closed the connection normally. */
 }
 
-static void telnet_receive(Plug plug, int urgent, char *data, int len)
+static void telnet_receive(Plug *plug, int urgent, const char *data, size_t len)
 {
     Telnet *telnet = (Telnet*) plug;
     if (urgent)
@@ -694,7 +693,7 @@ static void telnet_receive(Plug plug, int urgent, char *data, int len)
     do_telnet_read(telnet, data, len);
 }
 
-static void telnet_sent(Plug plug, int bufsize)
+static void telnet_sent(Plug *plug, size_t bufsize)
 {
     Telnet *telnet = (Telnet*) plug;
     telnet->bufsize = bufsize;
@@ -726,7 +725,7 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
     int addressfamily;
 
     telnet = snew(Telnet);
-    telnet->fn = &Telnet_plugvt;
+    telnet->plug.vt = &Telnet_plugvt;
     telnet->conf = conf_copy(conf);
     telnet->s = NULL;
     telnet->closed_on_socket_error = FALSE;
@@ -762,7 +761,7 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
      * Open socket.
      */
     telnet->s = new_connection(addr, *realhost, port, 0, 1,
-			       nodelay, keepalive, (Plug) telnet, telnet->conf);
+                               nodelay, keepalive, &telnet->plug, telnet->conf);
     if ((err = sk_socket_error(telnet->s)) != NULL)
 	return err;
 

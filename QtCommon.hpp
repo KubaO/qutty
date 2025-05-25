@@ -33,11 +33,9 @@ extern long timing_next_time;
 typedef struct QtSocket QtSocket;
 
 struct QtSocket {
-  Socket sock;
-  /* the above variable absolutely *must* be the first in this structure */
   const char *error;
-  // SOCKET s;
-  Plug plug;
+  QTcpSocket *qtsock;
+  Plug *plug;
   void *private_ptr;
   bufchain output_data;
   int connected;
@@ -60,7 +58,8 @@ struct QtSocket {
                       * track this link.
                       */
   QtSocket *parent, *child;
-  QTcpSocket *qtsock;
+
+  Socket sock;
 };
 
 void qstring_to_char(char *dst, const QString &src, int dstlen);

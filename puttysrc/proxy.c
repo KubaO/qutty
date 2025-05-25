@@ -76,10 +76,10 @@ void proxy_activate (ProxySocket *p)
 
 /* basic proxy socket functions */
 
-static Plug sk_proxy_plug (Socket *s, Plug p)
+static Plug *sk_proxy_plug (Socket *s, Plug *p)
 {
   ProxySocket *ps = container_of(s, ProxySocket, sock);
-  Plug ret = ps->plug;
+  Plug *ret = ps->plug;
   if (p) ps->plug = p;
   return ret;
 }
@@ -189,20 +189,18 @@ static const char * sk_proxy_socket_error (Socket *s)
 
 /* basic proxy plug functions */
 
-static void plug_proxy_log(Plug plug, int type, SockAddr *addr, int port,
+static void plug_proxy_log(Plug *plug, int type, SockAddr *addr, int port,
 			   const char *error_msg, int error_code)
 {
-    Proxy_Plug pp = (Proxy_Plug) plug;
-    ProxySocket *ps = pp->proxy_socket;
+    ProxySocket *ps = container_of(plug, ProxySocket, plugimpl);
 
     plug_log(ps->plug, type, addr, port, error_msg, error_code);
 }
 
-static void plug_proxy_closing (Plug p, const char *error_msg,
-				int error_code, int calling_back)
+static void plug_proxy_closing (Plug *p, const char *error_msg,
+				int error_code, bool calling_back)
 {
-    Proxy_Plug pp = (Proxy_Plug) p;
-    ProxySocket *ps = pp->proxy_socket;
+    ProxySocket *ps = container_of(p, ProxySocket, plugimpl);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	ps->closing_error_msg = error_msg;
@@ -214,10 +212,9 @@ static void plug_proxy_closing (Plug p, const char *error_msg,
     }
 }
 
-static void plug_proxy_receive (Plug p, int urgent, char *data, int len)
+static void plug_proxy_receive (Plug *p, int urgent, const char *data, size_t len)
 {
-    Proxy_Plug pp = (Proxy_Plug) p;
-    ProxySocket *ps = pp->proxy_socket;
+    ProxySocket *ps = container_of(p, ProxySocket, plugimpl);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	/* we will lose the urgentness of this data, but since most,
@@ -234,10 +231,9 @@ static void plug_proxy_receive (Plug p, int urgent, char *data, int len)
     }
 }
 
-static void plug_proxy_sent (Plug p, int bufsize)
+static void plug_proxy_sent (Plug *p, size_t bufsize)
 {
-    Proxy_Plug pp = (Proxy_Plug) p;
-    ProxySocket *ps = pp->proxy_socket;
+    ProxySocket *ps = container_of(p, ProxySocket, plugimpl);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	ps->sent_bufsize = bufsize;
@@ -247,11 +243,10 @@ static void plug_proxy_sent (Plug p, int bufsize)
     plug_sent(ps->plug, bufsize);
 }
 
-static int plug_proxy_accepting(Plug p,
+static int plug_proxy_accepting(Plug *p,
                                 accept_fn_t constructor, accept_ctx_t ctx)
 {
-    Proxy_Plug pp = (Proxy_Plug) p;
-    ProxySocket *ps = pp->proxy_socket;
+    ProxySocket *ps = container_of(p, ProxySocket, plugimpl);
 
     if (ps->state != PROXY_STATE_ACTIVE) {
 	ps->accepting_constructor = constructor;
@@ -421,13 +416,12 @@ static const struct PlugVtable ProxySocket_plugvt = {
 Socket *new_connection(SockAddr *addr, const char *hostname,
 		               int port, int privport,
 		               int oobinline, int nodelay, int keepalive,
-		               Plug plug, Conf *conf)
+		               Plug *plug, Conf *conf)
 {
     if (conf_get_int(conf, CONF_proxy_type) != PROXY_NONE &&
 	proxy_for_destination(addr, hostname, port, conf))
     {
       ProxySocket *ret;
-      Proxy_Plug pplug;
       SockAddr *proxy_addr;
       char *proxy_canonical_name;
       const char *proxy_type;
@@ -440,6 +434,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
 
       ret = snew(ProxySocket);
       ret->sock.vt = &ProxySocket_sockvt;
+      ret->plugimpl.vt = &ProxySocket_plugvt;
       ret->conf = conf_copy(conf);
       ret->plug = plug;
       ret->remote_addr = addr; /* will need to be freed on close */
@@ -486,12 +481,6 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
             sfree(logmsg);
         }
 
-	/* create the proxy plug to map calls from the actual
-	 * socket into our proxy socket layer */
-	pplug = snew(struct Plug_proxy_tag);
-	pplug->fn = &ProxySocket_plugvt;
-	pplug->proxy_socket = ret;
-
         {
             char *logmsg = dns_log_msg(conf_get_str(conf, CONF_proxy_host),
                                        conf_get_int(conf, CONF_addressfamily),
@@ -506,7 +495,6 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
 				   conf_get_int(conf, CONF_addressfamily));
 	if (sk_addr_error(proxy_addr) != NULL) {
 	    ret->error = "Proxy error: Unable to resolve proxy host name";
-            sfree(pplug);
             sk_addr_free(proxy_addr);
 	    return &ret->sock;
 	}
@@ -528,7 +516,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
 	ret->sub_socket = sk_new(proxy_addr,
 				 conf_get_int(conf, CONF_proxy_port),
 				 privport, oobinline,
-				 nodelay, keepalive, (Plug) pplug);
+				 nodelay, keepalive, &ret->plugimpl);
 	if (sk_socket_error(ret->sub_socket) != NULL)
 	    return &ret->sock;
 
@@ -543,8 +531,8 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
     return sk_new(addr, port, privport, oobinline, nodelay, keepalive, plug);
 }
 
-Socket *new_listener(const char *srcaddr, int port, Plug plug,
-                     int local_host_only, Conf *conf, int addressfamily)
+Socket *new_listener(const char *srcaddr, int port, Plug *plug,
+                     bool local_host_only, Conf *conf, int addressfamily)
 {
     /* TODO: SOCKS (and potentially others) support inbound
      * TODO: connections via the proxy. support them.
@@ -557,7 +545,7 @@ Socket *new_listener(const char *srcaddr, int port, Plug plug,
  * HTTP CONNECT proxy type.
  */
 
-static int get_line_end(char * data, int len)
+static bool get_line_end(char *data, size_t len, size_t *out)
 {
     int off = 0;
 
@@ -668,7 +656,7 @@ int proxy_http_negotiate (ProxySocket *p, int change)
 
     char *data, *datap;
     int len;
-    int eol;
+    size_t eol;
 
     if (p->state == 1) {
 
@@ -686,8 +674,7 @@ int proxy_http_negotiate (ProxySocket *p, int change)
        */
       data[len] = '\0';
 
-      eol = get_line_end(data, len);
-      if (eol < 0) {
+      if (!get_line_end(data, len, &eol)) {
         sfree(data);
         return 1;
       }
@@ -731,8 +718,7 @@ int proxy_http_negotiate (ProxySocket *p, int change)
       datap = data;
       bufchain_fetch(&p->pending_input_data, data, len);
 
-      eol = get_line_end(datap, len);
-      if (eol < 0) {
+      if (!get_line_end(datap, len, &eol)) {
         sfree(data);
         return 1;
       }
@@ -740,7 +726,8 @@ int proxy_http_negotiate (ProxySocket *p, int change)
         bufchain_consume(&p->pending_input_data, eol);
         datap += eol;
         len -= eol;
-        eol = get_line_end(datap, len);
+        if (!get_line_end(datap, len, &eol))
+          eol = 0;           /* terminate the loop */
       }
 
       if (eol == 2) {

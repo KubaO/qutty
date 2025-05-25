@@ -10,7 +10,7 @@
 
 struct ssh_channel;
 
-extern int sshfwd_write(struct ssh_channel *c, char *, int);
+extern int sshfwd_write(struct ssh_channel *c, const char *, int);
 extern void sshfwd_write_eof(struct ssh_channel *c);
 extern void sshfwd_unclean_close(struct ssh_channel *c, const char *err);
 extern void sshfwd_unthrottle(struct ssh_channel *c, int bufsize);
@@ -22,14 +22,15 @@ void sshfwd_x11_sharing_handover(struct ssh_channel *c,
                                  const void *initial_data, int initial_len);
 void sshfwd_x11_is_local(struct ssh_channel *c);
 
-extern Socket *ssh_connection_sharing_init(const char *host, int port,
-                                           Conf *conf, Ssh *ssh, void **state);
+extern Socket *ssh_connection_sharing_init(const char *host, int port, Conf *conf, Ssh *ssh,
+                                           Plug *sshplug, void **state);
 int ssh_share_test_for_upstream(const char *host, int port, Conf *conf);
 void share_got_pkt_from_server(void *ctx, int type,
                                unsigned char *pkt, int pktlen);
-void share_activate(void *state, const char *server_verstring);
-void sharestate_free(void *state);
-int share_ndownstreams(void *state);
+void share_activate(ssh_sharing_state *sharestate,
+                    const char *server_verstring);
+void sharestate_free(ssh_sharing_state *state);
+int share_ndownstreams(ssh_sharing_state *state);
 
 void ssh_connshare_log(Ssh *ssh, int event, const char *logtext,
                        const char *ds_err, const char *us_err);
@@ -845,7 +846,7 @@ int zlib_decompress_block(void *, unsigned char *block, int len,
  */
 enum { SHARE_NONE, SHARE_DOWNSTREAM, SHARE_UPSTREAM };
 int platform_ssh_share(const char *name, Conf *conf,
-                       Plug downplug, Plug upplug, Socket **sock,
+                       Plug *downplug, Plug *upplug, Socket **sock,
                        char **logtext, char **ds_err, char **us_err,
                        int can_upstream, int can_downstream);
 void platform_ssh_share_cleanup(const char *name);

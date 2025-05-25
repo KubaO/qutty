@@ -21,13 +21,6 @@ struct SockAddr {
 
 static void sk_tcp_flush(Socket * /*s*/) {}
 
-#if 0
-/* Return a pointer to the object of structure type 'type' whose field
- * with name 'field' is pointed at by 'object'. */
-#define container_of(object, type, field)
-
-#endif
-
 static const char *sk_tcp_socket_error(Socket *sock) {
   QtSocket *s = container_of(sock, QtSocket, sock);
   return s->error;
@@ -55,69 +48,39 @@ static size_t sk_tcp_write_oob(Socket *sock, const void *data, size_t len) {
 
 static void sk_tcp_close(Socket *sock) {
   QtSocket *s = container_of(sock, QtSocket, sock);
-  if (s->qtsock) s->qtsock->disconnectFromHost();
+
+  s->parent = nullptr;
+  if (s->child) sk_tcp_close(&s->child->sock);
+
+  bufchain_clear(&s->output_data);
+
+  s->qtsock->disconnect();
+  s->qtsock->deleteLater();
+  s->qtsock = nullptr;
+
+  sk_addr_free(s->addr);
+  sfree(s);
 }
 
 static void sk_tcp_set_frozen(Socket * /*sock*/, bool /*is_frozen*/) {
   qDebug() << "sk_tcp_set_frozen() NOT IMPL\n";
 }
 
-static Plug sk_tcp_plug(Socket *sock, Plug p) {
+static Plug *sk_tcp_plug(Socket *sock, Plug *p) {
   QtSocket *s = container_of(sock, QtSocket, sock);
-  Plug ret = s->plug;
+  Plug *ret = s->plug;
   if (p) s->plug = p;
   return ret;
 }
 
-Socket *sk_new(char *addr, int port, int privport, int oobinline, int nodelay, int keepalive,
-               Plug plug) {
-  static const struct SocketVtable fn_table = {sk_tcp_plug,
-                                               sk_tcp_close,
-                                               sk_tcp_write,
-                                               sk_tcp_write_oob,
-                                               nullptr /* TODO write_eof */,
-                                               sk_tcp_flush,
-                                               sk_tcp_set_frozen,
-                                               sk_tcp_socket_error};
-
-  QtSocket *ret;
-
-  /*
-   * Create Socket structure.
-   */
-  ret = snew(QtSocket);
-  ret->sock.vt = &fn_table;
-  ret->error = NULL;
-  ret->plug = plug;
-  bufchain_init(&ret->output_data);
-  ret->connected = 0; /* to start with */
-  ret->writable = 0;  /* to start with */
-  ret->sending_oob = 0;
-  ret->frozen = 0;
-  ret->frozen_readable = 0;
-  ret->localhost_only = 0; /* unused, but best init anyway */
-  ret->pending_error = 0;
-  ret->parent = ret->child = NULL;
-  ret->oobinline = oobinline;
-  ret->nodelay = nodelay;
-  ret->keepalive = keepalive;
-  ret->privport = privport;
-  ret->port = port;
-  // ret->addr = addr;
-  // START_STEP(ret->addr, ret->step);
-  // ret->s = INVALID_SOCKET;
-
-  /*do {
-      err = try_connect(ret);
-  } while (err && sk_nextaddr(ret->addr, &ret->step));
-  */
-  ret->qtsock = new QTcpSocket();
-  ret->qtsock->connectToHost(QString(addr), port);
-
-  if (nodelay) ret->qtsock->setSocketOption(QAbstractSocket::LowDelayOption, 1);
-
-  return &ret->sock;
-}
+static const struct SocketVtable QtSocket_sockvt = {sk_tcp_plug,
+                                                    sk_tcp_close,
+                                                    sk_tcp_write,
+                                                    sk_tcp_write_oob,
+                                                    nullptr /* TODO write_eof */,
+                                                    sk_tcp_flush,
+                                                    sk_tcp_set_frozen,
+                                                    sk_tcp_socket_error};
 
 int sk_addr_needs_port(SockAddr *addr) { return TRUE; }
 
@@ -242,41 +205,19 @@ int sk_address_is_special_local(SockAddr *addr) {
 }
 
 Socket *sk_new(SockAddr *addr, int port, int privport, int oobinline, int nodelay, int keepalive,
-               Plug plug) {
-  static const struct SocketVtable fn_table = {sk_tcp_plug,
-                                               sk_tcp_close,
-                                               sk_tcp_write,
-                                               sk_tcp_write_oob,
-                                               nullptr /* TODO write_eof */,
-                                               sk_tcp_flush,
-                                               sk_tcp_set_frozen,
-                                               sk_tcp_socket_error};
+               Plug *plug) {
+  QtSocket *ret = snew(QtSocket);
+  memset(ret, 0, sizeof(QtSocket));
 
-  QtSocket *ret;
-
-  /*
-   * Create Socket structure.
-   */
-  ret = snew(QtSocket);
-  ret->sock.vt = &fn_table;
-  ret->error = NULL;
+  ret->sock.vt = &QtSocket_sockvt;
   ret->plug = plug;
   bufchain_init(&ret->output_data);
-  ret->connected = 0; /* to start with */
-  ret->writable = 0;  /* to start with */
-  ret->sending_oob = 0;
-  ret->frozen = 0;
-  ret->frozen_readable = 0;
-  ret->localhost_only = 0; /* unused, but best init anyway */
-  ret->pending_error = 0;
-  ret->parent = ret->child = NULL;
   ret->oobinline = oobinline;
   ret->nodelay = nodelay;
   ret->keepalive = keepalive;
   ret->privport = privport;
   ret->port = port;
   ret->addr = addr;
-  ret->qtsock = NULL;
 
   if (!addr || !addr->qtaddr) {
     ret->error = "Cannot create socket";
@@ -292,7 +233,7 @@ cu0:
   return &ret->sock;
 }
 
-Socket *sk_newlistener(const char * /*srcaddr*/, int /*port*/, Plug /*plug*/,
+Socket *sk_newlistener(const char * /*srcaddr*/, int /*port*/, Plug * /*plug*/,
                        int /*local_host_only*/, int /*orig_address_family*/) {
   // TODO not implemented
   return NULL;
@@ -312,7 +253,7 @@ int net_service_lookup(char * /*service*/) {
   return 0;
 }
 
-Socket *sk_register(void * /*sock*/, Plug /*plug*/) {
+Socket *sk_register(void * /*sock*/, Plug * /*plug*/) {
   // TODO not implemented
   return NULL;
 }
@@ -330,12 +271,12 @@ SockAddr *platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*
 
 Socket *platform_new_connection(SockAddr * /*addr*/, const char * /*hostname*/, int /*port*/,
                                 int /*privport*/, int /*oobinline*/, int /*nodelay*/,
-                                int /*keepalive*/, Plug /*plug*/, Conf * /*cfg*/) {
+                                int /*keepalive*/, Plug * /*plug*/, Conf * /*cfg*/) {
   // TODO not yet implemented
   return NULL;
 }
 
-int platform_ssh_share(const char *name, Conf *conf, Plug downplug, Plug upplug, Socket **sock,
+int platform_ssh_share(const char *name, Conf *conf, Plug *downplug, Plug *upplug, Socket **sock,
                        char **logtext, char **ds_err, char **us_err, int can_upstream,
                        int can_downstream) {
   return SHARE_NONE;

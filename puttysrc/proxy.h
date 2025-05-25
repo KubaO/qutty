@@ -24,7 +24,7 @@ struct ProxySocket {
     const char *error;
 
     Socket *sub_socket;
-    Plug plug;
+    Plug *plug;
     SockAddr *remote_addr;
     int remote_port;
 
@@ -93,16 +93,7 @@ struct ProxySocket {
     int chap_current_datalen;
 
     Socket sock;
-};
-
-typedef struct Plug_proxy_tag * Proxy_Plug;
-
-struct Plug_proxy_tag {
-    const struct PlugVtable *fn;
-    /* the above variable absolutely *must* be the first in this structure */
-
-    ProxySocket *proxy_socket;
-
+    Plug plugimpl;
 };
 
 extern void proxy_activate (ProxySocket *);

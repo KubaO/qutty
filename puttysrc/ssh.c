@@ -760,13 +760,12 @@ struct queued_handler {
 };
 
 struct Ssh {
-    const struct PlugVtable *fn;
-    /* the above field _must_ be first in the structure */
-
     char *v_c, *v_s;
     void *exhash;
 
     Socket *s;
+
+    Plug plug;
 
     void *ldisc;
     void *logctx;
@@ -3507,10 +3506,10 @@ static int ssh_do_close(Ssh *ssh, int notify_exit)
     return ret;
 }
 
-static void ssh_socket_log(Plug plug, int type, SockAddr *addr, int port,
+static void ssh_socket_log(Plug *plug, int type, SockAddr *addr, int port,
                            const char *error_msg, int error_code)
 {
-    Ssh *ssh = (Ssh*) plug;
+    Ssh *ssh = container_of(plug, Ssh, plug);
 
     /*
      * While we're attempting connection sharing, don't loudly log
@@ -3560,10 +3559,10 @@ void ssh_connshare_log(Ssh *ssh, int event, const char *logtext,
     }
 }
 
-static void ssh_closing(Plug plug, const char *error_msg, int error_code,
-			int calling_back)
+static void ssh_closing(Plug *plug, const char *error_msg, int error_code,
+            bool calling_back)
 {
-    Ssh *ssh = (Ssh*) plug;
+    Ssh *ssh = container_of(plug, Ssh, plug);
     int need_notify = ssh_do_close(ssh, FALSE);
 
     if (!error_msg) {
@@ -3585,18 +3584,18 @@ static void ssh_closing(Plug plug, const char *error_msg, int error_code,
 	connection_fatal(ssh->frontend, "%s", error_msg);
 }
 
-static void ssh_receive(Plug plug, int urgent, char *data, int len)
+static void ssh_receive(Plug *plug, int urgent, const char *data, size_t len)
 {
-    Ssh *ssh = (Ssh*) plug;
+    Ssh *ssh = container_of(plug, Ssh, plug);
     ssh_gotdata(ssh, (unsigned char *)data, len);
     if (ssh->state == SSH_STATE_CLOSED) {
 	ssh_do_close(ssh, TRUE);
     }
 }
 
-static void ssh_sent(Plug plug, int bufsize)
+static void ssh_sent(Plug *plug, size_t bufsize)
 {
-    Ssh *ssh = (Ssh*) plug;
+    Ssh *ssh = container_of(plug, Ssh, plug);
     /*
      * If the send backlog on the SSH socket itself clears, we
      * should unthrottle the whole world if it was throttled.
@@ -3682,7 +3681,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
     ssh_hostport_setup(host, port, ssh->conf,
                        &ssh->savedhost, &ssh->savedport, &loghost);
 
-    ssh->fn = &Ssh_plugvt;               /* make 'ssh' usable as a Plug */
+    ssh->plug.vt = &Ssh_plugvt;
 
     /*
      * Try connection-sharing, in case that means we don't open a
@@ -3696,7 +3695,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
     ssh->connshare = NULL;
     ssh->attempting_connshare = TRUE;  /* affects socket logging behaviour */
     ssh->s = ssh_connection_sharing_init(ssh->savedhost, ssh->savedport,
-                                         ssh->conf, ssh, &ssh->connshare);
+                                         ssh->conf, ssh, &ssh->plug, &ssh->connshare);
     ssh->attempting_connshare = FALSE;
     if (ssh->s != NULL) {
         /*
@@ -3726,7 +3725,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
 
         ssh->s = new_connection(addr, *realhost, port,
                                 0, 1, nodelay, keepalive,
-                                (Plug) ssh, ssh->conf);
+                                &ssh->plug, ssh->conf);
         if ((err = sk_socket_error(ssh->s)) != NULL) {
             ssh->s = NULL;
             notify_remote_exit(ssh->frontend);
@@ -4015,7 +4014,7 @@ static void ssh_disconnect(Ssh *ssh, const char *client_reason,
     }
     ssh->close_expected = TRUE;
     ssh->clean_exit = clean_exit;
-    ssh_closing((Plug)ssh, error, 0, 0);
+    ssh_closing(&ssh->plug, error, 0, 0);
     sfree(error);
 }
 
@@ -5137,7 +5136,7 @@ void sshfwd_unclean_close(struct ssh_channel *c, const char *err)
     ssh2_channel_check_close(c);
 }
 
-int sshfwd_write(struct ssh_channel *c, char *buf, int len)
+int sshfwd_write(struct ssh_channel *c, const char *buf, int len)
 {
     Ssh *ssh = c->ssh;
 
@@ -11196,81 +11195,16 @@ static const char *ssh_init(void *frontend_handle, void **backend_handle,
     Ssh *ssh;
 
     ssh = snew(Ssh);
+    memset(ssh, 0, sizeof(Ssh));
+
     ssh->conf = conf_copy(conf);
     ssh_cache_conf_values(ssh);
-    ssh->version = 0;		       /* when not ready yet */
-    ssh->s = NULL;
-    ssh->cipher = NULL;
-    ssh->v1_cipher_ctx = NULL;
-    ssh->crcda_ctx = NULL;
-    ssh->cscipher = NULL;
-    ssh->cs_cipher_ctx = NULL;
-    ssh->sccipher = NULL;
-    ssh->sc_cipher_ctx = NULL;
-    ssh->csmac = NULL;
-    ssh->cs_mac_ctx = NULL;
-    ssh->scmac = NULL;
-    ssh->sc_mac_ctx = NULL;
-    ssh->cscomp = NULL;
-    ssh->cs_comp_ctx = NULL;
-    ssh->sccomp = NULL;
-    ssh->sc_comp_ctx = NULL;
-    ssh->kex = NULL;
-    ssh->kex_ctx = NULL;
-    ssh->hostkey = NULL;
-    ssh->hostkey_str = NULL;
     ssh->exitcode = -1;
-    ssh->close_expected = FALSE;
-    ssh->clean_exit = FALSE;
     ssh->state = SSH_STATE_PREPACKET;
-    ssh->size_needed = FALSE;
-    ssh->eof_needed = FALSE;
-    ssh->ldisc = NULL;
-    ssh->logctx = NULL;
-    ssh->deferred_send_data = NULL;
-    ssh->deferred_len = 0;
-    ssh->deferred_size = 0;
-    ssh->fallback_cmd = 0;
     ssh->pkt_kctx = SSH2_PKTCTX_NOKEX;
     ssh->pkt_actx = SSH2_PKTCTX_NOAUTH;
-    ssh->x11disp = NULL;
-    ssh->x11auth = NULL;
     ssh->x11authtree = newtree234(x11_authcmp);
-    ssh->v1_compressing = FALSE;
-    ssh->v2_outgoing_sequence = 0;
-    ssh->ssh1_rdpkt_crstate = 0;
-    ssh->ssh2_rdpkt_crstate = 0;
-    ssh->ssh2_bare_rdpkt_crstate = 0;
-    ssh->ssh_gotdata_crstate = 0;
-    ssh->do_ssh1_connection_crstate = 0;
-    ssh->do_ssh_init_state = NULL;
-    ssh->do_ssh_connection_init_state = NULL;
-    ssh->do_ssh1_login_state = NULL;
-    ssh->do_ssh2_transport_state = NULL;
-    ssh->do_ssh2_authconn_state = NULL;
-    ssh->v_c = NULL;
-    ssh->v_s = NULL;
-    ssh->mainchan = NULL;
-    ssh->throttled_all = 0;
-    ssh->v1_stdout_throttling = 0;
-    ssh->queue = NULL;
-    ssh->queuelen = ssh->queuesize = 0;
-    ssh->queueing = FALSE;
-    ssh->qhead = ssh->qtail = NULL;
-    ssh->deferred_rekey_reason = NULL;
     bufchain_init(&ssh->queued_incoming_data);
-    ssh->frozen = FALSE;
-    ssh->username = NULL;
-    ssh->sent_console_eof = FALSE;
-    ssh->got_pty = FALSE;
-    ssh->bare_connection = FALSE;
-    ssh->X11_fwd_enabled = FALSE;
-    ssh->connshare = NULL;
-    ssh->attempting_connshare = FALSE;
-    ssh->session_started = FALSE;
-    ssh->specials = NULL;
-    ssh->n_uncert_hostkeys = 0;
-    ssh->cross_certifying = FALSE;
 
     *backend_handle = ssh;
 
@@ -11283,35 +11217,8 @@ static const char *ssh_init(void *frontend_handle, void **backend_handle,
     ssh->term_width = conf_get_int(ssh->conf, CONF_width);
     ssh->term_height = conf_get_int(ssh->conf, CONF_height);
 
-    ssh->channels = NULL;
-    ssh->rportfwds = NULL;
-    ssh->portfwds = NULL;
-
-    ssh->send_ok = 0;
-    ssh->editing = 0;
-    ssh->echoing = 0;
-    ssh->conn_throttle_count = 0;
-    ssh->overall_bufsize = 0;
-    ssh->fallback_cmd = 0;
-
-    ssh->protocol = NULL;
-
-    ssh->protocol_initial_phase_done = FALSE;
-
-    ssh->pinger = NULL;
-
-    ssh->incoming_data_size = ssh->outgoing_data_size =
-	ssh->deferred_data_size = 0L;
     ssh->max_data_size = parse_blocksize(conf_get_str(ssh->conf,
 						      CONF_ssh_rekey_data));
-    ssh->kex_in_progress = FALSE;
-
-    ssh->auth_agent_query = NULL;
-
-#ifndef NO_GSSAPI
-    ssh->gsslibs = NULL;
-#endif
-
     random_ref(); /* do this now - may be needed by sharing setup code */
 
     p = connect_to_host(ssh, host, port, realhost, nodelay, keepalive);

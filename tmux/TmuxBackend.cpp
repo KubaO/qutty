@@ -17,21 +17,22 @@ typedef struct __tmux_window_pane_t {
 } tmux_window_pane_t;
 }
 
-extern "C" void tmux_log(Plug /*plug*/, int /*type*/, SockAddr * /*addr*/, int /*port*/,
+extern "C" void tmux_log(Plug * /*plug*/, int /*type*/, SockAddr * /*addr*/, int /*port*/,
                          const char * /*error_msg*/, int /*error_code*/) {
   qDebug() << __FUNCTION__;
 }
 
-extern "C" void tmux_closing(Plug /*plug*/, const char * /*error_msg*/, int /*error_code*/,
-                             int /*calling_back*/) {
+extern "C" void tmux_closing(Plug * /*plug*/, const char * /*error_msg*/, int /*error_code*/,
+                             bool /*calling_back*/) {
   qDebug() << __FUNCTION__;
 }
 
-extern "C" void tmux_receive(Plug /*plug*/, int /*urgent*/, char * /*data*/, int /*len*/) {
+extern "C" void tmux_receive(Plug * /*plug*/, int /*urgent*/, const char * /*data*/,
+                             size_t /*len*/) {
   qDebug() << __FUNCTION__;
 }
 
-extern "C" void tmux_sent(Plug /*plug*/, int /*bufsize*/) { qDebug() << __FUNCTION__; }
+extern "C" void tmux_sent(Plug * /*plug*/, size_t /*bufsize*/) { qDebug() << __FUNCTION__; }
 
 /*
  * Called to set up the Tmux client connection.

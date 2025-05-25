@@ -23,7 +23,7 @@ struct Socket {
 };
 
 struct SocketVtable {
-    Plug(*plug) (Socket *s, Plug p);
+    Plug *(*plug) (Socket *s, Plug *p);
     /* use a different plug (return the old one) */
     /* if p is NULL, it doesn't change the plug */
     /* but it does return the one it's using */
@@ -39,10 +39,14 @@ struct SocketVtable {
 };
 
 typedef union { void *p; int i; } accept_ctx_t;
-typedef Socket *(*accept_fn_t)(accept_ctx_t ctx, Plug plug);
+typedef Socket *(*accept_fn_t)(accept_ctx_t ctx, Plug *plug);
+
+struct Plug {
+    const struct PlugVtable *vt;
+};
 
 struct PlugVtable {
-    void (*log)(Plug p, int type, SockAddr *addr, int port,
+    void (*log)(Plug *p, int type, SockAddr *addr, int port,
 		const char *error_msg, int error_code);
     /*
      * Passes the client progress reports on the process of setting
@@ -62,11 +66,11 @@ struct PlugVtable {
      *    indicate this.
      */
     void (*closing)
-     (Plug p, const char *error_msg, int error_code, int calling_back);
+     (Plug *p, const char *error_msg, int error_code, bool calling_back);
     /* error_msg is NULL iff it is not an error (ie it closed normally) */
     /* calling_back != 0 iff there is a Plug function */
     /* currently running (would cure the fixme in try_send()) */
-    void (*receive) (Plug p, int urgent, char *data, int len);
+    void (*receive) (Plug *p, int urgent, const char *data, size_t len);
     /*
      *  - urgent==0. `data' points to `len' bytes of perfectly
      *    ordinary data.
@@ -77,13 +81,13 @@ struct PlugVtable {
      *  - urgent==2. `data' points to `len' bytes of data,
      *    the first of which was the one at the Urgent mark.
      */
-    void (*sent) (Plug p, int bufsize);
+    void (*sent) (Plug *p, size_t bufsize);
     /*
      * The `sent' function is called when the pending send backlog
      * on a socket is cleared or partially cleared. The new backlog
      * size is passed in the `bufsize' parameter.
      */
-    int (*accepting)(Plug p, accept_fn_t constructor, accept_ctx_t ctx);
+    int (*accepting)(Plug *p, accept_fn_t constructor, accept_ctx_t ctx);
     /*
      * `accepting' is called only on listener-type sockets, and is
      * passed a constructor function+context that will create a fresh
@@ -98,9 +102,9 @@ struct PlugVtable {
 Socket *new_connection(SockAddr *addr, const char *hostname,
                        int port, int privport,
                        int oobinline, int nodelay, int keepalive,
-                       Plug plug, Conf *conf);
-Socket *new_listener(const char *srcaddr, int port, Plug plug,
-                     int local_host_only, Conf *conf, int addressfamily);
+                       Plug *plug, Conf *conf);
+Socket *new_listener(const char *srcaddr, int port, Plug *plug,
+                     bool local_host_only, Conf *conf, int addressfamily);
 SockAddr *name_lookup(const char *host, int port, char **canonicalname,
                       Conf *conf, int addressfamily, void *frontend_for_logging,
                       const char *lookup_reason_for_logging);
@@ -112,7 +116,7 @@ int proxy_for_destination (SockAddr *addr, const char *hostname, int port,
 Socket *platform_new_connection(SockAddr *addr, const char *hostname,
                                 int port, int privport,
                                 int oobinline, int nodelay, int keepalive,
-                                Plug plug, Conf *conf);
+                                Plug *plug, Conf *conf);
 
 /* socket functions */
 
@@ -139,12 +143,12 @@ SockAddr *sk_addr_dup(SockAddr *addr);
 /* NB, control of 'addr' is passed via sk_new, which takes responsibility
  * for freeing it, as for new_connection() */
 Socket *sk_new(SockAddr *addr, int port, int privport, int oobinline,
-               int nodelay, int keepalive, Plug p);
+               int nodelay, int keepalive, Plug *p);
 
-Socket *sk_newlistener(const char *srcaddr, int port, Plug plug,
+Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
                        int local_host_only, int address_family);
 
-static inline Plug sk_plug(Socket *s, Plug p)
+static inline Plug *sk_plug(Socket *s, Plug *p)
 { return s->vt->plug(s, p); }
 static inline void sk_close(Socket *s)
 { s->vt->close(s); }
@@ -157,13 +161,18 @@ static inline void sk_write_eof(Socket *s)
 static inline void sk_flush(Socket *s)
 { s->vt->flush(s); }
 
-#ifdef DEFINE_PLUG_METHOD_MACROS
-#define plug_log(p,type,addr,port,msg,code) (((*p)->log) (p, type, addr, port, msg, code))
-#define plug_closing(p,msg,code,callback) (((*p)->closing) (p, msg, code, callback))
-#define plug_receive(p,urgent,buf,len) (((*p)->receive) (p, urgent, buf, len))
-#define plug_sent(p,bufsize) (((*p)->sent) (p, bufsize))
-#define plug_accepting(p, constructor, ctx) (((*p)->accepting)(p, constructor, ctx))
-#endif
+static inline void plug_log(
+    Plug *p, int type, SockAddr *addr, int port, const char *msg, int code)
+{ p->vt->log(p, type, addr, port, msg, code); }
+static inline void plug_closing(
+    Plug *p, const char *msg, int code, bool calling_back)
+{ p->vt->closing(p, msg, code, calling_back); }
+static inline void plug_receive(Plug *p, int urg, const char *data, size_t len)
+{ p->vt->receive(p, urg, data, len); }
+static inline void plug_sent (Plug *p, size_t bufsize)
+{ p->vt->sent(p, bufsize); }
+static inline int plug_accepting(Plug *p, accept_fn_t cons, accept_ctx_t ctx)
+{ return p->vt->accepting(p, cons, ctx); }
 
 /*
  * Special error values are returned from sk_namelookup and sk_new
@@ -222,7 +231,7 @@ char *get_hostname(void);
  * Trivial socket implementation which just stores an error. Found in
  * errsock.c.
  */
-Socket *new_error_socket(const char *errmsg, Plug plug);
+Socket *new_error_socket(const char *errmsg, Plug *plug);
 
 /* ----------------------------------------------------------------------
  * Functions defined outside the network code, which have to be
@@ -236,10 +245,11 @@ Socket *new_error_socket(const char *errmsg, Plug plug);
 void backend_socket_log(void *frontend, int type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
                         int session_started);
+
 #ifndef BUFCHAIN_TYPEDEF
 typedef struct bufchain_tag bufchain;  /* rest of declaration in misc.c */
 #define BUFCHAIN_TYPEDEF
 #endif
-void log_proxy_stderr(Plug plug, bufchain *buf, const void *vdata, int len);
+void log_proxy_stderr(Plug *plug, bufchain *buf, const void *vdata, int len);
 
 #endif

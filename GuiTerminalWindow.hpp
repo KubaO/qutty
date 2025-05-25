@@ -8,11 +8,12 @@
 #define TERMINALWINDOW_H
 
 #include <QAbstractScrollArea>
+#include <QAbstractSocket>
 #include <QElapsedTimer>
 #include <QFont>
 #include <QFontInfo>
 #include <QFontMetrics>
-#include <QtNetwork/QTcpSocket>
+#include <QPointer>
 
 #include "GuiBase.hpp"
 #include "GuiDrag.hpp"
@@ -45,7 +46,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   int fontWidth, fontHeight, fontAscent;
   struct unicode_data ucsdata = {};
   QtSocket *as = nullptr;
-  QTcpSocket *qtsock = nullptr;
+  QPointer<QAbstractSocket> qtsock;
   bool _any_update = false;
   QRegion termrgn;
   QColor colours[NALLCOLOURS];

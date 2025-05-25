@@ -140,23 +140,19 @@
 #include "ssh.h"
 
 struct ssh_sharing_state {
-    const struct PlugVtable *fn;
-    /* the above variable absolutely *must* be the first in this structure */
-
     char *sockname;                  /* the socket name, kept for cleanup */
     Socket *listensock;               /* the master listening Socket */
     tree234 *connections;            /* holds ssh_sharing_connstates */
     unsigned nextid;                 /* preferred id for next connstate */
     Ssh *ssh;                        /* instance of the ssh backend */
     char *server_verstring;          /* server version string after "SSH-" */
+
+    Plug plug;
 };
 
 struct share_globreq;
 
 struct ssh_sharing_connstate {
-    const struct PlugVtable *fn;
-    /* the above variable absolutely *must* be the first in this structure */
-
     unsigned id;    /* used to identify this downstream in log messages */
 
     Socket *sock;                     /* the Socket for this connection */
@@ -203,6 +199,8 @@ struct ssh_sharing_connstate {
 
     /* Global requests we've sent on to the server, pending replies. */
     struct share_globreq *globreq_head, *globreq_tail;
+
+    Plug plug;
 };
 
 struct share_halfchannel {
@@ -509,25 +507,23 @@ static void share_connstate_free(struct ssh_sharing_connstate *cs)
     sfree(cs);
 }
 
-void sharestate_free(void *v)
-{
-    struct ssh_sharing_state *sharestate = (struct ssh_sharing_state *)v;
-    struct ssh_sharing_connstate *cs;
+void sharestate_free(ssh_sharing_state *v) {
+  struct ssh_sharing_state *sharestate = (struct ssh_sharing_state *)v;
+  struct ssh_sharing_connstate *cs;
 
-    platform_ssh_share_cleanup(sharestate->sockname);
+  platform_ssh_share_cleanup(sharestate->sockname);
 
-    while ((cs = (struct ssh_sharing_connstate *)
-            delpos234(sharestate->connections, 0)) != NULL) {
-        share_connstate_free(cs);
-    }
-    freetree234(sharestate->connections);
-    if (sharestate->listensock) {
-        sk_close(sharestate->listensock);
-        sharestate->listensock = NULL;
-    }
-    sfree(sharestate->server_verstring);
-    sfree(sharestate->sockname);
-    sfree(sharestate);
+  while ((cs = (struct ssh_sharing_connstate *)delpos234(sharestate->connections, 0)) != NULL) {
+    share_connstate_free(cs);
+  }
+  freetree234(sharestate->connections);
+  if (sharestate->listensock) {
+    sk_close(sharestate->listensock);
+    sharestate->listensock = NULL;
+  }
+  sfree(sharestate->server_verstring);
+  sfree(sharestate->sockname);
+  sfree(sharestate);
 }
 
 static struct share_halfchannel *share_add_halfchannel
@@ -911,10 +907,11 @@ static void share_disconnect(struct ssh_sharing_connstate *cs,
     share_begin_cleanup(cs);
 }
 
-static void share_closing(Plug plug, const char *error_msg, int error_code,
-			  int calling_back)
+static void share_closing(Plug *plug, const char *error_msg, int error_code,
+			  bool calling_back)
 {
-    struct ssh_sharing_connstate *cs = (struct ssh_sharing_connstate *)plug;
+    struct ssh_sharing_connstate *cs = container_of(
+        plug, struct ssh_sharing_connstate, plug);
 
     if (error_msg) {
 #ifdef BROKEN_PIPE_ERROR_CODE
@@ -1784,9 +1781,10 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
         (c) = (unsigned char)*data++;                           \
     } while (0)
 
-static void share_receive(Plug plug, int urgent, char *data, int len)
+static void share_receive(Plug *plug, int urgent, const char *data, size_t len)
 {
-    struct ssh_sharing_connstate *cs = (struct ssh_sharing_connstate *)plug;
+    ssh_sharing_connstate *cs = container_of(
+        plug, ssh_sharing_connstate, plug);
     static const char expected_verstring_prefix[] =
         "SSHCONNECTION@putty.projects.tartarus.org-2.0-";
     unsigned char c;
@@ -1860,9 +1858,10 @@ static void share_receive(Plug plug, int urgent, char *data, int len)
     crFinishV;
 }
 
-static void share_sent(Plug plug, int bufsize)
+static void share_sent(Plug *plug, size_t bufsize)
 {
-    /* struct ssh_sharing_connstate *cs = (struct ssh_sharing_connstate *)plug; */
+    /* ssh_sharing_connstate *cs = container_of(
+        plug, ssh_sharing_connstate, plug); */
 
     /*
      * We do nothing here, because we expect that there won't be a
@@ -1874,10 +1873,11 @@ static void share_sent(Plug plug, int bufsize)
      */
 }
 
-static void share_listen_closing(Plug plug, const char *error_msg,
-				 int error_code, int calling_back)
+static void share_listen_closing(Plug *plug, const char *error_msg,
+				 int error_code, bool calling_back)
 {
-    struct ssh_sharing_state *sharestate = (struct ssh_sharing_state *)plug;
+    ssh_sharing_state *sharestate =
+        container_of(plug, ssh_sharing_state, plug);
     if (error_msg)
         ssh_sharing_logf(sharestate->ssh, 0,
                          "listening socket: %s", error_msg);
@@ -1895,13 +1895,13 @@ static void share_send_verstring(struct ssh_sharing_connstate *cs)
     cs->sent_verstring = TRUE;
 }
 
-int share_ndownstreams(void *state)
+int share_ndownstreams(ssh_sharing_state *state)
 {
     struct ssh_sharing_state *sharestate = (struct ssh_sharing_state *)state;
     return count234(sharestate->connections);
 }
 
-void share_activate(void *state, const char *server_verstring)
+void share_activate(ssh_sharing_state *state, const char *server_verstring)
 {
     /*
      * Indication from ssh.c that we are now ready to begin serving
@@ -1939,10 +1939,11 @@ static const PlugVtable ssh_sharing_conn_plugvt = {
     NULL /* no accepting function, because we've already done it */
 };
 
-static int share_listen_accepting(Plug plug,
+static int share_listen_accepting(Plug *plug,
                                   accept_fn_t constructor, accept_ctx_t ctx)
 {
-    struct ssh_sharing_state *sharestate = (struct ssh_sharing_state *)plug;
+    struct ssh_sharing_state *sharestate = container_of(
+        plug, struct ssh_sharing_state, plug);
     struct ssh_sharing_connstate *cs;
     const char *err;
     char *peerinfo;
@@ -1951,7 +1952,7 @@ static int share_listen_accepting(Plug plug,
      * A new downstream has connected to us.
      */
     cs = snew(struct ssh_sharing_connstate);
-    cs->fn = &ssh_sharing_conn_plugvt;
+    cs->plug.vt = &ssh_sharing_conn_plugvt;
     cs->parent = sharestate;
 
     if ((cs->id = share_find_unused_id(sharestate, sharestate->nextid)) == 0 &&
@@ -1963,7 +1964,7 @@ static int share_listen_accepting(Plug plug,
     if (sharestate->nextid == 0)
         sharestate->nextid++; /* only happens in VERY long-running upstreams */
 
-    cs->sock = constructor(ctx, (Plug) cs);
+    cs->sock = constructor(ctx, &cs->plug);
     if ((err = sk_socket_error(cs->sock)) != NULL) {
         sfree(cs);
 	return err != NULL;
@@ -2044,12 +2045,12 @@ char *ssh_share_sockname(const char *host, int port, Conf *conf)
     return sockname;
 }
 
-static void nullplug_socket_log(Plug plug, int type, SockAddr *addr, int port,
+static void nullplug_socket_log(Plug *plug, int type, SockAddr *addr, int port,
                                 const char *error_msg, int error_code) {}
-static void nullplug_closing(Plug plug, const char *error_msg, int error_code,
-			     int calling_back) {}
-static void nullplug_receive(Plug plug, int urgent, char *data, int len) {}
-static void nullplug_sent(Plug plug, int bufsize) {}
+static void nullplug_closing(Plug *plug, const char *error_msg, int error_code, bool calling_back) {
+}
+static void nullplug_receive(Plug *plug, int urgent, const char *data, size_t len) {}
+static void nullplug_sent(Plug *plug, size_t bufsize) {}
 
 int ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
 {
@@ -2060,21 +2061,17 @@ int ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
 	nullplug_sent,
 	NULL
     };
-    struct nullplug {
-        const struct PlugVtable *fn;
-    } np;
+    Plug np = {&fn_table};
 
     char *sockname, *logtext, *ds_err, *us_err;
     int result;
     Socket *sock;
 
-    np.fn = &fn_table;
-
     sockname = ssh_share_sockname(host, port, conf);
 
     sock = NULL;
     logtext = ds_err = us_err = NULL;
-    result = platform_ssh_share(sockname, conf, (Plug)&np, (Plug)NULL, &sock,
+    result = platform_ssh_share(sockname, conf, &np, (Plug *)NULL, &sock,
                                 &logtext, &ds_err, &us_err, FALSE, TRUE);
 
     sfree(logtext);
@@ -2111,7 +2108,7 @@ static const PlugVtable ssh_sharing_listen_plugvt = {
  * upstream) we return NULL.
  */
 Socket *ssh_connection_sharing_init(const char *host, int port,
-                                    Conf *conf, Ssh *ssh, void **state)
+                                    Conf *conf, Ssh *ssh, Plug *sshplug, void **state)
 {
     int result, can_upstream, can_downstream;
     char *logtext, *ds_err, *us_err;
@@ -2135,7 +2132,7 @@ Socket *ssh_connection_sharing_init(const char *host, int port,
      * to be an upstream.
      */
     sharestate = snew(struct ssh_sharing_state);
-    sharestate->fn = &ssh_sharing_listen_plugvt;
+    sharestate->plug.vt = &ssh_sharing_listen_plugvt;
     sharestate->listensock = NULL;
 
     /*
@@ -2147,8 +2144,8 @@ Socket *ssh_connection_sharing_init(const char *host, int port,
      */
     sock = NULL;
     logtext = ds_err = us_err = NULL;
-    result = platform_ssh_share(sockname, conf, (Plug)ssh,
-                                (Plug)sharestate, &sock, &logtext, &ds_err,
+    result = platform_ssh_share(sockname, conf, sshplug,
+                                &sharestate->plug, &sock, &logtext, &ds_err,
                                 &us_err, can_upstream, can_downstream);
     ssh_connshare_log(ssh, result, logtext, ds_err, us_err);
     sfree(logtext);

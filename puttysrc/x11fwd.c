@@ -26,9 +26,7 @@ struct XDMSeen {
     unsigned char clientid[6];
 };
 
-struct X11Connection {
-    const struct PlugVtable *fn;
-    /* the above variable absolutely *must* be the first in this structure */
+typedef struct X11Connection {
     unsigned char firstpkt[12];	       /* first X data packet */
     tree234 *authtree;
     struct X11Display *disp;
@@ -42,7 +40,9 @@ struct X11Connection {
     int peer_port;
     struct ssh_channel *c;        /* channel structure held by ssh.c */
     Socket *s;
-};
+
+    Plug plug;
+} X11Connection;
 
 static int xdmseen_cmp(void *a, void *b)
 {
@@ -56,13 +56,12 @@ static int xdmseen_cmp(void *a, void *b)
  * creates a trial connection (and then immediately closes it).
  * XXX: bit out of place here, could in principle live in a platform-
  *      independent network.c or something */
-static void dummy_plug_log(Plug p, int type, SockAddr *addr, int port,
+static void dummy_plug_log(Plug *p, int type, SockAddr *addr, int port,
 			   const char *error_msg, int error_code) { }
-static void dummy_plug_closing
-     (Plug p, const char *error_msg, int error_code, int calling_back) { }
-static void dummy_plug_receive(Plug p, int urgent, char *data, int len) { }
-static void dummy_plug_sent(Plug p, int bufsize) { }
-static int dummy_plug_accepting(Plug p, accept_fn_t constructor, accept_ctx_t ctx) { return 1; }
+static void dummy_plug_closing(Plug *p, const char *error_msg, int error_code, bool calling_back) { }
+static void dummy_plug_receive(Plug *p, int urgent, const char *data, size_t len) { }
+static void dummy_plug_sent(Plug *p, size_t bufsize) { }
+static int dummy_plug_accepting(Plug *p, accept_fn_t constructor, accept_ctx_t ctx) { return 1; }
 static const struct PlugVtable dummy_plug = {
     dummy_plug_log, dummy_plug_closing, dummy_plug_receive,
     dummy_plug_sent, dummy_plug_accepting
@@ -306,8 +305,8 @@ struct X11Display *x11_setup_display(const char *display, Conf *conf)
 	if (!err) {
 	    /* Create trial connection to see if there is a useful Unix-domain
 	     * socket */
-	    const struct PlugVtable *dummy = &dummy_plug;
-	    Socket *s = sk_new(sk_addr_dup(ux), 0, 0, 0, 0, 0, (Plug)&dummy);
+	    static Plug dummy = {&dummy_plug};
+	    Socket *s = sk_new(sk_addr_dup(ux), 0, 0, 0, 0, 0, &dummy);
 	    err = sk_socket_error(s);
 	    sk_close(s);
 	}
@@ -605,7 +604,7 @@ void x11_get_auth_from_authfile(struct X11Display *disp,
     sfree(ourhostname);
 }
 
-static void x11_log(Plug p, int type, SockAddr *addr, int port,
+static void x11_log(Plug *p, int type, SockAddr *addr, int port,
 		    const char *error_msg, int error_code)
 {
     /* We have no interface to the logging module here, so we drop these. */
@@ -614,10 +613,10 @@ static void x11_log(Plug p, int type, SockAddr *addr, int port,
 static void x11_send_init_error(struct X11Connection *conn,
                                 const char *err_message);
 
-static void x11_closing(Plug plug, const char *error_msg, int error_code,
-			int calling_back)
+static void x11_closing(Plug *plug, const char *error_msg, int error_code,
+                        bool calling_back)
 {
-    struct X11Connection *xconn = (struct X11Connection *) plug;
+    struct X11Connection *xconn = container_of(plug, struct X11Connection, plug);
 
     if (error_msg) {
         /*
@@ -646,9 +645,9 @@ static void x11_closing(Plug plug, const char *error_msg, int error_code,
     }
 }
 
-static void x11_receive(Plug plug, int urgent, char *data, int len)
+static void x11_receive(Plug *plug, int urgent, const char *data, size_t len)
 {
-    struct X11Connection *xconn = (struct X11Connection *) plug;
+    struct X11Connection *xconn = container_of(plug, struct X11Connection, plug);
 
     if (sshfwd_write(xconn->c, data, len) > 0) {
 	xconn->throttled = 1;
@@ -657,9 +656,9 @@ static void x11_receive(Plug plug, int urgent, char *data, int len)
     }
 }
 
-static void x11_sent(Plug plug, int bufsize)
+static void x11_sent(Plug *plug, size_t bufsize)
 {
-    struct X11Connection *xconn = (struct X11Connection *) plug;
+    struct X11Connection *xconn = container_of(plug, struct X11Connection, plug);
 
     sshfwd_unthrottle(xconn->c, bufsize);
 }
@@ -704,7 +703,7 @@ struct X11Connection *x11_init(tree234 *authtree, void *c,
      * Open socket.
      */
     xconn = snew(struct X11Connection);
-    xconn->fn = &X11Connection_plugvt;
+    xconn->plug.vt = &X11Connection_plugvt;
     xconn->auth_protocol = NULL;
     xconn->authtree = authtree;
     xconn->verified = 0;
@@ -915,7 +914,7 @@ int x11_send(struct X11Connection *xconn, char *data, int len)
         xconn->disp = auth_matched->disp;
         xconn->s = new_connection(sk_addr_dup(xconn->disp->addr),
                                   xconn->disp->realhost, xconn->disp->port, 
-                                  0, 1, 0, 0, (Plug) xconn,
+                                  0, 1, 0, 0, &xconn->plug,
                                   sshfwd_get_conf(xconn->c));
         if ((err = sk_socket_error(xconn->s)) != NULL) {
             char *err_message = dupprintf("unable to connect to"

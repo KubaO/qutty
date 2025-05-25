@@ -361,7 +361,8 @@ void GuiTerminalWindow::readyRead() {
   char buf[20480];
   int len = qtsock->read(buf, sizeof(buf));
   noise_ultralight(len);
-  (*as->plug)->receive(as->plug, 0, buf, len);
+
+  plug_receive(as->plug, 0, buf, len);
 
   if (qtsock->bytesAvailable() > 0) readyRead();
 }
@@ -875,13 +876,13 @@ void GuiTerminalWindow::detachTmuxControllerMode() {
 void GuiTerminalWindow::sockError(QAbstractSocket::SocketError socketError) {
   char errStr[256];
   qstring_to_char(errStr, as->qtsock->errorString(), sizeof(errStr));
-  (*as->plug)->closing(as->plug, errStr, socketError, 0);
+  plug_closing(as->plug, errStr, socketError, 0);
 }
 
 void GuiTerminalWindow::sockDisconnected() {
   char errStr[256];
   qstring_to_char(errStr, as->qtsock->errorString(), sizeof(errStr));
-  (*as->plug)->closing(as->plug, errStr, as->qtsock->error(), 0);
+  plug_closing(as->plug, errStr, as->qtsock->error(), 0);
 }
 
 void GuiTerminalWindow::closeTerminal() {

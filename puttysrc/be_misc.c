@@ -59,7 +59,7 @@ void backend_socket_log(void *frontend, int type, SockAddr *addr, int port,
     }
 }
 
-void log_proxy_stderr(Plug plug, bufchain *buf, const void *vdata, int len)
+void log_proxy_stderr(Plug *plug, bufchain *buf, const void *vdata, int len)
 {
     const char *data = (const char *)vdata;
     int pos = 0;
