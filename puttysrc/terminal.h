@@ -93,6 +93,7 @@ struct terminal_tag {
     termchar basic_erase_char, erase_char;
 
     bufchain inbuf;		       /* terminal input buffer */
+
     pos curs;			       /* cursor */
     pos savecurs;		       /* saved cursor position */
     int marg_t, marg_b;		       /* scroll margins */
@@ -220,8 +221,7 @@ struct terminal_tag {
     wchar_t *paste_buffer;
     int paste_len, paste_pos;
 
-    void (*resize_fn)(Backend *, int, int);
-    Backend *resize_ctx;
+    Backend *backend;
 
     Ldisc *ldisc;
 

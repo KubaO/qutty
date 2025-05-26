@@ -477,7 +477,7 @@ struct Backend {
     const BackendVtable *vt;
 };
 struct BackendVtable {
-    const char *(*init) (void *frontend, Backend **backend_out,
+    const char *(*init) (Seat *seat, Backend **backend_out,
                          LogContext *logctx, Conf *conf,
                          const char *host, int port,
                          char **realhost, bool nodelay, bool keepalive);
@@ -514,9 +514,9 @@ struct BackendVtable {
 };
 
 static inline const char *backend_init(
-    const BackendVtable *vt, void *frontend, Backend **out, LogContext *logctx,
+    const BackendVtable *vt, Seat *seat, Backend **out, LogContext *logctx,
     Conf *conf, const char *host, int port, char **rhost, bool nd, bool ka)
-{ return vt->init(frontend, out, logctx, conf, host, port, rhost, nd, ka); }
+{ return vt->init(seat, out, logctx, conf, host, port, rhost, nd, ka); }
 static inline void backend_free(Backend *be)
 { be->vt->free(be); }
 static inline void backend_reconfig(Backend *be, Conf *conf)
@@ -662,58 +662,357 @@ void prompt_ensure_result_size(prompt_t *pr, int len);
 /* Burn the evidence. (Assumes _all_ strings want free()ing.) */
 void free_prompts(prompts_t *p);
 
-/*
- * Exports from the front end.
- */
-void connection_fatal(void *frontend, const char *, ...);
-void nonfatal(const char *, ...);
-void fatalbox(const char *, ...);
-void modalfatalbox(const char *, ...);
-#ifdef macintosh
-#pragma noreturn(fatalbox)
-#pragma noreturn(modalfatalbox)
-#endif
-void frontend_keypress(void *frontend);
-void frontend_echoedit_update(void *frontend, int echo, int edit);
-/* It's the backend's responsibility to invoke this at the start of a
- * connection, if necessary; it can also invoke it later if the set of
- * special commands changes. It does not need to invoke it at session
- * shutdown. */
-void update_specials_menu(void *frontend);
-int from_backend(void *frontend, int is_stderr, const char *data, int len);
-int from_backend_untrusted(void *frontend, const char *data, int len);
-/* Called when the back end wants to indicate that EOF has arrived on
- * the server-to-client stream. Returns FALSE to indicate that we
- * intend to keep the session open in the other direction, or TRUE to
- * indicate that if they're closing so are we. */
-int from_backend_eof(void *frontend);
-void notify_remote_exit(void *frontend);
-/* Get a sensible value for a tty mode. NULL return = don't set.
- * Otherwise, returned value should be freed by caller. */
-char *get_ttymode(void *frontend, const char *mode);
-/*
- * >0 = `got all results, carry on'
- * 0  = `user cancelled' (FIXME distinguish "give up entirely" and "next auth"?)
- * <0 = `please call back later with more in/inlen'
- */
-#ifdef IS_QUTTY
-int get_userpass_input_v2(void *frontend, prompts_t *p, const unsigned char *in, int inlen);
-#define get_userpass_input(p, in, inlen) get_userpass_input_v2(ssh->frontend, p, in, inlen)
-#else
-int get_userpass_input(prompts_t *p, const unsigned char *in, int inlen);
-#endif
-#define OPTIMISE_IS_SCROLL 1
-
-/* Hint from backend to frontend about time-consuming operations.
- * Initial state is assumed to be BUSY_NOT. */
-enum {
+/* Hint from backend to frontend about time-consuming operations, used
+ * by seat_set_busy_status. Initial state is assumed to be
+ * BUSY_NOT. */
+typedef enum BusyStatus {
     BUSY_NOT,	    /* Not busy, all user interaction OK */
-    BUSY_WAITING,   /* Waiting for something; local event loops still running
-		       so some local interaction (e.g. menus) OK, but network
-		       stuff is suspended */
-    BUSY_CPU	    /* Locally busy (e.g. crypto); user interaction suspended */
+    BUSY_WAITING,   /* Waiting for something; local event loops still
+		       running so some local interaction (e.g. menus)
+		       OK, but network stuff is suspended */
+    BUSY_CPU	    /* Locally busy (e.g. crypto); user interaction
+                     * suspended */
+} BusyStatus;
+
+typedef enum SeatInteractionContext {
+    SIC_BANNER, SIC_KI_PROMPTS
+} SeatInteractionContext;
+
+/*
+ * Data type 'Seat', which is an API intended to contain essentially
+ * everything that a back end might need to talk to its client for:
+ * session output, password prompts, SSH warnings about host keys and
+ * weak cryptography, notifications of events like the remote process
+ * exiting or the GUI specials menu needing an update.
+ */
+struct Seat {
+    const struct SeatVtable *vt;
 };
-void set_busy_status(void *frontend, int status);
+struct SeatVtable {
+    /*
+     * Provide output from the remote session. 'is_stderr' indicates
+     * that the output should be sent to a separate error message
+     * channel, if the seat has one. But combining both channels into
+     * one is OK too; that's what terminal-window based seats do.
+     *
+     * The return value is the current size of the output backlog.
+     */
+    size_t (*output)(Seat *seat, bool is_stderr, const void *data, size_t len);
+
+    /*
+     * Called when the back end wants to indicate that EOF has arrived
+     * on the server-to-client stream. Returns false to indicate that
+     * we intend to keep the session open in the other direction, or
+     * true to indicate that if they're closing so are we.
+     */
+    bool (*eof)(Seat *seat);
+
+    /*
+     * Try to get answers from a set of interactive login prompts. The
+     * prompts are provided in 'p'; the bufchain 'input' holds the
+     * data currently outstanding in the session's normal standard-
+     * input channel. Seats may implement this function by consuming
+     * data from 'input' (e.g. password prompts in GUI PuTTY,
+     * displayed in the same terminal as the subsequent session), or
+     * by doing something entirely different (e.g. directly
+     * interacting with standard I/O, or putting up a dialog box).
+     *
+     * A positive return value means that all prompts have had answers
+     * filled in. A zero return means that the user performed a
+     * deliberate 'cancel' UI action. A negative return means that no
+     * answer can be given yet but please try again later.
+     *
+     * (FIXME: it would be nice to distinguish two classes of cancel
+     * action, so the user could specify 'I want to abandon this
+     * entire attempt to start a session' or the milder 'I want to
+     * abandon this particular form of authentication and fall back to
+     * a different one' - e.g. if you turn out not to be able to
+     * remember your private key passphrase then perhaps you'd rather
+     * fall back to password auth rather than aborting the whole
+     * session.)
+     *
+     * (Also FIXME: currently, backends' only response to the 'try
+     * again later' is to try again when more input data becomes
+     * available, because they assume that a seat is returning that
+     * value because it's consuming keyboard input. But a seat that
+     * handled this function by putting up a dialog box might want to
+     * put it up non-modally, and therefore would want to proactively
+     * notify the backend to retry once the dialog went away. So if I
+     * ever do want to move password prompts into a dialog box, I'll
+     * want a backend method for sending that notification.)
+     */
+    int (*get_userpass_input)(Seat *seat, prompts_t *p, const unsigned char *in, int inlen);
+
+    /*
+     * Notify the seat that the process running at the other end of
+     * the connection has finished.
+     */
+    void (*notify_remote_exit)(Seat *seat);
+
+    /*
+     * Notify the seat that the connection has suffered a fatal error.
+     */
+    void (*connection_fatal)(Seat *seat, const char *message);
+
+    /*
+     * Notify the seat that the list of special commands available
+     * from backend_get_specials() has changed, so that it might want
+     * to call that function to repopulate its menu.
+     *
+     * Seats are not expected to call backend_get_specials()
+     * proactively; they may start by assuming that the backend
+     * provides no special commands at all, so if the backend does
+     * provide any, then it should use this notification at startup
+     * time. Of course it can also invoke it later if the set of
+     * special commands changes.
+     *
+     * It does not need to invoke it at session shutdown.
+     */
+    void (*update_specials_menu)(Seat *seat);
+
+    /*
+     * Get the seat's preferred value for an SSH terminal mode
+     * setting. Returning NULL indicates no preference (i.e. the SSH
+     * connection will not attempt to set the mode at all).
+     *
+     * The returned value is dynamically allocated, and the caller
+     * should free it.
+     */
+    char *(*get_ttymode)(Seat *seat, const char *mode);
+
+    /*
+     * Tell the seat whether the backend is currently doing anything
+     * CPU-intensive (typically a cryptographic key exchange). See
+     * BusyStatus enumeration above.
+     */
+    void (*set_busy_status)(Seat *seat, BusyStatus status);
+
+    /*
+     * Ask the seat whether a given SSH host key should be accepted.
+     * This may return immediately after checking saved configuration
+     * or command-line options, or it may have to present a prompt to
+     * the user and return asynchronously later.
+     *
+     * Return values:
+     *
+     *  - +1 means `key was OK' (either already known or the user just
+     *    approved it) `so continue with the connection'
+     *
+     *  - 0 means `key was not OK, abandon the connection'
+     *
+     *  - -1 means `I've initiated enquiries, please wait to be called
+     *    back via the provided function with a result that's either 0
+     *    or +1'.
+     */
+    int (*verify_ssh_host_key)(
+        Seat *seat, const char *host, int port,
+        const char *keytype, char *keystr, char *key_fingerprint,
+        void (*callback)(void *ctx, int result), void *ctx);
+
+    /*
+     * Check with the seat whether it's OK to use a cryptographic
+     * primitive from below the 'warn below this line' threshold in
+     * the input Conf. Return values are the same as
+     * verify_ssh_host_key above.
+     */
+    int (*confirm_weak_crypto_primitive)(
+        Seat *seat, const char *algtype, const char *algname,
+        void (*callback)(void *ctx, int result), void *ctx);
+
+    /*
+     * Variant form of confirm_weak_crypto_primitive, which prints a
+     * slightly different message but otherwise has the same
+     * semantics.
+     *
+     * This form is used in the case where we're using a host key
+     * below the warning threshold because that's the best one we have
+     * cached, but at least one host key algorithm *above* the
+     * threshold is available that we don't have cached. 'betteralgs'
+     * lists the better algorithm(s).
+     */
+    int (*confirm_weak_cached_hostkey)(
+        Seat *seat, const char *algname, const char *betteralgs,
+        void (*callback)(void *ctx, int result), void *ctx);
+
+    /*
+     * Indicates whether the seat is expecting to interact with the
+     * user in the UTF-8 character set. (Affects e.g. visual erase
+     * handling in local line editing.)
+     */
+    bool (*is_utf8)(Seat *seat);
+
+    /*
+     * Notify the seat that the back end, and/or the ldisc between
+     * them, have changed their idea of whether they currently want
+     * local echo and/or local line editing enabled.
+     */
+    void (*echoedit_update)(Seat *seat, bool echoing, bool editing);
+
+    /*
+     * Return the local X display string relevant to a seat, or NULL
+     * if there isn't one or if the concept is meaningless.
+     */
+    const char *(*get_x_display)(Seat *seat);
+
+    /*
+     * Return the X11 id of the X terminal window relevant to a seat,
+     * by returning true and filling in the output pointer. Return
+     * false if there isn't one or if the concept is meaningless.
+     */
+    bool (*get_windowid)(Seat *seat, long *id_out);
+
+    /*
+     * Return the size of the terminal window in pixels. If the
+     * concept is meaningless or the information is unavailable,
+     * return false; otherwise fill in the output pointers and return
+     * true.
+     */
+    bool (*get_window_pixel_size)(Seat *seat, int *width, int *height);
+
+    /*
+     * Return a StripCtrlChars appropriate for sanitising untrusted
+     * terminal data (e.g. SSH banners, prompts) being sent to the
+     * user of this seat. May return NULL if no sanitisation is
+     * needed.
+     */
+    StripCtrlChars *(*stripctrl_new)(
+        Seat *seat, BinarySink *bs_out, SeatInteractionContext sic);
+
+    /*
+     * Set the seat's current idea of where output is coming from.
+     * True means that output is being generated by our own code base
+     * (and hence, can be trusted if it's asking you for secrets such
+     * as your passphrase); false means output is coming from the
+     * server.
+     *
+     * Returns true if the seat has a way to indicate this
+     * distinction. Returns false if not, in which case the backend
+     * should use a fallback defence against spoofing of PuTTY's local
+     * prompts by malicious servers.
+     */
+    bool (*set_trust_status)(Seat *seat, bool trusted);
+};
+
+static inline size_t seat_output(
+    Seat *seat, bool err, const void *data, size_t len)
+{ return seat->vt->output(seat, err, data, len); }
+static inline bool seat_eof(Seat *seat)
+{ return seat->vt->eof(seat); }
+static inline int seat_get_userpass_input(
+    Seat *seat, prompts_t *p, const unsigned char *in, int inlen)
+{ return seat->vt->get_userpass_input(seat, p, in, inlen); }
+static inline void seat_notify_remote_exit(Seat *seat)
+{ seat->vt->notify_remote_exit(seat); }
+static inline void seat_update_specials_menu(Seat *seat)
+{ seat->vt->update_specials_menu(seat); }
+static inline char *seat_get_ttymode(Seat *seat, const char *mode)
+{ return seat->vt->get_ttymode(seat, mode); }
+static inline void seat_set_busy_status(Seat *seat, BusyStatus status)
+{ seat->vt->set_busy_status(seat, status); }
+static inline int seat_verify_ssh_host_key(
+    Seat *seat, const char *h, int p, const char *ktyp, char *kstr,
+    char *fp, void (*cb)(void *ctx, int result), void *ctx)
+{ return seat->vt->verify_ssh_host_key(seat, h, p, ktyp, kstr, fp, cb, ctx); }
+static inline int seat_confirm_weak_crypto_primitive(
+    Seat *seat, const char *atyp, const char *aname,
+    void (*cb)(void *ctx, int result), void *ctx)
+{ return seat->vt->confirm_weak_crypto_primitive(seat, atyp, aname, cb, ctx); }
+static inline int seat_confirm_weak_cached_hostkey(
+    Seat *seat, const char *aname, const char *better,
+    void (*cb)(void *ctx, int result), void *ctx)
+{ return seat->vt->confirm_weak_cached_hostkey(seat, aname, better, cb, ctx); }
+static inline bool seat_is_utf8(Seat *seat)
+{ return seat->vt->is_utf8(seat); }
+static inline void seat_echoedit_update(Seat *seat, bool ec, bool ed)
+{ seat->vt->echoedit_update(seat, ec, ed); }
+static inline const char *seat_get_x_display(Seat *seat)
+{ return seat->vt->get_x_display(seat); }
+static inline bool seat_get_windowid(Seat *seat, long *id_out)
+{ return seat->vt->get_windowid(seat, id_out); }
+static inline bool seat_get_window_pixel_size(Seat *seat, int *w, int *h)
+{ return seat->vt->get_window_pixel_size(seat, w, h); }
+static inline StripCtrlChars *seat_stripctrl_new(
+    Seat *seat, BinarySink *bs, SeatInteractionContext sic)
+{ return seat->vt->stripctrl_new(seat, bs, sic); }
+static inline bool seat_set_trust_status(Seat *seat, bool trusted)
+{ return  seat->vt->set_trust_status(seat, trusted); }
+
+/* Unlike the seat's actual method, the public entry point
+ * seat_connection_fatal is a wrapper function with a printf-like API,
+ * defined in misc.c. */
+void seat_connection_fatal(Seat *seat, const char *fmt, ...);
+
+/* Handy aliases for seat_output which set is_stderr to a fixed value. */
+static inline size_t seat_stdout(Seat *seat, const void *data, size_t len)
+{ return seat_output(seat, false, data, len); }
+static inline size_t seat_stdout_pl(Seat *seat, ptrlen data)
+{ return seat_output(seat, false, data.ptr, data.len); }
+static inline size_t seat_stderr(Seat *seat, const void *data, size_t len)
+{ return seat_output(seat, true, data, len); }
+static inline size_t seat_stderr_pl(Seat *seat, ptrlen data)
+{ return seat_output(seat, true, data.ptr, data.len); }
+
+/*
+ * Stub methods for seat implementations that want to use the obvious
+ * null handling for a given method.
+ *
+ * These are generally obvious, except for is_utf8, where you might
+ * plausibly want to return either fixed answer 'no' or 'yes'.
+ */
+size_t nullseat_output(
+    Seat *seat, bool is_stderr, const void *data, size_t len);
+bool nullseat_eof(Seat *seat);
+int nullseat_get_userpass_input(Seat *seat, prompts_t *p, bufchain *input);
+void nullseat_notify_remote_exit(Seat *seat);
+void nullseat_connection_fatal(Seat *seat, const char *message);
+void nullseat_update_specials_menu(Seat *seat);
+char *nullseat_get_ttymode(Seat *seat, const char *mode);
+void nullseat_set_busy_status(Seat *seat, BusyStatus status);
+int nullseat_verify_ssh_host_key(
+    Seat *seat, const char *host, int port,
+    const char *keytype, char *keystr, char *key_fingerprint,
+    void (*callback)(void *ctx, int result), void *ctx);
+int nullseat_confirm_weak_crypto_primitive(
+    Seat *seat, const char *algtype, const char *algname,
+    void (*callback)(void *ctx, int result), void *ctx);
+int nullseat_confirm_weak_cached_hostkey(
+    Seat *seat, const char *algname, const char *betteralgs,
+    void (*callback)(void *ctx, int result), void *ctx);
+bool nullseat_is_never_utf8(Seat *seat);
+bool nullseat_is_always_utf8(Seat *seat);
+void nullseat_echoedit_update(Seat *seat, bool echoing, bool editing);
+const char *nullseat_get_x_display(Seat *seat);
+bool nullseat_get_windowid(Seat *seat, long *id_out);
+bool nullseat_get_window_pixel_size(Seat *seat, int *width, int *height);
+StripCtrlChars *nullseat_stripctrl_new(
+        Seat *seat, BinarySink *bs_out, SeatInteractionContext sic);
+bool nullseat_set_trust_status(Seat *seat, bool trusted);
+bool nullseat_set_trust_status_vacuously(Seat *seat, bool trusted);
+
+/*
+ * Seat functions provided by the platform's console-application
+ * support module (wincons.c, uxcons.c).
+ */
+
+void console_connection_fatal(Seat *seat, const char *message);
+int console_verify_ssh_host_key(
+    Seat *seat, const char *host, int port,
+    const char *keytype, char *keystr, char *key_fingerprint,
+    void (*callback)(void *ctx, int result), void *ctx);
+int console_confirm_weak_crypto_primitive(
+    Seat *seat, const char *algtype, const char *algname,
+    void (*callback)(void *ctx, int result), void *ctx);
+int console_confirm_weak_cached_hostkey(
+    Seat *seat, const char *algname, const char *betteralgs,
+    void (*callback)(void *ctx, int result), void *ctx);
+StripCtrlChars *console_stripctrl_new(
+        Seat *seat, BinarySink *bs_out, SeatInteractionContext sic);
+bool console_set_trust_status(Seat *seat, bool trusted);
+
+/*
+ * Other centralised seat functions.
+ */
+int filexfer_get_userpass_input(Seat *seat, prompts_t *p, bufchain *input);
 
 /*
  * Data type 'TermWin', which is a vtable encapsulating all the
@@ -852,6 +1151,13 @@ static inline const char *win_get_title(TermWin *win, bool icon)
 { return win->vt->get_title(win, icon); }
 static inline bool win_is_utf8(TermWin *win)
 { return win->vt->is_utf8(win); }
+
+/*
+ * Global functions not specific to a connection instance.
+ */
+void nonfatal(const char *, ...);
+NORETURN void modalfatalbox(const char *, ...);
+NORETURN void cleanup_exit(int);
 
 /*
  * Exports from conf.c, and a big enum (via parametric macro) of
@@ -1226,9 +1532,8 @@ void term_request_paste(Terminal *);
 void term_seen_key_event(Terminal *); 
 int term_data(Terminal *, int is_stderr, const char *data, int len);
 int term_data_untrusted(Terminal *, const char *data, int len);
-void term_provide_resize_fn(Terminal *term, void (*resize_fn)(Backend *, int, int),
-                            Backend *resize_ctx);
-void term_provide_logctx(Terminal *term, void *logctx);
+void term_provide_backend(Terminal *term, Backend *backend);
+void term_provide_logctx(Terminal *term, LogContext *logctx);
 void term_set_focus(Terminal *term, int has_focus);
 char *term_get_ttymode(Terminal *term, const char *mode);
 int term_get_userpass_input(Terminal *term, prompts_t *p,
@@ -1355,7 +1660,7 @@ extern const struct BackendVtable ssh_backend;
 /*
  * Exports from ldisc.c.
  */
-Ldisc *ldisc_create(Conf *, Terminal *, Backend *, void *);
+Ldisc *ldisc_create(Conf *, Terminal *, Backend *, Seat *);
 void ldisc_configure(Ldisc *, Conf *);
 void ldisc_free(Ldisc *);
 void ldisc_send(Ldisc *, const void *buf, int len, bool interactive);
@@ -1408,6 +1713,7 @@ void ser_setup_config_box(struct controlbox *b, int midsession,
  * Exports from version.c.
  */
 extern const char ver[];
+extern const char commitid[];
 
 /*
  * Exports from unicode.c.
@@ -1488,37 +1794,10 @@ int wc_unescape(char *output, const char *wildcard);
  */
 void pgp_fingerprints(void);
 /*
- * verify_ssh_host_key() can return one of three values:
- * 
- *  - +1 means `key was OK' (either already known or the user just
- *    approved it) `so continue with the connection'
- * 
- *  - 0 means `key was not OK, abandon the connection'
- * 
- *  - -1 means `I've initiated enquiries, please wait to be called
- *    back via the provided function with a result that's either 0
- *    or +1'.
- */
-int verify_ssh_host_key(void *frontend, char *host, int port,
-                        const char *keytype, char *keystr, char *fingerprint,
-                        void (*callback)(void *ctx, int result), void *ctx);
-/*
  * have_ssh_host_key() just returns true if a key of that type is
  * already cached and false otherwise.
  */
 int have_ssh_host_key(const char *host, int port, const char *keytype);
-/*
- * askalg and askhk have the same set of return values as
- * verify_ssh_host_key.
- *
- * (askhk is used in the case where we're using a host key below the
- * warning threshold because that's all we have cached, but at least
- * one acceptable algorithm is available that we don't have cached.)
- */
-int askalg(void *frontend, const char *algtype, const char *algname,
-	   void (*callback)(void *ctx, int result), void *ctx);
-int askhk(void *frontend, const char *algname, const char *betteralgs,
-          void (*callback)(void *ctx, int result), void *ctx);
 
 /*
  * Exports from console frontends (wincons.c, uxcons.c)
@@ -1734,18 +2013,40 @@ unsigned long timing_last_clock(void);
  * instead request notifications when a callback is available, so that
  * it knows to ask its delegate event loop to do the same thing. Also,
  * if a front end needs to know whether a callback is pending without
- * actually running it (e.g. so as to put a zero timeout on a select()
+ * actually running it (e.g. so as to put a zero timeout on a poll()
  * call) then it can call toplevel_callback_pending(), which will
  * return true if at least one callback is in the queue.
+ *
+ * run_toplevel_callbacks() returns true if it ran any actual code.
+ * This can be used as a means of speculatively terminating a poll
+ * loop, as in PSFTP, for example - if a callback has run then perhaps
+ * it might have done whatever the loop's caller was waiting for.
  */
 typedef void (*toplevel_callback_fn_t)(void *ctx);
 void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx);
-void run_toplevel_callbacks(void);
-int toplevel_callback_pending(void);
+bool run_toplevel_callbacks(void);
+bool toplevel_callback_pending(void);
+void delete_callbacks_for_context(void *ctx);
 
-typedef void (*toplevel_callback_notify_fn_t)(void *frontend);
+/*
+ * Another facility in callback.c deals with 'idempotent' callbacks,
+ * defined as those which never need to be scheduled again if they are
+ * already scheduled and have not yet run. (An example would be one
+ * which, when called, empties a queue of data completely: when data
+ * is added to the queue, you must ensure a run of the queue-consuming
+ * function has been scheduled, but if one is already pending, you
+ * don't need to schedule a second one.)
+ */
+struct IdempotentCallback {
+    toplevel_callback_fn_t fn;
+    void *ctx;
+    bool queued;
+};
+void queue_idempotent_callback(struct IdempotentCallback *ic);
+
+typedef void (*toplevel_callback_notify_fn_t)(void *ctx);
 void request_callback_notifications(toplevel_callback_notify_fn_t notify,
-                                    void *frontend);
+                                    void *ctx);
 
 /*
  * Define no-op macros for the jump list functions, on platforms that

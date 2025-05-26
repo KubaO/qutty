@@ -173,7 +173,7 @@ struct Telnet {
     Socket *s;
     bool closed_on_socket_error;
 
-    void *frontend;
+    Seat *seat;
     LogContext *logctx;
     Ldisc *ldisc;
     int term_width, term_height;
@@ -209,7 +209,7 @@ struct Telnet {
 
 static void c_write(Telnet *telnet, const void *buf, size_t len)
 {
-    size_t backlog = from_backend(telnet->frontend, 0, buf, len);
+    size_t backlog = seat_stdout(telnet->seat, buf, len);
     sk_set_frozen(telnet->s, backlog > TELNET_MAX_BACKLOG);
 }
 
@@ -628,7 +628,7 @@ static void telnet_log(Plug *plug, int type, SockAddr *addr, int port,
 		       const char *error_msg, int error_code)
 {
     Telnet *telnet = container_of(plug, Telnet, plug);
-    backend_socket_log(telnet->frontend, telnet->logctx, type, addr, port,
+    backend_socket_log(telnet->seat, telnet->logctx, type, addr, port,
                        error_msg, error_code, telnet->conf,
                        telnet->session_started);
 }
@@ -649,11 +649,11 @@ static void telnet_closing(Plug *plug, const char *error_msg, int error_code,
         telnet->s = NULL;
         if (error_msg)
             telnet->closed_on_socket_error = true;
-	notify_remote_exit(telnet->frontend);
+	seat_notify_remote_exit(telnet->seat);
     }
     if (error_msg) {
-	logevent(telnet->logctx, error_msg);
-	connection_fatal(telnet->frontend, "%s", error_msg);
+        logevent(telnet->logctx, error_msg);
+	seat_connection_fatal(telnet->seat, "%s", error_msg);
     }
     /* Otherwise, the remote side closed the connection normally. */
 }
@@ -689,7 +689,7 @@ static const PlugVtable Telnet_plugvt = {
  * Also places the canonical host name into `realhost'. It must be
  * freed by the caller.
  */
-static const char *telnet_init(void *frontend, Backend **backend_handle,
+static const char *telnet_init(Seat *seat, Backend **backend_handle,
                                LogContext *logctx, Conf *conf,
                                const char *host, int port,
 			       char **realhost, bool nodelay, bool keepalive)
@@ -711,7 +711,7 @@ static const char *telnet_init(void *frontend, Backend **backend_handle,
     telnet->activated = false;
     telnet->sb_buf = NULL;
     telnet->sb_size = 0;
-    telnet->frontend = frontend;
+    telnet->seat = seat;
     telnet->logctx = logctx;
     telnet->term_width = conf_get_int(telnet->conf, CONF_width);
     telnet->term_height = conf_get_int(telnet->conf, CONF_height);
@@ -772,7 +772,7 @@ static const char *telnet_init(void *frontend, Backend **backend_handle,
     /*
      * We can send special commands from the start.
      */
-    update_specials_menu(telnet->frontend);
+    seat_update_specials_menu(telnet->seat);
 
     /*
      * loghost overrides realhost, if specified.

@@ -24,7 +24,7 @@
 
 static void c_write(Ldisc *ldisc, const void *buf, int len)
 {
-    from_backend(ldisc->frontend, 0, buf, len);
+    seat_stdout(ldisc->seat, buf, len);
 }
 
 static int plen(Ldisc *ldisc, unsigned char c)
@@ -77,7 +77,7 @@ static void bsb(Ldisc *ldisc, int n)
 #define CTRL(x) (x^'@')
 #define KCTRL(x) ((x^'@') | 0x100)
 
-Ldisc *ldisc_create(Conf *conf, Terminal *term, Backend *backend, void *frontend)
+Ldisc *ldisc_create(Conf *conf, Terminal *term, Backend *backend, Seat *seat)
 {
     Ldisc *ldisc = snew(Ldisc);
 
@@ -88,7 +88,7 @@ Ldisc *ldisc_create(Conf *conf, Terminal *term, Backend *backend, void *frontend
 
     ldisc->backend = backend;
     ldisc->term = term;
-    ldisc->frontend = frontend;
+    ldisc->seat = seat;
 
     ldisc_configure(ldisc, conf);
 
@@ -123,7 +123,7 @@ void ldisc_free(Ldisc *ldisc)
 
 void ldisc_echoedit_update(Ldisc *ldisc)
 {
-    frontend_echoedit_update(ldisc->frontend, ECHOING, EDITING);
+    seat_echoedit_update(ldisc->seat, ECHOING, EDITING);
 }
 
 void ldisc_send(Ldisc *ldisc, const void *vbuf, int len, bool interactive)
@@ -133,13 +133,6 @@ void ldisc_send(Ldisc *ldisc, const void *vbuf, int len, bool interactive)
 
     assert(ldisc->term);
     assert(len);
-
-    /*
-     * Notify the front end that something was pressed, in case
-     * it's depending on finding out (e.g. keypress termination for
-     * Close On Exit). 
-     */
-    frontend_keypress(ldisc->frontend);
 
     if (interactive) {
         /*
@@ -240,7 +233,7 @@ void ldisc_send(Ldisc *ldisc, const void *vbuf, int len, bool interactive)
 		}
 		break;
 	      case CTRL('V'):	       /* quote next char */
-		ldisc->quotenext = TRUE;
+		ldisc->quotenext = true;
 		break;
 	      case CTRL('D'):	       /* logout or send */
 		if (ldisc->buflen == 0) {

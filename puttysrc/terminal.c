@@ -1013,6 +1013,26 @@ static int sblines(Terminal *term)
     return sblines;
 }
 
+static void null_line_error(Terminal *term, int y, int lineno,
+                            tree234 *whichtree, int treeindex,
+                            const char *varname)
+{
+    modalfatalbox("%s==NULL in terminal.c\n"
+                  "lineno=%d y=%d w=%d h=%d\n"
+                  "count(scrollback=%p)=%d\n"
+                  "count(screen=%p)=%d\n"
+                  "count(alt=%p)=%d alt_sblines=%d\n"
+                  "whichtree=%p treeindex=%d\n"
+                  "commitid=%s\n\n"
+                  "Please contact <putty@projects.tartarus.org> "
+                  "and pass on the above information.",
+                  varname, lineno, y, term->cols, term->rows,
+                  term->scrollback, count234(term->scrollback),
+                  term->screen, count234(term->screen),
+                  term->alt_screen, count234(term->alt_screen),
+                  term->alt_sblines, whichtree, treeindex, commitid);
+}
+
 /*
  * Retrieve a line of the screen or of the scrollback, according to
  * whether the y coordinate is non-negative or negative
@@ -1053,21 +1073,8 @@ static termline *lineptr(Terminal *term, int y, int lineno, int screen)
     }
 
     /* We assume that we don't screw up and retrieve something out of range. */
-    if (line == NULL) {
-	fatalbox("line==NULL in terminal.c\n"
-		 "lineno=%d y=%d w=%d h=%d\n"
-		 "count(scrollback=%p)=%d\n"
-		 "count(screen=%p)=%d\n"
-		 "count(alt=%p)=%d alt_sblines=%d\n"
-		 "whichtree=%p treeindex=%d\n\n"
-		 "Please contact <putty@projects.tartarus.org> "
-		 "and pass on the above information.",
-		 lineno, y, term->cols, term->rows,
-		 term->scrollback, count234(term->scrollback),
-		 term->screen, count234(term->screen),
-		 term->alt_screen, count234(term->alt_screen), term->alt_sblines,
-		 whichtree, treeindex);
-    }
+    if (line == NULL)
+        null_line_error(term, y, lineno, whichtree, treeindex, "line");
     assert(line != NULL);
 
     /*
@@ -1633,15 +1640,11 @@ Terminal *term_init(Conf *myconf, struct unicode_data *ucsdata, TermWin *win)
     term->rows = term->cols = -1;
     power_on(term, TRUE);
     term->beephead = term->beeptail = NULL;
-#ifdef OPTIMISE_SCROLL
-    term->scrollhead = term->scrolltail = NULL;
-#endif /* OPTIMISE_SCROLL */
     term->nbeeps = 0;
     term->lastbeep = FALSE;
     term->beep_overloaded = FALSE;
     term->attr_mask = 0xffffffff;
-    term->resize_fn = NULL;
-    term->resize_ctx = NULL;
+    term->backend = NULL;
     term->in_term_out = FALSE;
     term->ltemp = NULL;
     term->ltemp_size = 0;
@@ -1917,22 +1920,18 @@ void term_size(Terminal *term, int newrows, int newcols, int newsavelines)
 
     update_sbar(term);
     term_update(term);
-    if (term->resize_fn)
-	term->resize_fn(term->resize_ctx, term->cols, term->rows);
+    if (term->backend)
+        backend_size(term->backend, term->cols, term->rows);
 }
 
 /*
- * Hand a function and context pointer to the terminal which it can
- * use to notify a back end of resizes.
+ * Hand a backend to the terminal, so it can be notified of resizes.
  */
-void term_provide_resize_fn(Terminal *term,
-			    void (*resize_fn)(Backend *, int, int),
-			    Backend *resize_ctx)
+void term_provide_backend(Terminal *term, Backend *backend)
 {
-    term->resize_fn = resize_fn;
-    term->resize_ctx = resize_ctx;
-    if (resize_fn && term->cols > 0 && term->rows > 0)
-	resize_fn(resize_ctx, term->cols, term->rows);
+    term->backend = backend;
+    if (term->backend && term->cols > 0 && term->rows > 0)
+        backend_size(term->backend, term->cols, term->rows);
 }
 
 /* Find the bottom line on the screen that has any content.
@@ -5956,7 +5955,7 @@ static void term_paste_callback(void *vterm)
 void term_do_paste(Terminal *term, const wchar_t *data, int len)
 {
     if (data && len > 0) {
-        wchar_t *p, *q;
+        const wchar_t *p, *q;
 
 	term_seen_key_event(term);     /* pasted data counts */
 
@@ -6415,7 +6414,7 @@ int term_data_untrusted(Terminal *term, const char *data, int len)
     return 0; /* assumes that term_data() always returns 0 */
 }
 
-void term_provide_logctx(Terminal *term, void *logctx)
+void term_provide_logctx(Terminal *term, LogContext *logctx)
 {
     term->logctx = logctx;
 }

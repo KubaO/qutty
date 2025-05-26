@@ -37,12 +37,12 @@ void tmux_sent(Plug * /*plug*/, size_t /*bufsize*/) { qDebug() << __FUNCTION__; 
  *
  * Returns an error message, or NULL on success.
  */
-const char *tmux_client_init(void *frontend, Backend **backend_out, LogContext *logctx,
-                             Conf * /*cfg*/, const char * /*host*/, int port, char ** /*realhost*/,
+const char *tmux_client_init(Seat *seat, Backend **backend_out, LogContext *logctx, Conf * /*cfg*/,
+                             const char * /*host*/, int port, char ** /*realhost*/,
                              bool /*nodelay*/, bool /*keepalive*/) {
   static const struct PlugVtable vtable = {tmux_log, tmux_closing, tmux_receive, tmux_sent, NULL};
 
-  GuiTerminalWindow *termWnd = static_cast<GuiTerminalWindow *>(frontend);
+  GuiTerminalWindow *termWnd = container_of(seat, GuiTerminalWindow, seat);
   assert(termWnd->tmuxGateway());
 
   TmuxBackend *tb = new TmuxBackend();

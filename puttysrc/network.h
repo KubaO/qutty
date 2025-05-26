@@ -242,7 +242,7 @@ Socket *new_error_socket_fmt(Plug *plug, const char *fmt, ...);
 /*
  * Exports from be_misc.c.
  */
-void backend_socket_log(void *frontend, LogContext *logctx,
+void backend_socket_log(Seat *seat, LogContext *logctx,
                         int type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
                         bool session_started);

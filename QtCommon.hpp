@@ -66,5 +66,9 @@ void qstring_to_char(char *dst, const QString &src, int dstlen);
 
 class QTextCodec;
 QTextCodec *getTextCodec(int line_codepage);
+bool qtwin_is_utf8(TermWin *win);
+
+class GuiTerminalWindow;
+void qt_message_box(GuiTerminalWindow *frontend, const char *title, const char *fmt, ...);
 
 #endif  // QTCOMMON_H

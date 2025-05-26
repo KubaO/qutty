@@ -764,7 +764,7 @@ struct Ssh {
     void *exhash;
 
     Socket *s;
-    void *frontend;
+    Seat *seat;
     Conf *conf;
 
     Plug plug;
@@ -1001,7 +1001,7 @@ static void bomb_out(Ssh *ssh, char *text)
 {
     ssh_do_close(ssh, FALSE);
     logevent(text);
-    connection_fatal(ssh->frontend, "%s", text);
+    seat_connection_fatal(ssh->seat, "%s", text);
     sfree(text);
 }
 
@@ -1033,7 +1033,7 @@ static void parse_ttymodes(Ssh *ssh,
 	 *    mode.
 	 */
 	if (val[0] == 'A') {
-	    val = get_ttymode(ssh->frontend, mode->mode);
+	    val = seat_get_ttymode(ssh->seat, mode->mode);
 	    if (val) {
 		do_mode(data, mode, val);
 		sfree(val);
@@ -1189,7 +1189,7 @@ static void c_write(Ssh *ssh, const char *buf, int len)
     if (flags & FLAG_STDERR)
 	c_write_stderr(1, buf, len);
     else
-	from_backend(ssh->frontend, 1, buf, len);
+    seat_stderr(ssh->seat, buf, len);
 }
 
 static void c_write_untrusted(Ssh *ssh, const char *buf, int len)
@@ -1197,7 +1197,10 @@ static void c_write_untrusted(Ssh *ssh, const char *buf, int len)
     if (flags & FLAG_STDERR)
 	c_write_stderr(0, buf, len);
     else
-	from_backend_untrusted(ssh->frontend, buf, len);
+    seat_stderr(ssh->seat, buf, len);
+    // FIXME TODO
+    // This was a from_backend_untrusted call.
+    // THis code won't make it into 0.71, so it will fix itself naturally.
 }
 
 static void c_write_str(Ssh *ssh, const char *buf)
@@ -3206,7 +3209,7 @@ static int do_ssh_init(Ssh *ssh, unsigned char c)
     if (ssh->version == 2)
 	do_ssh2_transport(ssh, NULL, -1, NULL);
 
-    update_specials_menu(ssh->frontend);
+    seat_update_specials_menu(ssh->seat);
     ssh->state = SSH_STATE_BEFORE_SIZE;
     ssh->pinger = pinger_new(ssh->conf, &ssh->backend);
 
@@ -3312,7 +3315,7 @@ static int do_ssh_connection_init(Ssh *ssh, unsigned char c)
     ssh2_bare_connection_protocol_setup(ssh);
     ssh->s_rdpkt = ssh2_bare_connection_rdpkt;
 
-    update_specials_menu(ssh->frontend);
+    seat_update_specials_menu(ssh->seat);
     ssh->state = SSH_STATE_BEFORE_SIZE;
     ssh->pinger = pinger_new(ssh->conf, &ssh->backend);
 
@@ -3443,7 +3446,7 @@ static int ssh_do_close(Ssh *ssh, int notify_exit)
         sk_close(ssh->s);
         ssh->s = NULL;
         if (notify_exit)
-            notify_remote_exit(ssh->frontend);
+            seat_notify_remote_exit(ssh->seat);
         else
             ret = 1;
     }
@@ -3503,7 +3506,7 @@ static void ssh_socket_log(Plug *plug, int type, SockAddr *addr, int port,
      */
 
     if (!ssh->attempting_connshare)
-        backend_socket_log(ssh->frontend, ssh->logctx, type, addr, port,
+        backend_socket_log(ssh->seat, ssh->logctx, type, addr, port,
                            error_msg, error_code, ssh->conf,
                            ssh->session_started);
 }
@@ -3558,12 +3561,12 @@ static void ssh_closing(Plug *plug, const char *error_msg, int error_code,
 	ssh->exitcode = 0;
 
     if (need_notify)
-        notify_remote_exit(ssh->frontend);
+        seat_notify_remote_exit(ssh->seat);
 
     if (error_msg)
 	logevent(error_msg);
     if (!ssh->close_expected || !ssh->clean_exit)
-	connection_fatal(ssh->frontend, "%s", error_msg);
+	seat_connection_fatal(ssh->seat, "%s", error_msg);
 }
 
 static void ssh_receive(Plug *plug, int urgent, const char *data, size_t len)
@@ -3710,7 +3713,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
                                 &ssh->plug, ssh->conf);
         if ((err = sk_socket_error(ssh->s)) != NULL) {
             ssh->s = NULL;
-            notify_remote_exit(ssh->frontend);
+            seat_notify_remote_exit(ssh->seat);
             return err;
         }
     }
@@ -4185,10 +4188,10 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
             crStop(0);
         } else if (s->dlgret < 0) { /* none configured; use standard handling */
             ssh_set_frozen(ssh, 1);
-            s->dlgret = verify_ssh_host_key(ssh->frontend,
-                                            ssh->savedhost, ssh->savedport,
-                                            "rsa", keystr, fingerprint,
-                                            ssh_dialog_callback, ssh);
+            s->dlgret = seat_verify_ssh_host_key(ssh->seat,
+                                                 ssh->savedhost, ssh->savedport,
+                                                 "rsa", keystr, fingerprint,
+                                                 ssh_dialog_callback, ssh);
             sfree(keystr);
 #ifdef FUZZING
 	    s->dlgret = 1;
@@ -4277,7 +4280,7 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 	/* Warn about chosen cipher if necessary. */
 	if (warn) {
             ssh_set_frozen(ssh, 1);
-	    s->dlgret = askalg(ssh->frontend, "cipher", cipher_string,
+        s->dlgret = seat_confirm_weak_crypto_primitive(ssh->seat, "cipher", cipher_string,
 			       ssh_dialog_callback, ssh);
 	    if (s->dlgret < 0) {
 		do {
@@ -4365,11 +4368,11 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 	    s->cur_prompt->to_server = TRUE;
 	    s->cur_prompt->name = dupstr("SSH login name");
 	    add_prompt(s->cur_prompt, dupstr("login as: "), TRUE);
-	    ret = get_userpass_input(s->cur_prompt, NULL, 0);
+	    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
 	    while (ret < 0) {
 		ssh->send_ok = 1;
 		crWaitUntil(!pktin);
-		ret = get_userpass_input(s->cur_prompt, in, inlen);
+		ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
 		ssh->send_ok = 0;
 	    }
 	    if (!ret) {
@@ -4672,11 +4675,11 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 		    add_prompt(s->cur_prompt,
 			       dupprintf("Passphrase for key \"%.100s\": ",
 					 s->publickey_comment), FALSE);
-		    ret = get_userpass_input(s->cur_prompt, NULL, 0);
+		    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
 		    while (ret < 0) {
 			ssh->send_ok = 1;
 			crWaitUntil(!pktin);
-			ret = get_userpass_input(s->cur_prompt, in, inlen);
+			ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
 			ssh->send_ok = 0;
 		    }
 		    if (!ret) {
@@ -4892,11 +4895,11 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 	 */
 	{
 	    int ret; /* need not be kept over crReturn */
-	    ret = get_userpass_input(s->cur_prompt, NULL, 0);
+	    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
 	    while (ret < 0) {
 		ssh->send_ok = 1;
 		crWaitUntil(!pktin);
-		ret = get_userpass_input(s->cur_prompt, in, inlen);
+		ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
 		ssh->send_ok = 0;
 	    }
 	    if (!ret) {
@@ -5593,8 +5596,8 @@ static void ssh1_smsg_stdout_stderr_data(Ssh *ssh, struct Packet *pktin)
 	return;
     }
 
-    bufsize = from_backend(ssh->frontend, pktin->type == SSH1_SMSG_STDERR_DATA,
-			   string, stringlen);
+    size_t (*from_backend)(Seat *, const void *, size_t) = pktin->type == SSH1_SMSG_STDERR_DATA ? seat_stderr : seat_stdout;
+    bufsize = from_backend(ssh->seat, string, stringlen);
     if (!ssh->v1_stdout_throttling && bufsize > SSH1_BUFFER_LIMIT) {
 	ssh->v1_stdout_throttling = 1;
 	ssh_throttle_conn(ssh, +1);
@@ -5809,7 +5812,7 @@ static int ssh_channel_data(struct ssh_channel *c, int is_stderr,
 {
     switch (c->type) {
       case CHAN_MAINSESSION:
-	return from_backend(c->ssh->frontend, is_stderr, data, length);
+    return (is_stderr ? seat_stderr : seat_stdout)(c->ssh->seat, data, length);
       case CHAN_X11:
 	return x11_send(c->u.x11.xconn, data, length);
       case CHAN_SOCKDATA:
@@ -6817,7 +6820,7 @@ static void do_ssh2_transport(Ssh *ssh, const void *vin, int inlen,
 
 	if (s->warn_kex) {
 	    ssh_set_frozen(ssh, 1);
-	    s->dlgret = askalg(ssh->frontend, "key-exchange algorithm",
+        s->dlgret = seat_confirm_weak_crypto_primitive(ssh->seat, "key-exchange algorithm",
 			       ssh->kex->name,
 			       ssh_dialog_callback, ssh);
 	    if (s->dlgret < 0) {
@@ -6879,11 +6882,11 @@ static void do_ssh2_transport(Ssh *ssh, const void *vin, int inlen,
                 }
             }
             if (betteralgs) {
-                s->dlgret = askhk(ssh->frontend, ssh->hostkey->name,
+                s->dlgret = seat_confirm_weak_cached_hostkey(ssh->seat, ssh->hostkey->name,
                                   betteralgs, ssh_dialog_callback, ssh);
                 sfree(betteralgs);
             } else {
-                s->dlgret = askalg(ssh->frontend, "host key type",
+                s->dlgret = seat_confirm_weak_crypto_primitive(ssh->seat, "host key type",
                                    ssh->hostkey->name,
                                    ssh_dialog_callback, ssh);
             }
@@ -6908,7 +6911,7 @@ static void do_ssh2_transport(Ssh *ssh, const void *vin, int inlen,
 
 	if (s->warn_cscipher) {
 	    ssh_set_frozen(ssh, 1);
-	    s->dlgret = askalg(ssh->frontend,
+        s->dlgret = seat_confirm_weak_crypto_primitive(ssh->seat,
 			       "client-to-server cipher",
 			       s->cscipher_tobe->name,
 			       ssh_dialog_callback, ssh);
@@ -6933,7 +6936,7 @@ static void do_ssh2_transport(Ssh *ssh, const void *vin, int inlen,
 
 	if (s->warn_sccipher) {
 	    ssh_set_frozen(ssh, 1);
-	    s->dlgret = askalg(ssh->frontend,
+        s->dlgret = seat_confirm_weak_crypto_primitive(ssh->seat,
 			       "server-to-client cipher",
 			       s->sccipher_tobe->name,
 			       ssh_dialog_callback, ssh);
@@ -7033,19 +7036,19 @@ static void do_ssh2_transport(Ssh *ssh, const void *vin, int inlen,
         /*
          * Now generate and send e for Diffie-Hellman.
          */
-        set_busy_status(ssh->frontend, BUSY_CPU); /* this can take a while */
+        seat_set_busy_status(ssh->seat, BUSY_CPU); /* this can take a while */
         s->e = dh_create_e(ssh->kex_ctx, s->nbits * 2);
         s->pktout = ssh2_pkt_init(s->kex_init_value);
         ssh2_pkt_addmp(s->pktout, s->e);
         ssh2_pkt_send_noqueue(ssh, s->pktout);
 
-        set_busy_status(ssh->frontend, BUSY_WAITING); /* wait for server */
+        seat_set_busy_status(ssh->seat, BUSY_WAITING); /* wait for server */
         crWaitUntilV(pktin);
         if (pktin->type != s->kex_reply_value) {
             bombout(("expected key exchange reply packet from server"));
             crStopV;
         }
-        set_busy_status(ssh->frontend, BUSY_CPU); /* cogitate */
+        seat_set_busy_status(ssh->seat, BUSY_CPU); /* cogitate */
         ssh_pkt_getstring(pktin, &s->hostkeydata, &s->hostkeylen);
         if (!s->hostkeydata) {
             bombout(("unable to parse key exchange reply packet"));
@@ -7075,7 +7078,7 @@ static void do_ssh2_transport(Ssh *ssh, const void *vin, int inlen,
 
         /* We assume everything from now on will be quick, and it might
          * involve user interaction. */
-        set_busy_status(ssh->frontend, BUSY_NOT);
+        seat_set_busy_status(ssh->seat, BUSY_NOT);
 
         hash_string(ssh->kex->hash, ssh->exhash, s->hostkeydata, s->hostkeylen);
         if (dh_is_gex(ssh->kex)) {
@@ -7373,11 +7376,11 @@ static void do_ssh2_transport(Ssh *ssh, const void *vin, int inlen,
             crStopV;
         } else if (s->dlgret < 0) { /* none configured; use standard handling */
             ssh_set_frozen(ssh, 1);
-            s->dlgret = verify_ssh_host_key(ssh->frontend,
-                                            ssh->savedhost, ssh->savedport,
-                                            ssh->hostkey->keytype, s->keystr,
-                                            s->fingerprint,
-                                            ssh_dialog_callback, ssh);
+            s->dlgret = seat_verify_ssh_host_key(ssh->seat,
+                                                 ssh->savedhost, ssh->savedport,
+                                                 ssh->hostkey->keytype, s->keystr,
+                                                 s->fingerprint,
+                                                 ssh_dialog_callback, ssh);
 #ifdef FUZZING
 	    s->dlgret = 1;
 #endif
@@ -7608,7 +7611,7 @@ static void do_ssh2_transport(Ssh *ssh, const void *vin, int inlen,
      * Update the specials menu to list the remaining uncertified host
      * keys.
      */
-    update_specials_menu(ssh->frontend);
+    seat_update_specials_menu(ssh->seat);
 
     /*
      * Key exchange is over. Loop straight back round if we have a
@@ -8220,7 +8223,7 @@ static void ssh_channel_close_local(struct ssh_channel *c, char const *reason)
     switch (c->type) {
       case CHAN_MAINSESSION:
         ssh->mainchan = NULL;
-        update_specials_menu(ssh->frontend);
+        seat_update_specials_menu(ssh->seat);
         break;
       case CHAN_X11:
         assert(c->u.x11.xconn != NULL);
@@ -8330,7 +8333,7 @@ static void ssh_channel_got_eof(struct ssh_channel *c)
         Ssh *ssh = c->ssh;
 
         if (!ssh->sent_console_eof &&
-            (from_backend_eof(ssh->frontend) || ssh->got_pty)) {
+            (seat_eof(ssh->seat) || ssh->got_pty)) {
             /*
              * Either from_backend_eof told us that the front end
              * wants us to close the outgoing side of the connection
@@ -9532,11 +9535,11 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 	    s->cur_prompt->to_server = TRUE;
 	    s->cur_prompt->name = dupstr("SSH login name");
 	    add_prompt(s->cur_prompt, dupstr("login as: "), TRUE); 
-	    ret = get_userpass_input(s->cur_prompt, NULL, 0);
+	    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
 	    while (ret < 0) {
 		ssh->send_ok = 1;
 		crWaitUntilV(!pktin);
-		ret = get_userpass_input(s->cur_prompt, in, inlen);
+		ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
 		ssh->send_ok = 0;
 	    }
 	    if (!ret) {
@@ -9950,11 +9953,11 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 				   dupprintf("Passphrase for key \"%.100s\": ",
 					     s->publickey_comment),
 				   FALSE);
-			ret = get_userpass_input(s->cur_prompt, NULL, 0);
+			ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
 			while (ret < 0) {
 			    ssh->send_ok = 1;
 			    crWaitUntilV(!pktin);
-			    ret = get_userpass_input(s->cur_prompt,
+			    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt,
 						     in, inlen);
 			    ssh->send_ok = 0;
 			}
@@ -10367,11 +10370,11 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 		     */
 		    {
 			int ret; /* not live over crReturn */
-			ret = get_userpass_input(s->cur_prompt, NULL, 0);
+			ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
 			while (ret < 0) {
 			    ssh->send_ok = 1;
 			    crWaitUntilV(!pktin);
-			    ret = get_userpass_input(s->cur_prompt, in, inlen);
+			    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
 			    ssh->send_ok = 0;
 			}
 			if (!ret) {
@@ -10435,11 +10438,11 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 						    ssh->savedhost),
 			   FALSE);
 
-		ret = get_userpass_input(s->cur_prompt, NULL, 0);
+		ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
 		while (ret < 0) {
 		    ssh->send_ok = 1;
 		    crWaitUntilV(!pktin);
-		    ret = get_userpass_input(s->cur_prompt, in, inlen);
+		    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
 		    ssh->send_ok = 0;
 		}
 		if (!ret) {
@@ -10545,11 +10548,11 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 		     */
 		    while (!got_new) {
 
-			ret = get_userpass_input(s->cur_prompt, NULL, 0);
+			ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
 			while (ret < 0) {
 			    ssh->send_ok = 1;
 			    crWaitUntilV(!pktin);
-			    ret = get_userpass_input(s->cur_prompt, in, inlen);
+			    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
 			    ssh->send_ok = 0;
 			}
 			if (!ret) {
@@ -10745,7 +10748,7 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 	ssh->mainchan->type = CHAN_MAINSESSION;
 	ssh->mainchan->v.v2.remwindow = ssh_pkt_getuint32(pktin);
 	ssh->mainchan->v.v2.remmaxpkt = ssh_pkt_getuint32(pktin);
-	update_specials_menu(ssh->frontend);
+	seat_update_specials_menu(ssh->seat);
 	logevent("Opened main channel");
     }
 
@@ -11168,7 +11171,7 @@ static void ssh_cache_conf_values(Ssh *ssh)
  *
  * Returns an error message, or NULL on success.
  */
-static const char *ssh_init(void *frontend, Backend **backend_handle,
+static const char *ssh_init(Seat *seat, Backend **backend_handle,
                             LogContext *logctx, Conf *conf,
                             const char *host, int port, char **realhost,
 			    bool nodelay, bool keepalive)
@@ -11196,7 +11199,7 @@ static const char *ssh_init(void *frontend, Backend **backend_handle,
 	return "Microsoft high encryption pack not installed!";
 #endif
 
-    ssh->frontend = frontend;
+    ssh->seat = seat;
     ssh->logctx = logctx;
     
     ssh->term_width = conf_get_int(ssh->conf, CONF_width);

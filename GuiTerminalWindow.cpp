@@ -42,6 +42,7 @@ GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow,
   mouseButtonAction = MA_NOTHING;
   setMouseTracking(true);
   viewport()->setCursor(Qt::IBeamCursor);
+  Q_ASSERT(true);
 
   // enable drag-drop
   setAcceptDrops(true);
@@ -60,7 +61,7 @@ GuiTerminalWindow::~GuiTerminalWindow() {
   if (backend) {
     backend_free(backend);
     backend = NULL;
-    term_provide_resize_fn(term, NULL, NULL);
+    term_provide_backend(term, NULL);
     term_free(term);
     if (qtsock) qtsock->close();
     term = NULL;
@@ -77,6 +78,7 @@ int GuiTerminalWindow::initTerminal() {
   char *ip_addr = conf_get_str(cfg, CONF_host);
 
   termwin.vt = &qttermwin_vt;
+  seat.vt = &qtseat_vt;
 
   win_set_title(&termwin, ip_addr);
 
@@ -89,8 +91,9 @@ int GuiTerminalWindow::initTerminal() {
 
   const BackendVtable *vt = backend_vt_from_proto(conf_get_int(cfg, CONF_protocol));
   int port = conf_get_int(cfg, CONF_port);
+
   const char *error =
-      backend_init(vt, this, &backend, logctx, cfg, (char *)ip_addr, port, &realhost, 1, 0);
+      backend_init(vt, &seat, &backend, logctx, cfg, (char *)ip_addr, port, &realhost, 1, 0);
   if (realhost) sfree(realhost);
 
   if (error) {
@@ -135,12 +138,12 @@ int GuiTerminalWindow::initTerminal() {
   /*
    * Connect the terminal to the backend for resize purposes.
    */
-  term_provide_resize_fn(term, backend->vt->size, backend);
+  term_provide_backend(term, backend);
 
   /*
    * Set up a line discipline.
    */
-  ldisc = ldisc_create(cfg, term, backend, this);
+  ldisc = ldisc_create(cfg, term, backend, &seat);
 
   return 0;
 
@@ -204,7 +207,7 @@ int GuiTerminalWindow::restartTerminal() {
   if (backend) {
     backend_free(backend);
     backend = NULL;
-    term_provide_resize_fn(term, NULL, NULL);
+    term_provide_backend(term, NULL);
     term_free(term);
     qtsock->close();
     term = NULL;
@@ -285,7 +288,7 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
 
   const BackendVtable *vt = backend_vt_from_proto(conf_get_int(cfg, CONF_protocol));
   // HACK - pass paneid in port
-  backend_init(vt, this, &backend, logctx, cfg, NULL, id, NULL, 0, 0);
+  backend_init(vt, &seat, &backend, logctx, cfg, NULL, id, NULL, 0, 0);
   tmuxPane = new TmuxWindowPane(gateway, this);
   tmuxPane->id = id;
   tmuxPane->width = width;
@@ -297,12 +300,12 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   /*
    * Connect the terminal to the backend for resize purposes.
    */
-  term_provide_resize_fn(term, backend->vt->size, backend);
+  term_provide_backend(term, backend);
 
   /*
    * Set up a line discipline.
    */
-  ldisc = ldisc_create(cfg, term, backend, this);
+  ldisc = ldisc_create(cfg, term, backend, &seat);
   return tmuxPane;
 }
 

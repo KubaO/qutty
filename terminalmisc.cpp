@@ -10,19 +10,6 @@
 #include "QtCommon.hpp"
 #include "terminal.h"
 
-/* Dummy routine, only required in plink. */
-void ldisc_update(void * /*frontend*/, int /*echo*/, int /*edit*/) {}
-
-void frontend_keypress(void * /*handle*/) {
-  /*
-   * Keypress termination in non-Close-On-Exit mode is not
-   * currently supported in PuTTY proper, because the window
-   * always has a perfectly good Close button anyway. So we do
-   * nothing here.
-   */
-  return;
-}
-
 printer_job *printer_start_job(char * /*printer*/) { return NULL; }
 void printer_job_data(printer_job * /*pj*/, void * /*data*/, int /*len*/) {}
 void printer_finish_job(printer_job * /*pj*/) {}

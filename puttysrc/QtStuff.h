@@ -89,17 +89,10 @@ void socket_reselect_all(void);
  */
 #define sk_getxdmdata(socket, lenp) (NULL)
 
-
-void qt_message_box(void * frontend, const char *title, const char *fmt, ...);
-void qt_critical_msgbox(void *frontend, const char *fmt, ...);
+void qtc_assert(const char *assertion, const char *file, int line);
 
 #undef assert
-#define assert(cond)                                                                          \
-  do {                                                                                        \
-    if (!(cond))                                                                              \
-      qt_message_box(NULL, APPNAME " Fatal Error", "fatal assert %s(%d)" #cond, __FUNCTION__, \
-                     __LINE__);                                                               \
-  } while (0)
+#define assert(cond) ((cond) ? (void)0 : qtc_assert(#cond, __FILE__, __LINE__))
 
 #ifdef __linux
 #define _snprintf snprintf

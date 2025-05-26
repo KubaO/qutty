@@ -438,40 +438,6 @@ int from_backend_untrusted(void *frontend, const char *data, int len) {
   return term_data_untrusted(f->term, data, len);
 }
 
-int from_backend(void *frontend, int is_stderr, const char *data, int len) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return f->from_backend(is_stderr, data, (size_t)len);
-}
-
-void notify_remote_exit(void *frontend) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  int exitcode = backend_exitcode(f->backend);
-
-  if (f->userClosingTab || f->isSockDisconnected) return;
-
-  if (exitcode >= 0) {
-    int close_on_exit = conf_get_int(f->getCfg(), CONF_close_on_exit);
-    if (close_on_exit == FORCE_ON || (close_on_exit == AUTO && exitcode != INT_MAX)) {
-      f->closeTerminal();
-    } else {
-      /* exitcode == INT_MAX indicates that the connection was closed
-       * by a fatal error, so an error box will be coming our way and
-       * we should not generate this informational one. */
-      if (exitcode != INT_MAX) {
-        qt_message_box(frontend, APPNAME " Fatal Error", "Connection closed by remote host");
-        f->setSessionTitle(f->getSessionTitle() + " (inactive)");
-        // prevent recursive calling
-        f->isSockDisconnected = true;
-      }
-    }
-  }
-}
-
-char *get_ttymode(void *frontend, const char *mode) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return term_get_ttymode(f->term, mode);
-}
-
 struct tm ltime(void) {
   time_t rawtime;
   struct tm *timeinfo;
@@ -480,12 +446,6 @@ struct tm ltime(void) {
   timeinfo = localtime(&rawtime);
 
   return *timeinfo;
-}
-
-void set_busy_status(void * /*frontend*/, int /*status*/) {
-  // TODO not implemented
-  // busy_status = status;
-  // update_mouse_pointer();
 }
 
 char *platform_get_x_display(void) {
@@ -552,8 +512,6 @@ FontSpec *fontspec_deserialise(void *vdata, int maxsize, int *used) {
   return fontspec_new(data, GET_32BIT_MSB_FIRST(end), GET_32BIT_MSB_FIRST(end + 4),
                       GET_32BIT_MSB_FIRST(end + 8));
 }
-
-int from_backend_eof(void *frontend) { return TRUE; /* do respond to incoming EOF with outgoing */ }
 
 char *get_username(void) {
   DWORD namelen;
@@ -700,3 +658,7 @@ char filename_char_sanitise(char c) {
 
 /* Dummy routine, only required in plink. */
 void frontend_echoedit_update(void *frontend, int echo, int edit) {}
+
+void qtc_assert(const char *assertion, const char *file, int line) {
+  qt_assert(assertion, file, line);
+}
