@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <limits.h>
+#include <wchar.h>
 
 #include <time.h>
 #include <assert.h>
@@ -109,7 +110,7 @@ static void resizeline(Terminal *, termline *, int);
 static termline *lineptr(Terminal *, int, int, int);
 static void unlineptr(termline *);
 static void check_line_size(Terminal *, termline *);
-static void do_paint(Terminal *, Context, int);
+static void do_paint(Terminal *);
 static void erase_lots(Terminal *, bool, bool, bool);
 static int find_last_nonempty_line(Terminal *, tree234 *);
 static void swap_screen(Terminal *, int, bool, bool);
@@ -117,9 +118,6 @@ static void update_sbar(Terminal *);
 static void deselect(Terminal *);
 static void term_print_finish(Terminal *);
 static void scroll(Terminal *, int, int, int, bool);
-#ifdef OPTIMISE_SCROLL
-static void scroll_display(Terminal *, int, int, int);
-#endif /* OPTIMISE_SCROLL */
 
 static termline *newline(Terminal *term, int cols, bool bce)
 {
@@ -1278,7 +1276,7 @@ static void power_on(Terminal *term, bool clear)
     term->xterm_mouse = 0;
     term->xterm_extended_mouse = 0;
     term->urxvt_extended_mouse = 0;
-    set_raw_mouse_mode(term->frontend, FALSE);
+    win_set_raw_mouse_mode(term->win, false);
     term->bracketed_paste = FALSE;
     {
 	int i;
@@ -1309,13 +1307,10 @@ static void power_on(Terminal *term, bool clear)
  */
 void term_update(Terminal *term)
 {
-    Context ctx;
-
     term->window_update_pending = FALSE;
 
-    ctx = get_ctx(term->frontend);
-    if (ctx) {
-	int need_sbar_update = term->seen_disp_event;
+    if (win_setup_draw_ctx(term->win)) {
+	bool need_sbar_update = term->seen_disp_event;
 	if (term->seen_disp_event && term->scroll_on_disp) {
 	    term->disptop = 0;	       /* return to main screen */
 	    term->seen_disp_event = 0;
@@ -1324,9 +1319,10 @@ void term_update(Terminal *term)
 
 	if (need_sbar_update)
 	    update_sbar(term);
-	do_paint(term, ctx, TRUE);
-	sys_cursor(term->frontend, term->curs.x, term->curs.y - term->disptop);
-	free_ctx(ctx);
+	do_paint(term);
+	win_set_cursor_pos(
+            term->win, term->curs.x, term->curs.y - term->disptop);
+	win_free_draw_ctx(term->win);
     }
 }
 
@@ -1525,7 +1521,7 @@ void term_reconfig(Terminal *term, Conf *conf)
 	swap_screen(term, 0, FALSE, FALSE);
     if (conf_get_bool(term->conf, CONF_no_mouse_rep)) {
 	term->xterm_mouse = 0;
-	set_raw_mouse_mode(term->frontend, 0);
+	win_set_raw_mouse_mode(term->win, 0);
     }
     if (conf_get_bool(term->conf, CONF_no_remote_charset)) {
 	term->cset_attr[0] = term->cset_attr[1] = CSET_ASCII;
@@ -1590,8 +1586,7 @@ void term_clrsb(Terminal *term)
 /*
  * Initialise the terminal.
  */
-Terminal *term_init(Conf *myconf, struct unicode_data *ucsdata,
-		    void *frontend)
+Terminal *term_init(Conf *myconf, struct unicode_data *ucsdata, TermWin *win)
 {
     Terminal *term;
 
@@ -1600,7 +1595,7 @@ Terminal *term_init(Conf *myconf, struct unicode_data *ucsdata,
      * that need it.
      */
     term = snew(Terminal);
-    term->frontend = frontend;
+    term->win = win;
     term->ucsdata = ucsdata;
     term->conf = conf_copy(myconf);
     term->logctx = NULL;
@@ -2062,8 +2057,8 @@ static void swap_screen(Terminal *term, int which,
 static void update_sbar(Terminal *term)
 {
     int nscroll = sblines(term);
-    set_sbar(term->frontend, nscroll + term->rows,
-	     nscroll + term->disptop, term->rows);
+    win_set_scrollbar(term->win, nscroll + term->rows,
+                      nscroll + term->disptop, term->rows);
 }
 
 /*
@@ -2578,7 +2573,7 @@ static void toggle_mode(Terminal *term, int mode, int query, bool state)
 	  case 3:		       /* DECCOLM: 80/132 columns */
 	    deselect(term);
 	    if (!term->no_remote_resize)
-		request_resize(term->frontend, state ? 132 : 80, term->rows);
+		win_request_resize(term->win, state ? 132 : 80, term->rows);
 	    term->reset_132 = state;
 	    term->alt_t = term->marg_t = 0;
 	    term->alt_b = term->marg_b = term->rows - 1;
@@ -2630,11 +2625,11 @@ static void toggle_mode(Terminal *term, int mode, int query, bool state)
 	    break;
 	  case 1000:		       /* xterm mouse 1 (normal) */
 	    term->xterm_mouse = state ? 1 : 0;
-	    set_raw_mouse_mode(term->frontend, state);
+	    win_set_raw_mouse_mode(term->win, state);
 	    break;
 	  case 1002:		       /* xterm mouse 2 (inc. button drags) */
 	    term->xterm_mouse = state ? 2 : 0;
-	    set_raw_mouse_mode(term->frontend, state);
+	    win_set_raw_mouse_mode(term->win, state);
 	    break;
 	  case 1006:		       /* xterm extended mouse */
 	    term->xterm_extended_mouse = state ? 1 : 0;
@@ -2704,14 +2699,14 @@ static void do_osc(Terminal *term)
 	  case 0:
 	  case 1:
 	    if (!term->no_remote_wintitle)
-		set_icon(term->frontend, term->osc_string);
+		win_set_icon_title(term->win, term->osc_string);
 	    if (term->esc_args[0] == 1)
 		break;
 	    /* fall through: parameter 0 means set both */
 	  case 2:
 	  case 21:
 	    if (!term->no_remote_wintitle)
-		set_title(term->frontend, term->osc_string);
+		win_set_title(term->win, term->osc_string);
 	    break;
 	}
     }
@@ -3070,7 +3065,7 @@ static void term_out(Terminal *term)
 		     * Perform an actual beep if we're not overloaded.
 		     */
 		    if (!term->bellovl || !term->beep_overloaded) {
-			do_beep(term->frontend, term->beep);
+			win_bell(term->win, term->beep);
 
 			if (term->beep == BELL_VISUAL) {
 			    term_schedule_vbell(term, FALSE, 0);
@@ -3404,7 +3399,7 @@ static void term_out(Terminal *term)
 			ldisc_echoedit_update(term->ldisc);
 		    if (term->reset_132) {
 			if (!term->no_remote_resize)
-			    request_resize(term->frontend, 80, term->rows);
+			    win_request_resize(term->win, 80, term->rows);
 			term->reset_132 = 0;
 		    }
                     if (term->scroll_on_disp)
@@ -4002,8 +3997,8 @@ static void term_out(Terminal *term)
 				term->esc_args[0] >= 24)) {
 			    compatibility(VT340TEXT);
 			    if (!term->no_remote_resize)
-				request_resize(term->frontend, term->cols,
-					       def(term->esc_args[0], 24));
+				win_request_resize(term->win, term->cols,
+                                                   def(term->esc_args[0], 24));
 			    deselect(term);
 			} else if (term->esc_nargs >= 1 &&
 				   term->esc_args[0] >= 1 &&
@@ -4015,17 +4010,17 @@ static void term_out(Terminal *term)
 				char buf[80];
                                 const char *p;
 			      case 1:
-				set_iconic(term->frontend, FALSE);
+				win_set_minimised(term->win, false);
 				break;
 			      case 2:
-				set_iconic(term->frontend, TRUE);
+				win_set_minimised(term->win, true);
 				break;
 			      case 3:
 				if (term->esc_nargs >= 3) {
 				    if (!term->no_remote_resize)
-					move_window(term->frontend,
-						    def(term->esc_args[1], 0),
-						    def(term->esc_args[2], 0));
+					win_move(term->win,
+                                                 def(term->esc_args[1], 0),
+                                                 def(term->esc_args[2], 0));
 				}
 				break;
 			      case 4:
@@ -4036,56 +4031,60 @@ static void term_out(Terminal *term)
 				break;
 			      case 5:
 				/* move to top */
-				set_zorder(term->frontend, TRUE);
+				win_set_zorder(term->win, true);
 				break;
 			      case 6:
 				/* move to bottom */
-				set_zorder(term->frontend, FALSE);
+				win_set_zorder(term->win, false);
 				break;
 			      case 7:
-				refresh_window(term->frontend);
+				win_refresh(term->win);
 				break;
 			      case 8:
 				if (term->esc_nargs >= 3) {
 				    if (!term->no_remote_resize)
-					request_resize(term->frontend,
-						       def(term->esc_args[2], term->conf_width),
-						       def(term->esc_args[1], term->conf_height));
+					win_request_resize(
+                                            term->win,
+                                            def(term->esc_args[2],
+                                                term->conf_width),
+                                            def(term->esc_args[1],
+                                                term->conf_height));
 				}
 				break;
 			      case 9:
 				if (term->esc_nargs >= 2)
-				    set_zoomed(term->frontend,
-					       term->esc_args[1] ?
-					       TRUE : FALSE);
+				    win_set_maximised(
+                                        term->win,
+                                        term->esc_args[1] ? true : false);
 				break;
 			      case 11:
 				if (term->ldisc)
 				    ldisc_send(term->ldisc,
-					       is_iconic(term->frontend) ?
-					       "\033[2t" : "\033[1t", 4, 0);
+					       win_is_minimised(term->win) ?
+					       "\033[2t" : "\033[1t", 4,
+                                               false);
 				break;
 			      case 13:
 				if (term->ldisc) {
-				    get_window_pos(term->frontend, &x, &y);
+				    win_get_pos(term->win, &x, &y);
 				    len = sprintf(buf, "\033[3;%u;%ut",
                                                   (unsigned)x,
                                                   (unsigned)y);
-				    ldisc_send(term->ldisc, buf, len, 0);
+				    ldisc_send(term->ldisc, buf, len, false);
 				}
 				break;
 			      case 14:
 				if (term->ldisc) {
-				    get_window_pixels(term->frontend, &x, &y);
+				    win_get_pixels(term->win, &x, &y);
 				    len = sprintf(buf, "\033[4;%d;%dt", y, x);
-				    ldisc_send(term->ldisc, buf, len, 0);
+				    ldisc_send(term->ldisc, buf, len, false);
 				}
 				break;
 			      case 18:
 				if (term->ldisc) {
 				    len = sprintf(buf, "\033[8;%d;%dt",
 						  term->rows, term->cols);
-				    ldisc_send(term->ldisc, buf, len, 0);
+				    ldisc_send(term->ldisc, buf, len, false);
 				}
 				break;
 			      case 19:
@@ -4109,7 +4108,7 @@ static void term_out(Terminal *term)
 				if (term->ldisc &&
 				    term->remote_qtitle_action != TITLE_NONE) {
 				    if(term->remote_qtitle_action == TITLE_REAL)
-					p = get_window_title(term->frontend, TRUE);
+					p = win_get_title(term->win, true);
 				    else
 					p = EMPTY_WINDOW_TITLE;
 				    len = strlen(p);
@@ -4122,7 +4121,7 @@ static void term_out(Terminal *term)
 				if (term->ldisc &&
 				    term->remote_qtitle_action != TITLE_NONE) {
 				    if(term->remote_qtitle_action == TITLE_REAL)
-					p = get_window_title(term->frontend, FALSE);
+					p = win_get_title(term->win, false);
 				    else
 					p = EMPTY_WINDOW_TITLE;
 				    len = strlen(p);
@@ -4160,9 +4159,9 @@ static void term_out(Terminal *term)
 			compatibility(VT420);
 			if (term->esc_nargs == 1 && term->esc_args[0] > 0) {
 			    if (!term->no_remote_resize)
-				request_resize(term->frontend, term->cols,
-					       def(term->esc_args[0],
-						   term->conf_height));
+				win_request_resize(term->win, term->cols,
+                                                   def(term->esc_args[0],
+                                                       term->conf_height));
 			    deselect(term);
 			}
 			break;
@@ -4175,9 +4174,9 @@ static void term_out(Terminal *term)
 			compatibility(VT340TEXT);
 			if (term->esc_nargs <= 1) {
 			    if (!term->no_remote_resize)
-				request_resize(term->frontend,
-					       def(term->esc_args[0],
-						   term->conf_width),
+				win_request_resize(
+                                    term->win,
+                                    def(term->esc_args[0], term->conf_width),
 					       term->rows);
 			    deselect(term);
 			}
@@ -4384,9 +4383,9 @@ static void term_out(Terminal *term)
 			if (!has_compat(VT420) && has_compat(VT100)) {
 			    if (!term->no_remote_resize) {
 				if (term->reset_132)
-				    request_resize(132, 24);
+				    win_request_resize(term->win, 132, 24);
 				else
-				    request_resize(80, 24);
+				    win_request_resize(term->win, 80, 24);
 			    }
 			}
 #endif
@@ -4401,7 +4400,7 @@ static void term_out(Terminal *term)
 		    term->osc_strlen = 0;
 		    break;
 		  case 'R':	       /* Linux palette reset */
-		    palette_reset(term->frontend);
+		    win_palette_reset(term->win);
 		    term_invalidate(term);
 		    term->termstate = TOPLEVEL;
 		    break;
@@ -4484,7 +4483,8 @@ static void term_out(Terminal *term)
 		    }
 		    term->osc_string[term->osc_strlen++] = val;
 		    if (term->osc_strlen >= 7) {
-			palette_set(term->frontend, term->osc_string[0],
+			win_palette_set(
+                            term->win, term->osc_string[0],
 				    term->osc_string[1] * 16 + term->osc_string[2],
 				    term->osc_string[3] * 16 + term->osc_string[4],
 				    term->osc_string[5] * 16 + term->osc_string[6]);
@@ -4520,9 +4520,8 @@ static void term_out(Terminal *term)
         case SEEN_DCS:
           if (term->esc_buf_len<sizeof(term->esc_buf)) {
             term->esc_buf[term->esc_buf_len++] = c;
-            if (term->esc_buf_len == 5 &&
-              !strncmp("1000p", term->esc_buf, 5) &&
-              !tmux_init_tmux_mode(term->frontend, term->esc_buf)) {
+            if (term->esc_buf_len == 5 && !strncmp("1000p", term->esc_buf, 5) &&
+                !tmux_init_tmux_mode(term->win, term->esc_buf)) {
               // entered tmux mode:
               // all data should goto tmux gateway
               int tmptmuxbuflen = nchars + bufchain_size(&term->inbuf);
@@ -4531,7 +4530,7 @@ static void term_out(Terminal *term)
               bufchain_fetch(&term->inbuf, tmptmuxbuf+nchars,
                              bufchain_size(&term->inbuf));
               bufchain_consume(&term->inbuf, bufchain_size(&term->inbuf));
-              tmux_from_backend(term->frontend, 0, tmptmuxbuf, tmptmuxbuflen);
+              tmux_from_backend(term->win, 0, tmptmuxbuf, tmptmuxbuflen);
               sfree(tmptmuxbuf);
               chars = NULL;
               nchars = 0;
@@ -4987,20 +4986,26 @@ static termchar *term_bidi_line(Terminal *term, struct termline *ldata,
     return lchars;
 }
 
+static void do_paint_draw(Terminal *term, termline *ldata, int x, int y,
+                          wchar_t *ch, int ccount,
+                          unsigned long attr)
+{
+    win_draw_text(term->win, x, y, ch, ccount, attr, ldata->lattr);
+    if (attr & (TATTR_ACTCURS | TATTR_PASCURS))
+        win_draw_cursor(term->win, x, y, ch, ccount,
+                        attr, ldata->lattr);
+}
+
 /*
- * Given a context, update the window. Out of paranoia, we don't
- * allow WM_PAINT responses to do scrolling optimisations.
+ * Given a context, update the window.
  */
-static void do_paint(Terminal *term, Context ctx, int may_optimise)
+static void do_paint(Terminal *term)
 {
     int i, j, our_curs_y, our_curs_x;
     int rv, cursor;
     pos scrpos;
     wchar_t *ch;
-    int chlen;
-#ifdef OPTIMISE_SCROLL
-    struct scrollregion *sr;
-#endif /* OPTIMISE_SCROLL */
+    size_t chlen;
     termchar *newline;
 
     chlen = 1024;
@@ -5080,28 +5085,17 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
     }
     term->dispcursx = term->dispcursy = -1;
 
-#ifdef OPTIMISE_SCROLL
-    /* Do scrolls */
-    sr = term->scrollhead;
-    while (sr) {
-	struct scrollregion *next = sr->next;
-	do_scroll(ctx, sr->topline, sr->botline, sr->lines);
-	sfree(sr);
-	sr = next;
-    }
-    term->scrollhead = term->scrolltail = NULL;
-#endif /* OPTIMISE_SCROLL */
-
     /* The normal screen data */
     for (i = 0; i < term->rows; i++) {
 	termline *ldata;
 	termchar *lchars;
-	int dirty_line, dirty_run, selected;
+	bool dirty_line, dirty_run, selected;
 	unsigned long attr = 0, cset = 0;
 	int start = 0;
 	int ccount = 0;
-	int last_run_dirty = 0;
-	int laststart, dirtyrect;
+	bool last_run_dirty = false;
+	int laststart;
+        bool dirtyrect;
 	int *backward;
 
 	scrpos.y = i + term->disptop;
@@ -5165,7 +5159,7 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 		    selected = (posPle(term->selstart, scrpos) &&
 				posPlt(scrpos, term->selend));
 	    } else
-		selected = FALSE;
+		selected = false;
 	    tattr = (tattr ^ rv
 		     ^ (selected ? ATTR_REVERSE : 0));
 
@@ -5184,7 +5178,8 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 	    if (tchar != term->disptext[i]->chars[j].chr ||
 		tattr != (term->disptext[i]->chars[j].attr &~
 			  (ATTR_NARROW | DATTR_MASK))) {
-		if ((tattr & ATTR_WIDE) == 0 && char_width(ctx, tchar) == 2)
+		if ((tattr & ATTR_WIDE) == 0 &&
+                    win_char_width(term->win, tchar) == 2)
 		    tattr |= ATTR_NARROW;
 	    } else if (term->disptext[i]->chars[j].attr & ATTR_NARROW)
 		tattr |= ATTR_NARROW;
@@ -5218,11 +5213,11 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 	 * with fonts that overflow their character cells.
 	 */
 	laststart = 0;
-	dirtyrect = FALSE;
+	dirtyrect = false;
 	for (j = 0; j < term->cols; j++) {
 	    if (term->disptext[i]->chars[j].attr & DATTR_STARTRUN) {
 		laststart = j;
-		dirtyrect = FALSE;
+		dirtyrect = false;
 	    }
 
 	    if (term->disptext[i]->chars[j].chr != newline[j].chr ||
@@ -5234,7 +5229,7 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 		    for (k = laststart; k < j; k++)
 			term->disptext[i]->chars[k].attr |= ATTR_INVALID;
 
-		    dirtyrect = TRUE;
+		    dirtyrect = true;
 		}
 	    }
 
@@ -5251,14 +5246,14 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 
 	for (j = 0; j < term->cols; j++) {
 	    unsigned long tattr, tchar;
-	    int break_run, do_copy;
+	    bool break_run, do_copy;
 	    termchar *d = lchars + j;
 
 	    tattr = newline[j].attr;
 	    tchar = newline[j].chr;
 
 	    if ((term->disptext[i]->chars[j].attr ^ tattr) & ATTR_WIDE)
-		dirty_line = TRUE;
+		dirty_line = true;
 
 	    break_run = ((tattr ^ attr) & term->attr_mask) != 0;
 
@@ -5267,7 +5262,7 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 	    if ((tchar >= 0x23BA && tchar <= 0x23BD) ||
                 (j > 0 && (newline[j-1].chr >= 0x23BA &&
                            newline[j-1].chr <= 0x23BD)))
-		break_run = TRUE;
+		break_run = true;
 #endif
 
 	    /*
@@ -5275,31 +5270,26 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 	     * same CSET, if that CSET is a magic one.
 	     */
 	    if (CSET_OF(tchar) != cset)
-		break_run = TRUE;
+		break_run = true;
 
 	    /*
 	     * Break on both sides of any combined-character cell.
 	     */
 	    if (d->cc_next != 0 ||
 		(j > 0 && d[-1].cc_next != 0))
-		break_run = TRUE;
+		break_run = true;
 
 	    if (!term->ucsdata->dbcs_screenfont && !dirty_line) {
 		if (term->disptext[i]->chars[j].chr == tchar &&
 		    (term->disptext[i]->chars[j].attr &~ DATTR_MASK) == tattr)
-		    break_run = TRUE;
+		    break_run = true;
 		else if (!dirty_run && ccount == 1)
-		    break_run = TRUE;
+		    break_run = true;
 	    }
 
 	    if (break_run) {
-		if ((dirty_run || last_run_dirty) && ccount > 0) {
-		    do_text(ctx, start, i, ch, ccount, attr,
-			    ldata->lattr);
-		    if (attr & (TATTR_ACTCURS | TATTR_PASCURS))
-			do_cursor(ctx, start, i, ch, ccount, attr,
-				  ldata->lattr);
-		}
+		if ((dirty_run || last_run_dirty) && ccount > 0)
+                    do_paint_draw(term, ldata, start, i, ch, ccount, attr);
 		start = j;
 		ccount = 0;
 		attr = tattr;
@@ -5309,11 +5299,11 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 		dirty_run = dirty_line;
 	    }
 
-	    do_copy = FALSE;
+	    do_copy = false;
 	    if (!termchars_equal_override(&term->disptext[i]->chars[j],
 					  d, tchar, tattr)) {
-		do_copy = TRUE;
-		dirty_run = TRUE;
+		do_copy = true;
+		dirty_run = true;
 	    }
 
 	    if (ccount+2 > chlen) {
@@ -5390,18 +5380,13 @@ static void do_paint(Terminal *term, Context ctx, int may_optimise)
 		     */
 		    assert(!(i == our_curs_y && j == our_curs_x));
 		    if (!termchars_equal(&term->disptext[i]->chars[j], d))
-			dirty_run = TRUE;
+			dirty_run = true;
 		    copy_termchar(term->disptext[i], j, d);
 		}
 	    }
 	}
-	if (dirty_run && ccount > 0) {
-	    do_text(ctx, start, i, ch, ccount, attr,
-		    ldata->lattr);
-	    if (attr & (TATTR_ACTCURS | TATTR_PASCURS))
-		do_cursor(ctx, start, i, ch, ccount, attr,
-			  ldata->lattr);
-	}
+	if (dirty_run && ccount > 0)
+            do_paint_draw(term, ldata, start, i, ch, ccount, attr);
 
 	unlineptr(ldata);
     }
@@ -5446,7 +5431,7 @@ void term_paint(Terminal *term, Context ctx,
     }
 
     if (immediately) {
-        do_paint (term, ctx, FALSE);
+        do_paint(term);
     } else {
 	term_schedule_update(term);
     }
@@ -5690,7 +5675,7 @@ static void clipme(Terminal *term, pos top, pos bottom, int rect, int desel)
     clip_addchar(&buf, 0, 0);
 #endif
     /* Finally, transfer all that to the clipboard. */
-    write_clip(term->frontend, buf.textbuf, buf.attrbuf, buf.bufpos, desel);
+    win_clip_write(term->win, buf.textbuf, buf.attrbuf, buf.bufpos, desel);
     sfree(buf.textbuf);
     sfree(buf.attrbuf);
 }
@@ -5705,6 +5690,11 @@ void term_copyall(Terminal *term)
     bottom.y = find_last_nonempty_line(term, screen);
     bottom.x = term->cols;
     clipme(term, top, bottom, 0, TRUE);
+}
+
+void term_request_paste(Terminal *term)
+{
+    win_clip_request_paste(term->win);
 }
 
 /*
@@ -5963,12 +5953,8 @@ static void term_paste_callback(void *vterm)
     term->paste_len = 0;
 }
 
-void term_do_paste(Terminal *term)
+void term_do_paste(Terminal *term, const wchar_t *data, int len)
 {
-    wchar_t *data;
-    int len;
-
-    get_clip(term->frontend, &data, &len);
     if (data && len > 0) {
         wchar_t *p, *q;
 
@@ -6022,7 +6008,6 @@ void term_do_paste(Terminal *term)
             term->paste_pos = term->paste_len = 0;
         }
     }
-    get_clip(term->frontend, NULL, NULL);
 
     queue_toplevel_callback(term_paste_callback, term);
 }
@@ -6286,7 +6271,7 @@ void term_mouse(Terminal *term, Mouse_Button braw, Mouse_Button bcooked,
 		   || a == MA_2CLK || a == MA_3CLK
 #endif
 		   )) {
-	request_paste(term->frontend);
+	term_request_paste(term);
     }
 
     /*
@@ -6451,7 +6436,7 @@ char *term_get_ttymode(Terminal *term, const char *mode)
     if (strcmp(mode, "ERASE") == 0) {
 	val = term->bksp_is_delete ? "^?" : "^H";
     } else if (strcmp(mode, "IUTF8") == 0) {
-	val = frontend_is_utf8(term->frontend) ? "yes" : "no";
+	val = win_is_utf8(term->win) ? "yes" : "no";
     }
     /* FIXME: perhaps we should set ONLCR based on lfhascr as well? */
     /* FIXME: or ECHO and friends based on local echo state? */

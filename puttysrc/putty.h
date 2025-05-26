@@ -632,25 +632,6 @@ void free_prompts(prompts_t *p);
 /*
  * Exports from the front end.
  */
-void request_resize(void *frontend, int, int);
-void do_text(Context, int, int, wchar_t *, int, unsigned long, int);
-void do_cursor(Context, int, int, wchar_t *, int, unsigned long, int);
-int char_width(Context ctx, int uc);
-#ifdef OPTIMISE_SCROLL
-void do_scroll(Context, int, int, int);
-#endif
-void set_title(void *frontend, char *);
-void set_icon(void *frontend, char *);
-void set_sbar(void *frontend, int, int, int);
-Context get_ctx(void *frontend);
-void free_ctx(Context);
-void palette_set(void *frontend, int, int, int, int);
-void palette_reset(void *frontend);
-void write_aclip(void *frontend, char *, int, int);
-void write_clip(void *frontend, wchar_t *, int *, int, int);
-void get_clip(void *frontend, wchar_t **, int *);
-void optimised_move(void *frontend, int, int, int);
-void set_raw_mouse_mode(void *frontend, int);
 void connection_fatal(void *frontend, const char *, ...);
 void nonfatal(const char *, ...);
 void fatalbox(const char *, ...);
@@ -659,10 +640,6 @@ void modalfatalbox(const char *, ...);
 #pragma noreturn(fatalbox)
 #pragma noreturn(modalfatalbox)
 #endif
-void do_beep(void *frontend, int);
-void begin_session(void *frontend);
-void sys_cursor(void *frontend, int x, int y);
-void request_paste(void *frontend);
 void frontend_keypress(void *frontend);
 void frontend_echoedit_update(void *frontend, int echo, int edit);
 /* It's the backend's responsibility to invoke this at the start of a
@@ -694,15 +671,6 @@ int get_userpass_input(prompts_t *p, const unsigned char *in, int inlen);
 #endif
 #define OPTIMISE_IS_SCROLL 1
 
-void set_iconic(void *frontend, int iconic);
-void move_window(void *frontend, int x, int y);
-void set_zorder(void *frontend, int top);
-void refresh_window(void *frontend);
-void set_zoomed(void *frontend, int zoomed);
-int is_iconic(void *frontend);
-void get_window_pos(void *frontend, int *x, int *y);
-void get_window_pixels(void *frontend, int *x, int *y);
-char *get_window_title(void *frontend, int icon);
 /* Hint from backend to frontend about time-consuming operations.
  * Initial state is assumed to be BUSY_NOT. */
 enum {
@@ -713,9 +681,144 @@ enum {
     BUSY_CPU	    /* Locally busy (e.g. crypto); user interaction suspended */
 };
 void set_busy_status(void *frontend, int status);
-int frontend_is_utf8(void *frontend);
 
-void cleanup_exit(int);
+/*
+ * Data type 'TermWin', which is a vtable encapsulating all the
+ * functionality that Terminal expects from its containing terminal
+ * window.
+ */
+struct TermWin {
+    const struct TermWinVtable *vt;
+};
+struct TermWinVtable {
+    /*
+     * All functions listed here between setup_draw_ctx and
+     * free_draw_ctx expect to be _called_ between them too, so that
+     * the TermWin has a drawing context currently available.
+     *
+     * (Yes, even char_width, because e.g. the Windows implementation
+     * of TermWin handles it by loading the currently configured font
+     * into the HDC and doing a GDI query.)
+     */
+    bool (*setup_draw_ctx)(TermWin *);
+    /* Draw text in the window, during a painting operation */
+    void (*draw_text)(TermWin *, int x, int y, wchar_t *text, int len,
+                      unsigned long attrs, int line_attrs);
+    /* Draw the visible cursor. Expects you to have called do_text
+     * first (because it might just draw an underline over a character
+     * presumed to exist already), but also expects you to pass in all
+     * the details of the character under the cursor (because it might
+     * redraw it in different colours). */
+    void (*draw_cursor)(TermWin *, int x, int y, wchar_t *text, int len,
+                        unsigned long attrs, int line_attrs);
+    /* Draw the sigil indicating that a line of text has come from
+     * PuTTY itself rather than the far end (defence against end-of-
+     * authentication spoofing) */
+    void (*draw_trust_sigil)(TermWin *, int x, int y);
+    int (*char_width)(TermWin *, int uc);
+    void (*free_draw_ctx)(TermWin *);
+
+    void (*set_cursor_pos)(TermWin *, int x, int y);
+
+    void (*set_raw_mouse_mode)(TermWin *, bool enable);
+
+    void (*set_scrollbar)(TermWin *, int total, int start, int page);
+
+    void (*bell)(TermWin *, int mode);
+
+    void (*clip_write)(TermWin *, wchar_t *text, int *attrs,
+                       int len, bool must_deselect);
+    void (*clip_request_paste)(TermWin *);
+
+    void (*refresh)(TermWin *);
+
+    void (*request_resize)(TermWin *, int w, int h);
+
+    void (*set_title)(TermWin *, const char *title);
+    void (*set_icon_title)(TermWin *, const char *icontitle);
+    /* set_minimised and set_maximised are assumed to set two
+     * independent settings, rather than a single three-way
+     * {min,normal,max} switch. The idea is that when you un-minimise
+     * the window it remembers whether to go back to normal or
+     * maximised. */
+    void (*set_minimised)(TermWin *, bool minimised);
+    bool (*is_minimised)(TermWin *);
+    void (*set_maximised)(TermWin *, bool maximised);
+    void (*move)(TermWin *, int x, int y);
+    void (*set_zorder)(TermWin *, bool top);
+
+    bool (*palette_get)(TermWin *, int n, int *r, int *g, int *b);
+    void (*palette_set)(TermWin *, int n, int r, int g, int b);
+    void (*palette_reset)(TermWin *);
+
+    void (*get_pos)(TermWin *, int *x, int *y);
+    void (*get_pixels)(TermWin *, int *x, int *y);
+    const char *(*get_title)(TermWin *, bool icon);
+    bool (*is_utf8)(TermWin *);
+};
+
+static inline bool win_setup_draw_ctx(TermWin *win)
+{ return win->vt->setup_draw_ctx(win); }
+static inline void win_draw_text(
+    TermWin *win, int x, int y, wchar_t *text, int len,
+    unsigned long attrs, int line_attrs)
+{ win->vt->draw_text(win, x, y, text, len, attrs, line_attrs); }
+static inline void win_draw_cursor(
+    TermWin *win, int x, int y, wchar_t *text, int len,
+    unsigned long attrs, int line_attrs)
+{ win->vt->draw_cursor(win, x, y, text, len, attrs, line_attrs); }
+static inline void win_draw_trust_sigil(TermWin *win, int x, int y)
+{ win->vt->draw_trust_sigil(win, x, y); }
+static inline int win_char_width(TermWin *win, int uc)
+{ return win->vt->char_width(win, uc); }
+static inline void win_free_draw_ctx(TermWin *win)
+{ win->vt->free_draw_ctx(win); }
+static inline void win_set_cursor_pos(TermWin *win, int x, int y)
+{ win->vt->set_cursor_pos(win, x, y); }
+static inline void win_set_raw_mouse_mode(TermWin *win, bool enable)
+{ win->vt->set_raw_mouse_mode(win, enable); }
+static inline void win_set_scrollbar(TermWin *win, int t, int s, int p)
+{ win->vt->set_scrollbar(win, t, s, p); }
+static inline void win_bell(TermWin *win, int mode)
+{ win->vt->bell(win, mode); }
+static inline void win_clip_write(
+    TermWin *win, wchar_t *text, int *attrs,
+    int len, bool deselect)
+{ win->vt->clip_write(win, text, attrs, len, deselect); }
+static inline void win_clip_request_paste(TermWin *win)
+{ win->vt->clip_request_paste(win); }
+static inline void win_refresh(TermWin *win)
+{ win->vt->refresh(win); }
+static inline void win_request_resize(TermWin *win, int w, int h)
+{ win->vt->request_resize(win, w, h); }
+static inline void win_set_title(TermWin *win, const char *title)
+{ win->vt->set_title(win, title); }
+static inline void win_set_icon_title(TermWin *win, const char *icontitle)
+{ win->vt->set_icon_title(win, icontitle); }
+static inline void win_set_minimised(TermWin *win, bool minimised)
+{ win->vt->set_minimised(win, minimised); }
+static inline bool win_is_minimised(TermWin *win)
+{ return win->vt->is_minimised(win); }
+static inline void win_set_maximised(TermWin *win, bool maximised)
+{ win->vt->set_maximised(win, maximised); }
+static inline void win_move(TermWin *win, int x, int y)
+{ win->vt->move(win, x, y); }
+static inline void win_set_zorder(TermWin *win, bool top)
+{ win->vt->set_zorder(win, top); }
+static inline bool win_palette_get(TermWin *win, int n, int *r, int *g, int *b)
+{ return win->vt->palette_get(win, n, r, g, b); }
+static inline void win_palette_set(TermWin *win, int n, int r, int g, int b)
+{ win->vt->palette_set(win, n, r, g, b); }
+static inline void win_palette_reset(TermWin *win)
+{ win->vt->palette_reset(win); }
+static inline void win_get_pos(TermWin *win, int *x, int *y)
+{ win->vt->get_pos(win, x, y); }
+static inline void win_get_pixels(TermWin *win, int *x, int *y)
+{ win->vt->get_pixels(win, x, y); }
+static inline const char *win_get_title(TermWin *win, bool icon)
+{ return win->vt->get_title(win, icon); }
+static inline bool win_is_utf8(TermWin *win)
+{ return win->vt->is_utf8(win); }
 
 /*
  * Exports from conf.c, and a big enum (via parametric macro) of
@@ -1064,7 +1167,7 @@ FontSpec *platform_default_fontspec(const char *name);
  * Exports from terminal.c.
  */
 
-Terminal *term_init(Conf *, struct unicode_data *, void *);
+Terminal *term_init(Conf *, struct unicode_data *, TermWin *);
 void term_free(Terminal *);
 void term_size(Terminal *, int, int, int);
 void term_paint(Terminal *, Context, int, int, int, int, int);
@@ -1080,11 +1183,13 @@ void term_deselect(Terminal *);
 void term_update(Terminal *);
 void term_invalidate(Terminal *);
 void term_blink(Terminal *, int set_cursor);
-void term_do_paste(Terminal *);
+void term_do_paste(Terminal *, const wchar_t *, int);
 void term_nopaste(Terminal *);
 int term_ldisc(Terminal *, int option);
 void term_copyall(Terminal *);
 void term_reconfig(Terminal *, Conf *);
+void term_request_copy(Terminal *, const int *clipboards, int n_clipboards);
+void term_request_paste(Terminal *);
 void term_seen_key_event(Terminal *); 
 int term_data(Terminal *, int is_stderr, const char *data, int len);
 int term_data_untrusted(Terminal *, const char *data, int len);

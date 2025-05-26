@@ -77,7 +77,9 @@ int GuiTerminalWindow::initTerminal() {
   char *ip_addr = conf_get_str(cfg, CONF_host);
   void *logctx;
 
-  set_title(this, ip_addr);
+  termwin.vt = &qttermwin_vt;
+
+  win_set_title(&termwin, ip_addr);
 
   memset(&ucsdata, 0, sizeof(struct unicode_data));
   init_ucs(cfg, &ucsdata);
@@ -103,7 +105,7 @@ int GuiTerminalWindow::initTerminal() {
     goto cu0;
   }
 
-  term = term_init(cfg, &ucsdata, this);
+  term = term_init(cfg, &ucsdata, &termwin);
   logctx = log_init(NULL, cfg);
   term_provide_logctx(term, logctx);
 
@@ -259,7 +261,7 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   setTermFont(cfg);
   cfgtopalette(cfg);
 
-  term = term_init(cfg, &ucsdata, this);
+  term = term_init(cfg, &ucsdata, &termwin);
   void *logctx = log_init(NULL, cfg);
   term_provide_logctx(term, logctx);
   int cfg_width = conf_get_int(cfg, CONF_width);
@@ -747,7 +749,8 @@ void GuiTerminalWindow::getClip(wchar_t **p, int *len) {
 }
 
 void GuiTerminalWindow::requestPaste() {
-  term_do_paste(term);
+  auto text = QApplication::clipboard()->text().toStdWString();
+  term_do_paste(term, text.c_str(), text.size());
 
   // Save the paste in our persistent list.
   qutty_web_plugin_map.hash_map["PASTE_HISTORY"].prepend(QApplication::clipboard()->text());

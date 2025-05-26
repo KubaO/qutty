@@ -76,6 +76,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   Terminal *term = nullptr;
   Backend *backend = nullptr;
   Ldisc *ldisc = nullptr;
+  TermWin termwin = {};
 
   bool userClosingTab = false;
   bool isSockDisconnected = false;
@@ -176,5 +177,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void sockDisconnected();
   void on_sessionTitleChange(bool force = false);
 };
+
+extern const TermWinVtable qttermwin_vt;
 
 #endif  // TERMINALWINDOW_H

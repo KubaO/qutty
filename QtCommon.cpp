@@ -496,14 +496,14 @@ char *platform_get_x_display(void) {
 /*
  * called to initalize tmux mode
  */
-int tmux_init_tmux_mode(void *frontend, char *tmux_version) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return f->initTmuxControllerMode(tmux_version);
+int tmux_init_tmux_mode(TermWin *win, char *tmux_version) {
+  GuiTerminalWindow *gw = container_of(win, GuiTerminalWindow, termwin);
+  return gw->initTmuxControllerMode(tmux_version);
 }
 
-size_t tmux_from_backend(void *frontend, int is_stderr, const char *data, int len) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return f->tmuxGateway()->fromBackend(is_stderr, data, len);
+size_t tmux_from_backend(TermWin *win, int is_stderr, const char *data, int len) {
+  GuiTerminalWindow *gw = container_of(win, GuiTerminalWindow, termwin);
+  return gw->tmuxGateway()->fromBackend(is_stderr, data, len);
 }
 
 void qstring_to_char(char *dst, const QString &src, int dstlen) {
@@ -554,11 +554,6 @@ FontSpec *fontspec_deserialise(void *vdata, int maxsize, int *used) {
 }
 
 int from_backend_eof(void *frontend) { return TRUE; /* do respond to incoming EOF with outgoing */ }
-
-int frontend_is_utf8(void *frontend) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return f->term->ucsdata->line_codepage == CP_UTF8;
-}
 
 char *get_username(void) {
   DWORD namelen;
