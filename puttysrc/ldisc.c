@@ -216,7 +216,7 @@ void ldisc_send(Ldisc *ldisc, const void *vbuf, int len, bool interactive)
 			bsb(ldisc, plen(ldisc, ldisc->buf[ldisc->buflen - 1]));
 		    ldisc->buflen--;
 		}
-                backend_special(ldisc->backend, TS_EL);
+                backend_special(ldisc->backend, SS_EL, 0);
                 /*
                  * We don't send IP, SUSP or ABORT if the user has
                  * configured telnet specials off! This breaks
@@ -225,11 +225,11 @@ void ldisc_send(Ldisc *ldisc, const void *vbuf, int len, bool interactive)
                 if (!ldisc->telnet_keyboard)
                     goto default_case;
 		if (c == CTRL('C'))
-                    backend_special(ldisc->backend, TS_IP);
+                    backend_special(ldisc->backend, SS_IP, 0);
 		if (c == CTRL('Z'))
-                    backend_special(ldisc->backend, TS_SUSP);
+                    backend_special(ldisc->backend, SS_SUSP, 0);
 		if (c == CTRL('\\'))
-                    backend_special(ldisc->backend, TS_ABORT);
+                    backend_special(ldisc->backend, SS_ABORT, 0);
 		break;
 	      case CTRL('R'):	       /* redraw line */
 		if (ECHOING) {
@@ -244,7 +244,7 @@ void ldisc_send(Ldisc *ldisc, const void *vbuf, int len, bool interactive)
 		break;
 	      case CTRL('D'):	       /* logout or send */
 		if (ldisc->buflen == 0) {
-                    backend_special(ldisc->backend, TS_EOF);
+                    backend_special(ldisc->backend, SS_EOF, 0);
 		} else {
                     backend_send(ldisc->backend, ldisc->buf, ldisc->buflen);
 		    ldisc->buflen = 0;
@@ -287,7 +287,7 @@ void ldisc_send(Ldisc *ldisc, const void *vbuf, int len, bool interactive)
 		    if (ldisc->protocol == PROT_RAW)
                         backend_send(ldisc->backend, "\r\n", 2);
 		    else if (ldisc->protocol == PROT_TELNET && ldisc->telnet_newline)
-                        backend_special(ldisc->backend, TS_EOL);
+                        backend_special(ldisc->backend, SS_EOL, 0);
 		    else
                         backend_send(ldisc->backend, "\r", 1);
 		    if (ECHOING)
@@ -324,24 +324,24 @@ void ldisc_send(Ldisc *ldisc, const void *vbuf, int len, bool interactive)
 		switch (buf[0]) {
 		  case CTRL('M'):
 		    if (ldisc->protocol == PROT_TELNET && ldisc->telnet_newline)
-                        backend_special(ldisc->backend, TS_EOL);
+                        backend_special(ldisc->backend, SS_EOL, 0);
 		    else
                         backend_send(ldisc->backend, "\r", 1);
 		    break;
 		  case CTRL('?'):
 		  case CTRL('H'):
 		    if (ldisc->telnet_keyboard) {
-                        backend_special(ldisc->backend, TS_EC);
+                        backend_special(ldisc->backend, SS_EC, 0);
 			break;
 		    }
 		  case CTRL('C'):
 		    if (ldisc->telnet_keyboard) {
-                        backend_special(ldisc->backend, TS_IP);
+                        backend_special(ldisc->backend, SS_IP, 0);
 			break;
 		    }
 		  case CTRL('Z'):
 		    if (ldisc->telnet_keyboard) {
-                        backend_special(ldisc->backend, TS_SUSP);
+                        backend_special(ldisc->backend, SS_SUSP, 0);
 			break;
 		    }
 

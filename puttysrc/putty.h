@@ -162,34 +162,73 @@ struct unicode_data {
 #define LGTYP_PACKETS 3		       /* logmode: SSH data packets */
 #define LGTYP_SSHRAW 4		       /* logmode: SSH raw data */
 
+/*
+ * Enumeration of 'special commands' that can be sent during a
+ * session, separately from the byte stream of ordinary session data.
+ */
 typedef enum {
-    /* Actual special commands. Originally Telnet, but some codes have
-     * been re-used for similar specials in other protocols. */
-    TS_AYT, TS_BRK, TS_SYNCH, TS_EC, TS_EL, TS_GA, TS_NOP, TS_ABORT,
-    TS_AO, TS_IP, TS_SUSP, TS_EOR, TS_EOF, TS_LECHO, TS_RECHO, TS_PING,
-    TS_EOL,
-    /* Special command for SSH. */
-    TS_REKEY,
-    /* POSIX-style signals. (not Telnet) */
-    TS_SIGABRT, TS_SIGALRM, TS_SIGFPE,  TS_SIGHUP,  TS_SIGILL,
-    TS_SIGINT,  TS_SIGKILL, TS_SIGPIPE, TS_SIGQUIT, TS_SIGSEGV,
-    TS_SIGTERM, TS_SIGUSR1, TS_SIGUSR2,
-    /* Pseudo-specials used for constructing the specials menu. */
-    TS_SEP,	    /* Separator */
-    TS_SUBMENU,	    /* Start a new submenu with specified name */
-    TS_EXITMENU,    /* Exit current submenu or end of specials */
-    /* Starting point for protocols to invent special-action codes
-     * that can't live in this enum at all, e.g. because they change
-     * with every session.
-     *
-     * Of course, this must remain the last value in this
-     * enumeration. */
-    TS_LOCALSTART
-} Telnet_Special;
+    /*
+     * Commands that are generally useful in multiple backends.
+     */
+    SS_BRK,    /* serial-line break */
+    SS_EOF,    /* end-of-file on session input */
+    SS_NOP,    /* transmit data with no effect */
+    SS_PING,   /* try to keep the session alive (probably, but not
+                * necessarily, implemented as SS_NOP) */
 
-struct telnet_special {
+    /*
+     * Commands specific to Telnet.
+     */
+    SS_AYT,    /* Are You There */
+    SS_SYNCH,  /* Synch */
+    SS_EC,     /* Erase Character */
+    SS_EL,     /* Erase Line */
+    SS_GA,     /* Go Ahead */
+    SS_ABORT,  /* Abort Process */
+    SS_AO,     /* Abort Output */
+    SS_IP,     /* Interrupt Process */
+    SS_SUSP,   /* Suspend Process */
+    SS_EOR,    /* End Of Record */
+    SS_EOL,    /* Telnet end-of-line sequence (CRLF, as opposed to CR
+                * NUL that escapes a literal CR) */
+
+    /*
+     * Commands specific to SSH.
+     */
+    SS_REKEY,  /* trigger an immediate repeat key exchange */
+    SS_XCERT,  /* cross-certify another host key ('arg' indicates which) */
+
+    /*
+     * Send a POSIX-style signal. (Useful in SSH and also pterm.)
+     *
+     * We use the master list in sshsignals.h to define these enum
+     * values, which will come out looking like names of the form
+     * SS_SIGABRT, SS_SIGINT etc.
+     */
+    #define SIGNAL_MAIN(name, text) SS_SIG ## name,
+    #define SIGNAL_SUB(name) SS_SIG ## name,
+    #include "sshsignals.h"
+    #undef SIGNAL_MAIN
+    #undef SIGNAL_SUB
+
+    /*
+     * These aren't really special commands, but they appear in the
+     * enumeration because the list returned from
+     * backend_get_specials() will use them to specify the structure
+     * of the GUI specials menu.
+     */
+    SS_SEP,	    /* Separator */
+    SS_SUBMENU,	    /* Start a new submenu with specified name */
+    SS_EXITMENU,    /* Exit current submenu, or end of entire specials list */
+} SessionSpecialCode;
+
+/*
+ * The structure type returned from backend_get_specials.
+ */
+struct SessionSpecial {
     const char *name;
-    int code;
+    SessionSpecialCode code;
+    int arg;
 };
 
 typedef enum {
@@ -451,8 +490,8 @@ struct BackendVtable {
     /* sendbuffer() does the same thing but without attempting a send */
     size_t (*sendbuffer) (Backend *be);
     void (*size) (Backend *be, int width, int height);
-    void (*special) (Backend *be, Telnet_Special code);
-    const struct telnet_special *(*get_specials) (Backend *be);
+    void (*special) (Backend *be, SessionSpecialCode code, int arg);
+    const SessionSpecial *(*get_specials) (Backend *be);
     bool (*connected) (Backend *be);
     int (*exitcode) (Backend *be);
     /* If back->sendok() returns false, the backend doesn't currently
@@ -490,9 +529,9 @@ static inline size_t backend_sendbuffer(Backend *be)
 static inline void backend_size(Backend *be, int width, int height)
 { be->vt->size(be, width, height); }
 static inline void backend_special(
-    Backend *be, Telnet_Special code)
-{ be->vt->special(be, code); }
-static inline const struct telnet_special *backend_get_specials(Backend *be)
+    Backend *be, SessionSpecialCode code, int arg)
+{ be->vt->special(be, code, arg); }
+static inline const SessionSpecial *backend_get_specials(Backend *be)
 { return be->vt->get_specials(be); }
 static inline bool backend_connected(Backend *be)
 { return be->vt->connected(be); }

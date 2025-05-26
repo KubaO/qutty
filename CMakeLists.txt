@@ -159,6 +159,7 @@ set(PROJECT_SOURCES
     puttysrc/sshblowf.h
     puttysrc/sshbn.h
     puttysrc/sshgssc.h
+    puttysrc/sshsignals.h
     puttysrc/proxy.h
     puttysrc/int64.h
     puttysrc/ldisc.h
