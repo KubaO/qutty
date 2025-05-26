@@ -106,7 +106,7 @@ Socket *new_connection(SockAddr *addr, const char *hostname,
 Socket *new_listener(const char *srcaddr, int port, Plug *plug,
                      bool local_host_only, Conf *conf, int addressfamily);
 SockAddr *name_lookup(const char *host, int port, char **canonicalname,
-                      Conf *conf, int addressfamily, void *frontend_for_logging,
+                      Conf *conf, int addressfamily, LogContext *logctx,
                       const char *lookup_reason_for_logging);
 int proxy_for_destination (SockAddr *addr, const char *hostname, int port,
                            Conf *conf);
@@ -231,7 +231,7 @@ char *get_hostname(void);
  * Trivial socket implementation which just stores an error. Found in
  * errsock.c.
  */
-Socket *new_error_socket(const char *errmsg, Plug *plug);
+Socket *new_error_socket_fmt(Plug *plug, const char *fmt, ...);
 
 /* ----------------------------------------------------------------------
  * Functions defined outside the network code, which have to be
@@ -242,14 +242,17 @@ Socket *new_error_socket(const char *errmsg, Plug *plug);
 /*
  * Exports from be_misc.c.
  */
-void backend_socket_log(void *frontend, int type, SockAddr *addr, int port,
+void backend_socket_log(void *frontend, LogContext *logctx,
+                        int type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
-                        int session_started);
+                        bool session_started);
 
-#ifndef BUFCHAIN_TYPEDEF
-typedef struct bufchain_tag bufchain;  /* rest of declaration in misc.c */
-#define BUFCHAIN_TYPEDEF
-#endif
-void log_proxy_stderr(Plug *plug, bufchain *buf, const void *vdata, int len);
+typedef struct ProxyStderrBuf {
+    char buf[8192];
+    size_t size;
+} ProxyStderrBuf;
+void psb_init(ProxyStderrBuf *psb);
+void log_proxy_stderr(
+    Plug *plug, ProxyStderrBuf *psb, const void *vdata, size_t len);
 
 #endif

@@ -45,8 +45,8 @@ int askalg(void *frontend, const char *algtype, const char *algname,
  * Ask whether to wipe a session log file before writing to it.
  * Returns 2 for wipe, 1 for append, 0 for cancel (don't log).
  */
-int askappend(void * /*frontend*/, Filename *filename, void (* /*callback*/)(void *ctx, int result),
-              void * /*ctx*/) {
+int qt_askappend(LogPolicy * /*lp*/, Filename *filename,
+                 void (* /*callback*/)(void *ctx, int result), void * /*ctx*/) {
   // assert(frontend);
   QString msg = QString("The session log file \"") + QString(filename->path) +
                 QString(
@@ -254,7 +254,9 @@ void modalfatalbox(const char *fmt, ...) {
 
 void update_specials_menu(void *) {}
 
-void logevent(void *frontend, const char *string) { qDebug() << frontend << string; }
+void qt_eventlog(LogPolicy *lp, const char *event) { qDebug() << lp << event; }
+
+void qt_logging_error(LogPolicy *lp, const char *event) { qDebug() << lp << event; }
 
 // from putty-0.69/windlg.c
 int verify_ssh_host_key(void *frontend, char *host, int port, const char *keytype, char *keystr,
@@ -362,3 +364,6 @@ int askhk(void *frontend, const char *algname, const char *betteralgs,
   else
     return 0;
 }
+
+static const LogPolicyVtable default_logpolicy_vt = {qt_eventlog, qt_askappend, qt_logging_error};
+LogPolicy default_logpolicy[1] = {&default_logpolicy_vt};

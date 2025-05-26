@@ -478,7 +478,7 @@ struct Backend {
 };
 struct BackendVtable {
     const char *(*init) (void *frontend, Backend **backend_out,
-                         Conf *conf,
+                         LogContext *logctx, Conf *conf,
                          const char *host, int port,
                          char **realhost, bool nodelay, bool keepalive);
 
@@ -500,7 +500,6 @@ struct BackendVtable {
     bool (*sendok) (Backend *be);
     bool (*ldisc_option_state) (Backend *be, int);
     void (*provide_ldisc) (Backend *be, Ldisc *ldisc);
-    void (*provide_logctx) (Backend *be, void *logctx);
     /* Tells the back end that the front end  buffer is clearing. */
     void (*unthrottle) (Backend *be, size_t bufsize);
     int (*cfg_info) (Backend *be);
@@ -515,9 +514,9 @@ struct BackendVtable {
 };
 
 static inline const char *backend_init(
-    const BackendVtable *vt, void *frontend, Backend **out,
+    const BackendVtable *vt, void *frontend, Backend **out, LogContext *logctx,
     Conf *conf, const char *host, int port, char **rhost, bool nd, bool ka)
-{ return vt->init(frontend, out, conf, host, port, rhost, nd, ka); }
+{ return vt->init(frontend, out, logctx, conf, host, port, rhost, nd, ka); }
 static inline void backend_free(Backend *be)
 { be->vt->free(be); }
 static inline void backend_reconfig(Backend *be, Conf *conf)
@@ -566,10 +565,6 @@ extern const char *const appname;
  * Some global flags denoting the type of application.
  * 
  * FLAG_VERBOSE is set when the user requests verbose details.
- * 
- * FLAG_STDERR is set in command-line applications (which have a
- * functioning stderr that it makes sense to write to) and not in
- * GUI applications (which don't).
  * 
  * FLAG_INTERACTIVE is set when a full interactive shell session is
  * being run, _either_ because no remote command has been provided
@@ -657,11 +652,10 @@ typedef struct {
     size_t n_prompts;   /* May be zero (in which case display the foregoing,
                          * if any, and return success) */
     prompt_t **prompts;
-    void *frontend;
     void *data;		/* slot for housekeeping data, managed by
 			 * get_userpass_input(); initially NULL */
 } prompts_t;
-prompts_t *new_prompts(void *frontend);
+prompts_t *new_prompts(void);
 void add_prompt(prompts_t *p, char *promptstr, int echo);
 void prompt_set_result(prompt_t *pr, const char *newstr);
 void prompt_ensure_result_size(prompt_t *pr, int len);
@@ -1245,14 +1239,72 @@ int format_arrow_key(char *buf, Terminal *term, int xkey, int ctrl);
 /*
  * Exports from logging.c.
  */
-void *log_init(void *frontend, Conf *conf);
-void log_free(void *logctx);
-void log_reconfig(void *logctx, Conf *conf);
-void logfopen(void *logctx);
-void logfclose(void *logctx);
-void logtraffic(void *logctx, unsigned char c, int logmode);
-void logflush(void *logctx);
-void log_eventlog(void *logctx, const char *string);
+struct LogPolicyVtable {
+    /*
+     * Pass Event Log entries on from LogContext to the front end,
+     * which might write them to standard error or save them for a GUI
+     * list box or other things.
+     */
+    void (*eventlog)(LogPolicy *lp, const char *event);
+
+    /*
+     * Ask what to do about the specified output log file already
+     * existing. Can return four values:
+     *
+     *  - 2 means overwrite the log file
+     *  - 1 means append to the log file
+     *  - 0 means cancel logging for this session
+     *  - -1 means please wait, and callback() will be called with one
+     *    of those options.
+     */
+    int (*askappend)(LogPolicy *lp, Filename *filename,
+                     void (*callback)(void *ctx, int result), void *ctx);
+
+    /*
+     * Emergency logging when the log file itself can't be opened,
+     * which typically means we want to shout about it more loudly
+     * than a mere Event Log entry.
+     *
+     * One reasonable option is to send it to the same place that
+     * stderr output from the main session goes (so, either a console
+     * tool's actual stderr, or a terminal window). In many cases this
+     * is unlikely to cause this error message to turn up
+     * embarrassingly in a log file of real server output, because the
+     * whole point is that we haven't managed to open any such log
+     * file :-)
+     */
+    void (*logging_error)(LogPolicy *lp, const char *event);
+};
+struct LogPolicy {
+    const LogPolicyVtable *vt;
+};
+
+static inline void lp_eventlog(LogPolicy *lp, const char *event)
+{ lp->vt->eventlog(lp, event); }
+static inline int lp_askappend(
+    LogPolicy *lp, Filename *filename,
+    void (*callback)(void *ctx, int result), void *ctx)
+{ return lp->vt->askappend(lp, filename, callback, ctx); }
+static inline void lp_logging_error(LogPolicy *lp, const char *event)
+{ lp->vt->logging_error(lp, event); }
+
+LogContext *log_init(LogPolicy *lp, Conf *conf);
+void log_free(LogContext *logctx);
+void log_reconfig(LogContext *logctx, Conf *conf);
+void logfopen(LogContext *logctx);
+void logfclose(LogContext *logctx);
+void logtraffic(LogContext *logctx, unsigned char c, int logmode);
+void logflush(LogContext *logctx);
+void logevent(LogContext *logctx, const char *event);
+void logeventf(LogContext *logctx, const char *fmt, ...);
+void logeventvf(LogContext *logctx, const char *fmt, va_list ap);
+
+/*
+ * Pass a dynamically allocated string to logevent and immediately
+ * free it. Intended for use by wrapper macros which pass the return
+ * value of dupprintf straight to this.
+ */
+void logevent_and_free(LogContext *logctx, char *event);
 enum { PKT_INCOMING, PKT_OUTGOING };
 enum { PKTLOG_EMIT, PKTLOG_BLANK, PKTLOG_OMIT };
 struct logblank_t {
@@ -1260,11 +1312,15 @@ struct logblank_t {
     int len;
     int type;
 };
-void log_packet(void *logctx, int direction, int type,
-		const char *texttype, const void *data, int len,
+void log_packet(LogContext *logctx, int direction, int type,
+		const char *texttype, const void *data, size_t len,
 		int n_blanks, const struct logblank_t *blanks,
 		const unsigned long *sequence,
                 unsigned downstream_id, const char *additional_log_text);
+
+/* This is defined by applications that have an obvious logging
+ * destination like standard error or the GUI. */
+extern LogPolicy default_logpolicy[1];
 
 /*
  * Exports from testback.c
@@ -1430,7 +1486,6 @@ int wc_unescape(char *output, const char *wildcard);
 /*
  * Exports from frontend (windlg.c etc)
  */
-void logevent(void *frontend, const char *);
 void pgp_fingerprints(void);
 /*
  * verify_ssh_host_key() can return one of three values:
@@ -1464,16 +1519,6 @@ int askalg(void *frontend, const char *algtype, const char *algname,
 	   void (*callback)(void *ctx, int result), void *ctx);
 int askhk(void *frontend, const char *algname, const char *betteralgs,
           void (*callback)(void *ctx, int result), void *ctx);
-/*
- * askappend can return four values:
- * 
- *  - 2 means overwrite the log file
- *  - 1 means append to the log file
- *  - 0 means cancel logging for this session
- *  - -1 means please wait.
- */
-int askappend(void *frontend, Filename *filename,
-	      void (*callback)(void *ctx, int result), void *ctx);
 
 /*
  * Exports from console frontends (wincons.c, uxcons.c)
@@ -1482,7 +1527,6 @@ int askappend(void *frontend, Filename *filename,
 extern int console_batch_mode;
 int console_get_userpass_input(prompts_t *p, const unsigned char *in,
                                int inlen);
-void console_provide_logctx(void *logctx);
 int is_interactive(void);
 
 /*

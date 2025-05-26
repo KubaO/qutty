@@ -13,6 +13,7 @@ struct TmuxBackend {
 
   Plug plug;
   Backend backend;
+  LogContext *logctx;
 };
 
 void tmux_log(Plug * /*plug*/, int /*type*/, SockAddr * /*addr*/, int /*port*/,
@@ -36,8 +37,8 @@ void tmux_sent(Plug * /*plug*/, size_t /*bufsize*/) { qDebug() << __FUNCTION__; 
  *
  * Returns an error message, or NULL on success.
  */
-const char *tmux_client_init(void *frontend, Backend **backend_out, Conf * /*cfg*/,
-                             const char * /*host*/, int port, char ** /*realhost*/,
+const char *tmux_client_init(void *frontend, Backend **backend_out, LogContext *logctx,
+                             Conf * /*cfg*/, const char * /*host*/, int port, char ** /*realhost*/,
                              bool /*nodelay*/, bool /*keepalive*/) {
   static const struct PlugVtable vtable = {tmux_log, tmux_closing, tmux_receive, tmux_sent, NULL};
 
@@ -49,6 +50,7 @@ const char *tmux_client_init(void *frontend, Backend **backend_out, Conf * /*cfg
   tb->gateway = termWnd->tmuxGateway();
   tb->paneid = port;  // HACK - port is actually paneid
   tb->plug.vt = &vtable;
+  tb->logctx = logctx;
 
   return NULL;
 }
@@ -106,8 +108,6 @@ void tmux_provide_ldisc(Backend * /*be*/, Ldisc * /*ldisc*/) {
   // telnet->ldisc = ldisc;
 }
 
-void tmux_provide_logctx(Backend * /*be*/, void * /*logctx*/) { /* This is a stub. */ }
-
 int tmux_cfg_info(Backend * /*be*/) { return 0; }
 
 static const char tmux_client_backend_name[] = "tmux_client_backend";
@@ -125,7 +125,6 @@ BackendVtable tmux_client_backend = {tmux_client_init,
                                      NULL /*sendok*/,
                                      tmux_ldisc,
                                      tmux_provide_ldisc,
-                                     tmux_provide_logctx,
                                      tmux_unthrottle,
                                      tmux_cfg_info,
                                      NULL /*test_for_upstream*/,

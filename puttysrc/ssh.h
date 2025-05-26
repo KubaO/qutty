@@ -507,8 +507,6 @@ int random_byte(void);
 void random_add_noise(void *noise, int length);
 void random_add_heavynoise(void *noise, int length);
 
-void logevent(void *, const char *);
-
 struct PortForwarding;
 
 /* Allocate and register a new channel for port forwarding */

@@ -75,7 +75,6 @@ int GuiTerminalWindow::initTerminal() {
   Socket *sock = nullptr;
   char *realhost = NULL;
   char *ip_addr = conf_get_str(cfg, CONF_host);
-  void *logctx;
 
   termwin.vt = &qttermwin_vt;
 
@@ -86,9 +85,12 @@ int GuiTerminalWindow::initTerminal() {
   setTermFont(cfg);
   cfgtopalette(cfg);
 
+  LogContext *logctx = log_init(default_logpolicy, cfg);
+
   const BackendVtable *vt = backend_vt_from_proto(conf_get_int(cfg, CONF_protocol));
   int port = conf_get_int(cfg, CONF_port);
-  const char *error = backend_init(vt, this, &backend, cfg, (char *)ip_addr, port, &realhost, 1, 0);
+  const char *error =
+      backend_init(vt, this, &backend, logctx, cfg, (char *)ip_addr, port, &realhost, 1, 0);
   if (realhost) sfree(realhost);
 
   if (error) {
@@ -106,7 +108,7 @@ int GuiTerminalWindow::initTerminal() {
   }
 
   term = term_init(cfg, &ucsdata, &termwin);
-  logctx = log_init(NULL, cfg);
+  logctx = log_init(default_logpolicy, cfg);
   term_provide_logctx(term, logctx);
 
   term_size(term, this->viewport()->height() / fontHeight, this->viewport()->width() / fontWidth,
@@ -262,7 +264,7 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   cfgtopalette(cfg);
 
   term = term_init(cfg, &ucsdata, &termwin);
-  void *logctx = log_init(NULL, cfg);
+  LogContext *logctx = log_init(default_logpolicy, cfg);
   term_provide_logctx(term, logctx);
   int cfg_width = conf_get_int(cfg, CONF_width);
   int cfg_height = conf_get_int(cfg, CONF_height);
@@ -283,7 +285,7 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
 
   const BackendVtable *vt = backend_vt_from_proto(conf_get_int(cfg, CONF_protocol));
   // HACK - pass paneid in port
-  backend_init(vt, this, &backend, cfg, NULL, id, NULL, 0, 0);
+  backend_init(vt, this, &backend, logctx, cfg, NULL, id, NULL, 0, 0);
   tmuxPane = new TmuxWindowPane(gateway, this);
   tmuxPane->id = id;
   tmuxPane->width = width;

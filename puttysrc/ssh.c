@@ -771,7 +771,7 @@ struct Ssh {
     Backend backend;
 
     Ldisc *ldisc;
-    void *logctx;
+    LogContext *logctx;
 
     unsigned char session_key[32];
     int v1_compressing;
@@ -994,20 +994,8 @@ static const char *ssh_pkt_type(Ssh *ssh, int type)
 	return ssh2_pkt_type(ssh->pkt_kctx, ssh->pkt_actx, type);
 }
 
-#define logevent(s) logevent(ssh->frontend, s)
-
-/* logevent, only printf-formatted. */
-static void logeventf(Ssh *ssh, const char *fmt, ...)
-{
-    va_list ap;
-    char *buf;
-
-    va_start(ap, fmt);
-    buf = dupvprintf(fmt, ap);
-    va_end(ap);
-    logevent(buf);
-    sfree(buf);
-}
+#define logevent(s) logevent(ssh->logctx, s)
+#define logeventf(ssh, ...) logeventf(ssh->logctx, __VA_ARGS__)
 
 static void bomb_out(Ssh *ssh, char *text)
 {
@@ -3515,7 +3503,7 @@ static void ssh_socket_log(Plug *plug, int type, SockAddr *addr, int port,
      */
 
     if (!ssh->attempting_connshare)
-        backend_socket_log(ssh->frontend, type, addr, port,
+        backend_socket_log(ssh->frontend, ssh->logctx, type, addr, port,
                            error_msg, error_code, ssh->conf,
                            ssh->session_started);
 }
@@ -3710,7 +3698,7 @@ static const char *connect_to_host(Ssh *ssh, const char *host, int port,
          */
         addressfamily = conf_get_int(ssh->conf, CONF_addressfamily);
         addr = name_lookup(host, port, realhost, ssh->conf, addressfamily,
-                           ssh->frontend, "SSH connection");
+                           ssh->logctx, "SSH connection");
         if ((err = sk_addr_error(addr)) != NULL) {
             sk_addr_free(addr);
             return err;
@@ -4373,7 +4361,7 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
     {
 	if ((ssh->username = get_remote_username(ssh->conf)) == NULL) {
 	    int ret; /* need not be kept over crReturn */
-	    s->cur_prompt = new_prompts(ssh->frontend);
+	    s->cur_prompt = new_prompts();
 	    s->cur_prompt->to_server = TRUE;
 	    s->cur_prompt->name = dupstr("SSH login name");
 	    add_prompt(s->cur_prompt, dupstr("login as: "), TRUE);
@@ -4424,7 +4412,7 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
     s->keyfile = conf_get_filename(ssh->conf, CONF_keyfile);
     if (!filename_is_null(s->keyfile)) {
 	int keytype;
-	logeventf(ssh, "Reading key file \"%.150s\"",
+    logeventf(ssh, "Reading key file \"%.150s\"",
 		  filename_to_str(s->keyfile));
 	keytype = key_type(s->keyfile);
 	if (keytype == SSH_KEYTYPE_SSH1 ||
@@ -4440,7 +4428,7 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
                                                            NULL);
 	    } else {
 		char *msgbuf;
-		logeventf(ssh, "Unable to load key (%s)", error);
+        logeventf(ssh, "Unable to load key (%s)", error);
 		msgbuf = dupprintf("Unable to load key file "
 				   "\"%.150s\" (%s)\r\n",
 				   filename_to_str(s->keyfile),
@@ -4451,7 +4439,7 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 	    }
 	} else {
 	    char *msgbuf;
-	    logeventf(ssh, "Unable to use this key file (%s)",
+        logeventf(ssh, "Unable to use this key file (%s)",
 		      key_type_to_str(keytype));
 	    msgbuf = dupprintf("Unable to use key file \"%.150s\""
 			       " (%s)\r\n",
@@ -4505,7 +4493,7 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
                     s->nkeys = 0;
                 }
 		s->p += 4;
-		logeventf(ssh, "Pageant has %d SSH-1 keys", s->nkeys);
+        logeventf(ssh, "Pageant has %d SSH-1 keys", s->nkeys);
 		for (s->keyi = 0; s->keyi < s->nkeys; s->keyi++) {
 		    unsigned char *pkblob = s->p;
 		    s->p += 4;
@@ -4544,14 +4532,14 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 		    if (s->publickey_blob) {
 			if (!memcmp(pkblob, s->publickey_blob,
 				    s->publickey_bloblen)) {
-			    logeventf(ssh, "Pageant key #%d matches "
+                logeventf(ssh, "Pageant key #%d matches "
 				      "configured key file", s->keyi);
 			    s->tried_publickey = 1;
 			} else
 			    /* Skip non-configured key */
 			    continue;
 		    }
-		    logeventf(ssh, "Trying Pageant key #%d", s->keyi);
+            logeventf(ssh, "Trying Pageant key #%d", s->keyi);
 		    send_packet(ssh, SSH1_CMSG_AUTH_RSA,
 				PKT_BIGNUM, s->key.modulus, PKT_END);
 		    crWaitUntil(pktin);
@@ -4662,7 +4650,7 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 	    if (flags & FLAG_VERBOSE)
 		c_write_str(ssh, "Trying public key authentication.\r\n");
 	    s->keyfile = conf_get_filename(ssh->conf, CONF_keyfile);
-	    logeventf(ssh, "Trying public key \"%s\"",
+        logeventf(ssh, "Trying public key \"%s\"",
 		      filename_to_str(s->keyfile));
 	    s->tried_publickey = 1;
 	    got_passphrase = FALSE;
@@ -4678,7 +4666,7 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 		    passphrase = NULL;
 		} else {
 		    int ret; /* need not be kept over crReturn */
-		    s->cur_prompt = new_prompts(ssh->frontend);
+		    s->cur_prompt = new_prompts();
 		    s->cur_prompt->to_server = FALSE;
 		    s->cur_prompt->name = dupstr("SSH key passphrase");
 		    add_prompt(s->cur_prompt,
@@ -4797,7 +4785,7 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 	/*
 	 * Otherwise, try various forms of password-like authentication.
 	 */
-	s->cur_prompt = new_prompts(ssh->frontend);
+	s->cur_prompt = new_prompts();
 
     if (conf_get_bool(ssh->conf, CONF_try_tis_auth) &&
 	    (s->supported_auths_mask & (1 << SSH1_AUTH_TIS)) &&
@@ -5222,10 +5210,10 @@ static void ssh_rportfwd_succfail(Ssh *ssh, struct Packet *pktin, void *ctx)
 
     if (pktin->type == (ssh->version == 1 ? SSH1_SMSG_SUCCESS :
 			SSH2_MSG_REQUEST_SUCCESS)) {
-	logeventf(ssh, "Remote port forwarding from %s enabled",
+    logeventf(ssh, "Remote port forwarding from %s enabled",
 		  pf->sportdesc);
     } else {
-	logeventf(ssh, "Remote port forwarding from %s refused",
+    logeventf(ssh, "Remote port forwarding from %s refused",
 		  pf->sportdesc);
 
 	rpf = del234(ssh->rportfwds, pf);
@@ -5329,7 +5317,7 @@ static void ssh_setup_portfwd(Ssh *ssh, Conf *conf)
 	    sserv = 1;
 	    sport = net_service_lookup(sports);
 	    if (!sport) {
-		logeventf(ssh, "Service lookup failed for source"
+        logeventf(ssh, "Service lookup failed for source"
 			  " port \"%s\"", sports);
 	    }
 	}
@@ -5355,7 +5343,7 @@ static void ssh_setup_portfwd(Ssh *ssh, Conf *conf)
 		dserv = 1;
 		dport = net_service_lookup(dports);
 		if (!dport) {
-		    logeventf(ssh, "Service lookup failed for destination"
+            logeventf(ssh, "Service lookup failed for destination"
 			      " port \"%s\"", dports);
 		}
 	    }
@@ -5426,7 +5414,7 @@ static void ssh_setup_portfwd(Ssh *ssh, Conf *conf)
 		message = msg2;
 	    }
 
-	    logeventf(ssh, "Cancelling %s", message);
+        logeventf(ssh, "Cancelling %s", message);
 	    sfree(message);
 
 	    /* epf->remote or epf->local may be NULL if setting up a
@@ -5507,7 +5495,7 @@ static void ssh_setup_portfwd(Ssh *ssh, Conf *conf)
                                        ssh, conf, &epf->local,
                                        epf->addressfamily);
 
-		logeventf(ssh, "Local %sport %s forwarding to %s%s%s",
+        logeventf(ssh, "Local %sport %s forwarding to %s%s%s",
 			  epf->addressfamily == ADDRTYPE_IPV4 ? "IPv4 " :
 			  epf->addressfamily == ADDRTYPE_IPV6 ? "IPv6 " : "",
 			  sportdesc, dportdesc,
@@ -5519,7 +5507,7 @@ static void ssh_setup_portfwd(Ssh *ssh, Conf *conf)
                                        ssh, conf, &epf->local,
                                        epf->addressfamily);
 
-		logeventf(ssh, "Local %sport %s SOCKS dynamic forwarding%s%s",
+        logeventf(ssh, "Local %sport %s SOCKS dynamic forwarding%s%s",
 			  epf->addressfamily == ADDRTYPE_IPV4 ? "IPv4 " :
 			  epf->addressfamily == ADDRTYPE_IPV6 ? "IPv6 " : "",
 			  sportdesc,
@@ -5553,11 +5541,11 @@ static void ssh_setup_portfwd(Ssh *ssh, Conf *conf)
                 }
 		pf->sport = epf->sport;
 		if (add234(ssh->rportfwds, pf) != pf) {
-		    logeventf(ssh, "Duplicate remote port forwarding to %s:%d",
+            logeventf(ssh, "Duplicate remote port forwarding to %s:%d",
 			      epf->daddr, epf->dport);
 		    sfree(pf);
 		} else {
-		    logeventf(ssh, "Requesting remote port %s"
+            logeventf(ssh, "Requesting remote port %s"
 			      " forward to %s", sportdesc, dportdesc);
 
 		    pf->sportdesc = sportdesc;
@@ -5687,7 +5675,7 @@ static void ssh1_msg_port_open(Ssh *ssh, struct Packet *pktin)
     pfp = find234(ssh->rportfwds, &pf, NULL);
 
     if (pfp == NULL) {
-	logeventf(ssh, "Rejected remote port open request for %s:%d",
+    logeventf(ssh, "Rejected remote port open request for %s:%d",
 		  pf.dhost, port);
 	send_packet(ssh, SSH1_MSG_CHANNEL_OPEN_FAILURE,
 		    PKT_INT, remoteid, PKT_END);
@@ -5695,12 +5683,12 @@ static void ssh1_msg_port_open(Ssh *ssh, struct Packet *pktin)
         struct ssh_channel *c = snew(struct ssh_channel);
         c->ssh = ssh;
 
-	logeventf(ssh, "Received remote port open request for %s:%d",
+    logeventf(ssh, "Received remote port open request for %s:%d",
 		  pf.dhost, port);
 	err = pfd_connect(&c->u.pfd.pf, pf.dhost, port,
                           c, ssh->conf, pfp->pfrec->addressfamily);
 	if (err != NULL) {
-	    logeventf(ssh, "Port open failed: %s", err);
+        logeventf(ssh, "Port open failed: %s", err);
             sfree(err);
 	    sfree(c);
 	    send_packet(ssh, SSH1_MSG_CHANNEL_OPEN_FAILURE,
@@ -7193,7 +7181,7 @@ static void do_ssh2_transport(Ssh *ssh, const void *vin, int inlen,
 
         ssh_ecdhkex_freekey(s->eckey);
     } else {
-	logeventf(ssh, "Doing RSA key exchange with hash %s",
+    logeventf(ssh, "Doing RSA key exchange with hash %s",
 		  ssh->kex->hash->text_name);
 	ssh->pkt_kctx = SSH2_PKTCTX_RSAKEX;
         /*
@@ -7361,7 +7349,7 @@ static void do_ssh2_transport(Ssh *ssh, const void *vin, int inlen,
 		}
 	    }
 	    if (list) {
-		logeventf(ssh,
+        logeventf(ssh,
 			  "Server also has %s host key%s, but we "
 			  "don't know %s", list,
 			  nkeys > 1 ? "s" : "",
@@ -7519,15 +7507,15 @@ static void do_ssh2_transport(Ssh *ssh, const void *vin, int inlen,
     }
 
     if (ssh->cscipher)
-	logeventf(ssh, "Initialised %.200s client->server encryption",
+    logeventf(ssh, "Initialised %.200s client->server encryption",
 		  ssh->cscipher->text_name);
     if (ssh->csmac)
-	logeventf(ssh, "Initialised %.200s client->server MAC algorithm%s%s",
+    logeventf(ssh, "Initialised %.200s client->server MAC algorithm%s%s",
 		  ssh->csmac->text_name,
 		  ssh->csmac_etm ? " (in ETM mode)" : "",
 		  ssh->cscipher->required_mac ? " (required by cipher)" : "");
     if (ssh->cscomp->text_name)
-	logeventf(ssh, "Initialised %s compression",
+    logeventf(ssh, "Initialised %s compression",
 		  ssh->cscomp->text_name);
 
     /*
@@ -7600,15 +7588,15 @@ static void do_ssh2_transport(Ssh *ssh, const void *vin, int inlen,
         sfree(key);
     }
     if (ssh->sccipher)
-	logeventf(ssh, "Initialised %.200s server->client encryption",
+    logeventf(ssh, "Initialised %.200s server->client encryption",
 		  ssh->sccipher->text_name);
     if (ssh->scmac)
-	logeventf(ssh, "Initialised %.200s server->client MAC algorithm%s%s",
+    logeventf(ssh, "Initialised %.200s server->client MAC algorithm%s%s",
 		  ssh->scmac->text_name,
 		  ssh->scmac_etm ? " (in ETM mode)" : "",
 		  ssh->sccipher->required_mac ? " (required by cipher)" : "");
     if (ssh->sccomp->text_name)
-	logeventf(ssh, "Initialised %s decompression",
+    logeventf(ssh, "Initialised %s decompression",
 		  ssh->sccomp->text_name);
 
     /*
@@ -8254,7 +8242,7 @@ static void ssh_channel_close_local(struct ssh_channel *c, char const *reason)
     c->type = CHAN_ZOMBIE;
     if (msg != NULL) {
 	if (reason != NULL)
-	    logeventf(ssh, "%s %s", msg, reason);
+        logeventf(ssh, "%s %s", msg, reason);
 	else
 	    logevent(msg);
     }
@@ -8595,7 +8583,7 @@ static void ssh2_msg_channel_request(Ssh *ssh, struct Packet *pktin)
 	    !memcmp(type, "exit-status", 11)) {
 
 	    ssh->exitcode = ssh_pkt_getuint32(pktin);
-	    logeventf(ssh, "Server sent command exit status %d",
+        logeventf(ssh, "Server sent command exit status %d",
 		      ssh->exitcode);
 	    reply = SSH2_MSG_CHANNEL_SUCCESS;
 
@@ -8725,7 +8713,7 @@ static void ssh2_msg_channel_request(Ssh *ssh, struct Packet *pktin)
 		}
 		/* ignore lang tag */
 	    } /* else don't attempt to parse */
-	    logeventf(ssh, "Server exited on signal%s%s%s",
+        logeventf(ssh, "Server exited on signal%s%s%s",
 		      fmt_sig ? fmt_sig : "",
                       core ? " (core dumped)" : "",
 		      fmt_msg ? fmt_msg : "");
@@ -8823,7 +8811,7 @@ static void ssh2_msg_channel_open(Ssh *ssh, struct Packet *pktin)
 	addrstr = dupprintf("%.*s", peeraddrlen, NULLTOEMPTY(peeraddr));
 	peerport = ssh_pkt_getuint32(pktin);
 
-	logeventf(ssh, "Received X11 connect request from %s:%d",
+    logeventf(ssh, "Received X11 connect request from %s:%d",
 		  addrstr, peerport);
 
 	if (!ssh->X11_fwd_enabled && !ssh->connshare)
@@ -9540,7 +9528,7 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 	     */
 	} else if ((ssh->username = get_remote_username(ssh->conf)) == NULL) {
 	    int ret; /* need not be kept over crReturn */
-	    s->cur_prompt = new_prompts(ssh->frontend);
+	    s->cur_prompt = new_prompts();
 	    s->cur_prompt->to_server = TRUE;
 	    s->cur_prompt->name = dupstr("SSH login name");
 	    add_prompt(s->cur_prompt, dupstr("login as: "), TRUE); 
@@ -9955,7 +9943,7 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 			 * Get a passphrase from the user.
 			 */
 			int ret; /* need not be kept over crReturn */
-			s->cur_prompt = new_prompts(ssh->frontend);
+			s->cur_prompt = new_prompts();
 			s->cur_prompt->to_server = FALSE;
 			s->cur_prompt->name = dupstr("SSH key passphrase");
 			add_prompt(s->cur_prompt,
@@ -10321,7 +10309,7 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 		    ssh_pkt_getstring(pktin, &name, &name_len);
 		    ssh_pkt_getstring(pktin, &inst, &inst_len);
 		    ssh_pkt_getstring(pktin, &lang, &lang_len);
-		    s->cur_prompt = new_prompts(ssh->frontend);
+		    s->cur_prompt = new_prompts();
 		    s->cur_prompt->to_server = TRUE;
 
 		    /*
@@ -10439,7 +10427,7 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 
 		ssh->pkt_actx = SSH2_PKTCTX_PASSWORD;
 
-		s->cur_prompt = new_prompts(ssh->frontend);
+		s->cur_prompt = new_prompts();
 		s->cur_prompt->to_server = TRUE;
 		s->cur_prompt->name = dupstr("SSH password");
 		add_prompt(s->cur_prompt, dupprintf("%s@%s's password: ",
@@ -10525,7 +10513,7 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 
 		    ssh_pkt_getstring(pktin, &prompt, &prompt_len);
 
-		    s->cur_prompt = new_prompts(ssh->frontend);
+		    s->cur_prompt = new_prompts();
 		    s->cur_prompt->to_server = TRUE;
 		    s->cur_prompt->name = dupstr("New SSH password");
 		    s->cur_prompt->instruction =
@@ -11181,7 +11169,7 @@ static void ssh_cache_conf_values(Ssh *ssh)
  * Returns an error message, or NULL on success.
  */
 static const char *ssh_init(void *frontend, Backend **backend_handle,
-                            Conf *conf,
+                            LogContext *logctx, Conf *conf,
                             const char *host, int port, char **realhost,
 			    bool nodelay, bool keepalive)
 {
@@ -11209,6 +11197,8 @@ static const char *ssh_init(void *frontend, Backend **backend_handle,
 #endif
 
     ssh->frontend = frontend;
+    ssh->logctx = logctx;
+    
     ssh->term_width = conf_get_int(ssh->conf, CONF_width);
     ssh->term_height = conf_get_int(ssh->conf, CONF_height);
 
@@ -11839,12 +11829,6 @@ static void ssh_provide_ldisc(Backend *be, Ldisc *ldisc)
     ssh->ldisc = ldisc;
 }
 
-static void ssh_provide_logctx(Backend *be, void *logctx)
-{
-    Ssh *ssh = container_of(be, Ssh, backend);
-    ssh->logctx = logctx;
-}
-
 static int ssh_return_exitcode(Backend *be)
 {
     Ssh *ssh = container_of(be, Ssh, backend);
@@ -11895,7 +11879,6 @@ const struct BackendVtable ssh_backend = {
     ssh_sendok,
     ssh_ldisc,
     ssh_provide_ldisc,
-    ssh_provide_logctx,
     ssh_unthrottle,
     ssh_cfg_info,
     ssh_test_for_upstream,

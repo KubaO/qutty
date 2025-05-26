@@ -8,6 +8,8 @@
 #include <limits.h>
 #include <ctype.h>
 #include <assert.h>
+
+#include "defs.h"
 #include "putty.h"
 #include "misc.h"
 
@@ -216,17 +218,15 @@ char *host_strduptrim(const char *s)
     return dupstr(s);
 }
 
-prompts_t *new_prompts(void *frontend)
-{
-    prompts_t *p = snew(prompts_t);
-    p->prompts = NULL;
-    p->n_prompts = 0;
-    p->frontend = frontend;
-    p->data = NULL;
-    p->to_server = TRUE; /* to be on the safe side */
-    p->name = p->instruction = NULL;
-    p->name_reqd = p->instr_reqd = FALSE;
-    return p;
+prompts_t *new_prompts(void) {
+  prompts_t *p = snew(prompts_t);
+  p->prompts = NULL;
+  p->n_prompts = 0;
+  p->data = NULL;
+  p->to_server = TRUE; /* to be on the safe side */
+  p->name = p->instruction = NULL;
+  p->name_reqd = p->instr_reqd = FALSE;
+  return p;
 }
 void add_prompt(prompts_t *p, char *promptstr, int echo)
 {
