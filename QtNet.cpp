@@ -80,9 +80,10 @@ static const struct SocketVtable QtSocket_sockvt = {sk_tcp_plug,
                                                     nullptr /* TODO write_eof */,
                                                     sk_tcp_flush,
                                                     sk_tcp_set_frozen,
-                                                    sk_tcp_socket_error};
+                                                    sk_tcp_socket_error,
+                                                    nullptr /* TODO peer_info */};
 
-int sk_addr_needs_port(SockAddr *addr) { return TRUE; }
+bool sk_addr_needs_port(SockAddr *addr) { return true; }
 
 int sk_addrtype(SockAddr *addr) {
   const QHostAddress *a = addr->qtaddr;
@@ -177,7 +178,7 @@ const char *sk_addr_error(SockAddr *addr) {
   return addr->error;
 }
 
-int sk_hostname_is_local(const char *name) {
+bool sk_hostname_is_local(const char *name) {
   return !strcmp(name, "localhost") || !strcmp(name, "::1") || !strncmp(name, "127.", 4);
 }
 
@@ -191,21 +192,21 @@ void sk_getaddr(SockAddr *addr, char *buf, int buflen) {
   buf[buflen - 1] = '\0';
 }
 
-int sk_address_is_local(SockAddr *addr) {
+bool sk_address_is_local(SockAddr *addr) {
   const QHostAddress *a = addr->qtaddr;
-  if (*a == QHostAddress::LocalHost || *a == QHostAddress::LocalHostIPv6) return 1;
+  if (*a == QHostAddress::LocalHost || *a == QHostAddress::LocalHostIPv6) return true;
   foreach (const QHostAddress &locaddr, QNetworkInterface::allAddresses()) {
-    if (*a == locaddr) return 1;
+    if (*a == locaddr) return true;
   }
-  return 0;
+  return false;
 }
 
-int sk_address_is_special_local(SockAddr *addr) {
-  return 0; /* no Unix-domain socket analogue here */
+bool sk_address_is_special_local(SockAddr *addr) {
+  return false; /* no Unix-domain socket analogue here */
 }
 
-Socket *sk_new(SockAddr *addr, int port, int privport, int oobinline, int nodelay, int keepalive,
-               Plug *plug) {
+Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline, bool nodelay,
+               bool keepalive, Plug *plug) {
   QtSocket *ret = snew(QtSocket);
   memset(ret, 0, sizeof(QtSocket));
 
@@ -234,7 +235,7 @@ cu0:
 }
 
 Socket *sk_newlistener(const char * /*srcaddr*/, int /*port*/, Plug * /*plug*/,
-                       int /*local_host_only*/, int /*orig_address_family*/) {
+                       bool /*local_host_only*/, int /*orig_address_family*/) {
   // TODO not implemented
   return NULL;
 }
@@ -270,8 +271,8 @@ SockAddr *platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*
 }
 
 Socket *platform_new_connection(SockAddr * /*addr*/, const char * /*hostname*/, int /*port*/,
-                                int /*privport*/, int /*oobinline*/, int /*nodelay*/,
-                                int /*keepalive*/, Plug * /*plug*/, Conf * /*cfg*/) {
+                                bool /*privport*/, bool /*oobinline*/, bool /*nodelay*/,
+                                bool /*keepalive*/, Plug * /*plug*/, Conf * /*cfg*/) {
   // TODO not yet implemented
   return NULL;
 }

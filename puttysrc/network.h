@@ -114,8 +114,8 @@ bool proxy_for_destination (SockAddr *addr, const char *hostname, int port,
 /* platform-dependent callback from new_connection() */
 /* (same caveat about addr as new_connection()) */
 Socket *platform_new_connection(SockAddr *addr, const char *hostname,
-                                int port, int privport,
-                                int oobinline, int nodelay, int keepalive,
+                                int port, bool privport,
+                                bool oobinline, bool nodelay, bool keepalive,
                                 Plug *plug, Conf *conf);
 
 /* socket functions */
@@ -126,10 +126,10 @@ void sk_cleanup(void);		       /* called just before program exit */
 SockAddr *sk_namelookup(const char *host, char **canonicalname, int address_family);
 SockAddr *sk_nonamelookup(const char *host);
 void sk_getaddr(SockAddr *addr, char *buf, int buflen);
-int sk_addr_needs_port(SockAddr *addr);
-int sk_hostname_is_local(const char *name);
-int sk_address_is_local(SockAddr *addr);
-int sk_address_is_special_local(SockAddr *addr);
+bool sk_addr_needs_port(SockAddr *addr);
+bool sk_hostname_is_local(const char *name);
+bool sk_address_is_local(SockAddr *addr);
+bool sk_address_is_special_local(SockAddr *addr);
 int sk_addrtype(SockAddr *addr);
 void sk_addrcopy(SockAddr *addr, char *buf);
 void sk_addr_free(SockAddr *addr);
@@ -142,11 +142,11 @@ SockAddr *sk_addr_dup(SockAddr *addr);
 
 /* NB, control of 'addr' is passed via sk_new, which takes responsibility
  * for freeing it, as for new_connection() */
-Socket *sk_new(SockAddr *addr, int port, int privport, int oobinline,
-               int nodelay, int keepalive, Plug *p);
+Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline,
+               bool nodelay, bool keepalive, Plug *p);
 
 Socket *sk_newlistener(const char *srcaddr, int port, Plug *plug,
-                       int local_host_only, int address_family);
+                       bool local_host_only, int address_family);
 
 static inline Plug *sk_plug(Socket *s, Plug *p)
 { return s->vt->plug(s, p); }
@@ -271,6 +271,11 @@ char *get_hostname(void);
  * errsock.c.
  */
 Socket *new_error_socket_fmt(Plug *plug, const char *fmt, ...);
+
+/*
+ * Trivial plug that does absolutely nothing. Found in nullplug.c.
+ */
+extern Plug *const nullplug;
 
 /* ----------------------------------------------------------------------
  * Functions defined outside the network code, which have to be
