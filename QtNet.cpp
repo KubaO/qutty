@@ -34,7 +34,7 @@ static size_t sk_tcp_write(Socket *sock, const void *data, size_t len) {
     j += sprintf(pr + j, "%u ", (unsigned char)((const char *)data)[i]);
   // qDebug()<<"sk_tcp_write"<<len<<pr;
   int ret = s->qtsock->write((const char *)data, len);
-  noise_ultralight(len);
+  noise_ultralight(NOISE_SOURCE_IOLEN, len);
   if (ret <= 0) qDebug() << "tcp_write ret " << ret;
   return ret;
 }
@@ -282,5 +282,3 @@ int platform_ssh_share(const char *name, Conf *conf, Plug *downplug, Plug *upplu
                        int can_downstream) {
   return SHARE_NONE;
 }
-
-void platform_ssh_share_cleanup(const char *name) {}

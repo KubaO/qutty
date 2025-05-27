@@ -310,7 +310,7 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
 }
 
 void GuiTerminalWindow::keyPressEvent(QKeyEvent *e) {
-  noise_ultralight(e->key());
+  noise_ultralight(NOISE_SOURCE_KEY, e->key());
   if (!term) return;
 
   // skip ALT SHIFT CTRL keypress events
@@ -360,12 +360,14 @@ void GuiTerminalWindow::keyPressEvent(QKeyEvent *e) {
   }
 }
 
-void GuiTerminalWindow::keyReleaseEvent(QKeyEvent *e) { noise_ultralight(e->key()); }
+void GuiTerminalWindow::keyReleaseEvent(QKeyEvent *e) {
+  noise_ultralight(NOISE_SOURCE_KEY, e->key());
+}
 
 void GuiTerminalWindow::readyRead() {
   char buf[20480];
   int len = qtsock->read(buf, sizeof(buf));
-  noise_ultralight(len);
+  noise_ultralight(NOISE_SOURCE_IOLEN, len);
 
   plug_receive(as->plug, 0, buf, len);
 
@@ -613,7 +615,7 @@ static Mouse_Button translate_button(Conf *cfg, Mouse_Button button) {
 
 void GuiTerminalWindow::mouseDoubleClickEvent(QMouseEvent *e) {
   QPoint pos = e->position().toPoint();
-  noise_ultralight(pos.x() << 16 | pos.y());
+  noise_ultralight(NOISE_SOURCE_MOUSEPOS, pos.x() << 16 | pos.y());
   if (!term) return;
 
   int mouse_is_xterm = conf_get_int(cfg, CONF_mouse_is_xterm);
@@ -644,7 +646,7 @@ void GuiTerminalWindow::mouseDoubleClickEvent(QMouseEvent *e) {
 //#define (e) e->button()&Qt::LeftButton
 void GuiTerminalWindow::mouseMoveEvent(QMouseEvent *e) {
   QPoint pos = e->position().toPoint();
-  noise_ultralight(pos.x() << 16 | pos.y());
+  noise_ultralight(NOISE_SOURCE_MOUSEPOS, pos.x() << 16 | pos.y());
   if (e->buttons() == Qt::NoButton) {
     mainWindow->toolBarTerminalTop.processMouseMoveTerminalTop(this, e);
     return;
@@ -679,7 +681,7 @@ void GuiTerminalWindow::mouseMoveEvent(QMouseEvent *e) {
 
 void GuiTerminalWindow::mousePressEvent(QMouseEvent *e) {
   QPoint pos = e->position().toPoint();
-  noise_ultralight(pos.x() << 16 | pos.y());
+  noise_ultralight(NOISE_SOURCE_MOUSEPOS, pos.x() << 16 | pos.y());
   if (!term) return;
 
   int mouse_is_xterm = conf_get_int(cfg, CONF_mouse_is_xterm);
@@ -723,7 +725,8 @@ void GuiTerminalWindow::mousePressEvent(QMouseEvent *e) {
 
 void GuiTerminalWindow::mouseReleaseEvent(QMouseEvent *e) {
   QPoint pos = e->position().toPoint();
-  noise_ultralight(pos.x() << 16 | pos.y());
+  noise_ultralight(NOISE_SOURCE_MOUSEPOS, pos.x() << 16 | pos.y());
+  noise_ultralight(NOISE_SOURCE_MOUSEBUTTON, e->buttons());
   if (!term) return;
 
   Mouse_Button button, bcooked;

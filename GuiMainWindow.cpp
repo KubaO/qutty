@@ -80,12 +80,12 @@ void GuiMainWindow::on_createNewSession(Conf *cfg, GuiBase::SplitType splittype)
 }
 
 void GuiMainWindow::createNewTab(Conf *cfg, GuiBase::SplitType splittype) {
-  int rc;
   GuiTerminalWindow *newWnd = new GuiTerminalWindow(tabArea, this, cfg);
   QString config_name = conf_get_str(cfg, CONF_config_name);
   QString hostname = conf_get_str(cfg, CONF_host);
 
-  if ((rc = newWnd->initTerminal())) goto err_exit;
+  int rc = newWnd->initTerminal();
+  if (rc) goto err_exit;
 
   if (this->setupLayout(newWnd, splittype)) goto err_exit;
 

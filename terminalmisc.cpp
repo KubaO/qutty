@@ -10,10 +10,6 @@
 #include "QtCommon.hpp"
 #include "terminal.h"
 
-printer_job *printer_start_job(char * /*printer*/) { return NULL; }
-void printer_job_data(printer_job * /*pj*/, const void * /*data*/, size_t /*len*/) {}
-void printer_finish_job(printer_job * /*pj*/) {}
-
 #if 0
 void get_clip(void *frontend, wchar_t **p, int *len) {
   GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
