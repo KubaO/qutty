@@ -414,24 +414,9 @@ void filename_free(Filename *fn) {
   sfree(fn);
 }
 
-int filename_serialise(const Filename *f, void *vdata) {
-  char *data = (char *)vdata;
-  int len = strlen(f->path) + 1; /* include trailing NUL */
-  if (data) {
-    strcpy(data, f->path);
-  }
-  return len;
-}
+void filename_serialise(BinarySink *bs, const Filename *f) { put_asciz(bs, f->path); }
 
-Filename *filename_deserialise(void *vdata, int maxsize, int *used) {
-  char *data = (char *)vdata;
-  char *end;
-  end = (char *)memchr(data, '\0', maxsize);
-  if (!end) return NULL;
-  end++;
-  *used = end - data;
-  return filename_from_str(data);
-}
+Filename *filename_deserialise(BinarySource *src) { return filename_from_str(get_asciz(src)); }
 
 struct tm ltime(void) {
   time_t rawtime;
@@ -484,28 +469,19 @@ FontSpec *fontspec_copy(const FontSpec *f) {
 
 void fontspec_free(FontSpec *f) { sfree(f); }
 
-int fontspec_serialise(FontSpec *f, void *vdata) {
-  char *data = (char *)vdata;
-  int len = strlen(f->name) + 1; /* include trailing NUL */
-  if (data) {
-    strcpy(data, f->name);
-    PUT_32BIT_MSB_FIRST(data + len, f->isbold);
-    PUT_32BIT_MSB_FIRST(data + len + 4, f->height);
-    PUT_32BIT_MSB_FIRST(data + len + 8, f->charset);
-  }
-  return len + 12; /* also include three 4-byte ints */
+void fontspec_serialise(BinarySink *bs, FontSpec *f) {
+  put_asciz(bs, f->name);
+  put_uint32(bs, f->isbold);
+  put_uint32(bs, f->height);
+  put_uint32(bs, f->charset);
 }
 
-FontSpec *fontspec_deserialise(void *vdata, int maxsize, int *used) {
-  char *data = (char *)vdata;
-  char *end;
-  if (maxsize < 13) return NULL;
-  end = (char *)memchr(data, '\0', maxsize - 12);
-  if (!end) return NULL;
-  end++;
-  *used = end - data + 12;
-  return fontspec_new(data, GET_32BIT_MSB_FIRST(end), GET_32BIT_MSB_FIRST(end + 4),
-                      GET_32BIT_MSB_FIRST(end + 8));
+FontSpec *fontspec_deserialise(BinarySource *src) {
+  const char *name = get_asciz(src);
+  unsigned isbold = get_uint32(src);
+  unsigned height = get_uint32(src);
+  unsigned charset = get_uint32(src);
+  return fontspec_new(name, isbold, height, charset);
 }
 
 char *get_username(void) {
@@ -633,7 +609,7 @@ extern "C" const char *win_strerror(int error) {
     es->text = snewn(bufsize, char);
     if (!FormatMessageA((FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS), NULL, error,
                         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), es->text, bufsize, NULL)) {
-      sprintf(es->text, "Windows error code %d (and FormatMessage returned %d)", error,
+      sprintf(es->text, "Windows error code %d (and FormatMessage returned %lu)", error,
               GetLastError());
     } else {
       int len = strlen(es->text);
