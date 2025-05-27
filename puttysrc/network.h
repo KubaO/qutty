@@ -213,6 +213,45 @@ static inline char *sk_peer_info(Socket *s)
 { return s->vt->peer_info(s); }
 
 /*
+ * The structure returned from sk_peer_info, and a function to free
+ * one (in misc.c).
+ */
+struct SocketPeerInfo {
+    int addressfamily;
+
+    /*
+     * Text form of the IPv4 or IPv6 address of the other end of the
+     * socket, if available, in the standard text representation.
+     */
+    const char *addr_text;
+
+    /*
+     * Binary form of the same address. Filled in if and only if
+     * addr_text is not NULL. You can tell which branch of the union
+     * is used by examining 'addressfamily'.
+     */
+    union {
+        unsigned char ipv6[16];
+        unsigned char ipv4[4];
+    } addr_bin;
+
+    /*
+     * Remote port number, or -1 if not available.
+     */
+    int port;
+
+    /*
+     * Free-form text suitable for putting in log messages. For IP
+     * sockets, repeats the address and port information from above.
+     * But it can be completely different, e.g. for Unix-domain
+     * sockets it gives information about the uid, gid and pid of the
+     * connecting process.
+     */
+    const char *log_text;
+};
+void sk_free_peer_info(SocketPeerInfo *pi);
+
+/*
  * Simple wrapper on getservbyname(), needed by ssh.c. Returns the
  * port number, in host byte order (suitable for printf and so on).
  * Returns 0 on failure. Any platform not supporting getservbyname

@@ -153,7 +153,7 @@ HMODULE load_system32_dll(const char *libname);
 void escape_registry_key(const char *in, strbuf *out);
 void unescape_registry_key(const char *in, strbuf *out);
 
-int has_embedded_chm(void); /* 1 = yes, 0 = no, -1 = N/A */
+static int has_embedded_chm(void) { return -1; } /* 1 = yes, 0 = no, -1 = N/A */
 
 #ifdef __cplusplus
 }

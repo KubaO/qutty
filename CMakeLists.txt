@@ -73,12 +73,14 @@ set(PROJECT_SOURCES
     puttysrc/proxy.c
     puttysrc/portfwd.c
     puttysrc/misc.c
+    puttysrc/marshal.c
     puttysrc/terminal.c
     puttysrc/ldisc.c
     puttysrc/ldiscucs.c
     puttysrc/memory.c
     puttysrc/miscucs.c
     puttysrc/timing.c
+    puttysrc/utils.c
     puttysrc/sshbn.c
     puttysrc/sshpubk.c
     puttysrc/sshrand.c
