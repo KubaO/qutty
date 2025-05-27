@@ -9257,6 +9257,8 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, const int inlen,
 	Ssh_gss_buf gss_rcvtok, gss_sndtok;
 	Ssh_gss_name gss_srv_name;
 	Ssh_gss_stat gss_stat;
+    time_t gss_cred_expiry;             /* Re-delegate if newer */
+    unsigned long gss_ctxt_lifetime;    /* Re-delegate when short */
 #endif
     };
     bufchain input;
@@ -10175,7 +10177,7 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, const int inlen,
 		}
 
 		/* fetch TGT into GSS engine */
-		s->gss_stat = s->gsslib->acquire_cred(s->gsslib, &s->gss_ctx);
+        s->gss_stat = s->gsslib->acquire_cred(s->gsslib, &s->gss_ctx, &s->gss_cred_expiry);
 
 		if (s->gss_stat != SSH_GSS_OK) {
 		    logevent("GSSAPI authentication failed to get credentials");
@@ -10195,7 +10197,7 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, const int inlen,
 			 s->gss_srv_name,
 			 conf_get_bool(ssh->conf, CONF_gssapifwd),
 			 &s->gss_rcvtok,
-			 &s->gss_sndtok);
+             &s->gss_sndtok, NULL, NULL);
 
 		    if (s->gss_stat!=SSH_GSS_S_COMPLETE &&
 			s->gss_stat!=SSH_GSS_S_CONTINUE_NEEDED) {
