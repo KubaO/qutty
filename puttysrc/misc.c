@@ -241,7 +241,7 @@ prompts_t *new_prompts(void) {
   p->name_reqd = p->instr_reqd = FALSE;
   return p;
 }
-void add_prompt(prompts_t *p, char *promptstr, int echo)
+void add_prompt(prompts_t *p, char *promptstr, bool echo)
 {
     prompt_t *pr = snew(prompt_t);
     pr->prompt = promptstr;
@@ -956,7 +956,7 @@ void debug_memdump(const void *buf, int len, int L)
  * Determine whether or not a Conf represents a session which can
  * sensibly be launched right now.
  */
-int conf_launchable(Conf *conf)
+bool conf_launchable(Conf *conf)
 {
     if (conf_get_int(conf, CONF_protocol) == PROT_SERIAL)
 	return conf_get_str(conf, CONF_serline)[0] != 0;

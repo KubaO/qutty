@@ -13,6 +13,8 @@
 extern "C" {
 #endif
 
+#include "defs.h"
+
 #ifdef _MSC_VER
 #define stricmp _stricmp
 #define strnicmp _strnicmp
@@ -129,6 +131,29 @@ static void clear_jumplist(void) {}
   (p_##name = module ? (t_##name)GetProcAddress(module, #name) : NULL)
 
 HMODULE load_system32_dll(const char *libname);
+
+#define PLATFORM_IS_UTF16 /* enable UTF-16 processing when exchanging \
+                           * wchar_t strings with environment */
+
+#define PLATFORM_CLIPBOARDS(X)       \
+  X(CLIP_SYSTEM, "system clipboard") \
+  /* end of list */
+
+/*
+ * Windows clipboard-UI wording.
+ */
+#define CLIPNAME_IMPLICIT "Last selected text"
+#define CLIPNAME_EXPLICIT "System clipboard"
+#define CLIPNAME_EXPLICIT_OBJECT "system clipboard"
+/* These defaults are the ones PuTTY has historically had */
+#define CLIPUI_DEFAULT_AUTOCOPY true
+#define CLIPUI_DEFAULT_MOUSE CLIPUI_EXPLICIT
+#define CLIPUI_DEFAULT_INS CLIPUI_EXPLICIT
+
+void escape_registry_key(const char *in, strbuf *out);
+void unescape_registry_key(const char *in, strbuf *out);
+
+int has_embedded_chm(void); /* 1 = yes, 0 = no, -1 = N/A */
 
 #ifdef __cplusplus
 }

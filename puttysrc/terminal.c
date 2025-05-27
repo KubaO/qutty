@@ -4989,10 +4989,11 @@ static void do_paint_draw(Terminal *term, termline *ldata, int x, int y,
                           wchar_t *ch, int ccount,
                           unsigned long attr)
 {
-    win_draw_text(term->win, x, y, ch, ccount, attr, ldata->lattr);
+    truecolour tc = {};
+    win_draw_text(term->win, x, y, ch, ccount, attr, ldata->lattr, tc);
     if (attr & (TATTR_ACTCURS | TATTR_PASCURS))
         win_draw_cursor(term->win, x, y, ch, ccount,
-                        attr, ldata->lattr);
+                        attr, ldata->lattr, tc);
 }
 
 /*
@@ -5411,8 +5412,8 @@ void term_invalidate(Terminal *term)
 /*
  * Paint the window in response to a WM_PAINT message.
  */
-void term_paint(Terminal *term, Context ctx,
-		int left, int top, int right, int bottom, int immediately)
+void term_paint(Terminal *term,
+		int left, int top, int right, int bottom, bool immediately)
 {
     int i, j;
     if (left < 0) left = 0;
@@ -6012,7 +6013,7 @@ void term_do_paste(Terminal *term, const wchar_t *data, int len)
 }
 
 void term_mouse(Terminal *term, Mouse_Button braw, Mouse_Button bcooked,
-		Mouse_Action a, int x, int y, int shift, int ctrl, int alt)
+		Mouse_Action a, int x, int y, bool shift, bool ctrl, bool alt)
 {
     pos selpoint;
     termline *ldata;
@@ -6283,7 +6284,7 @@ void term_mouse(Terminal *term, Mouse_Button braw, Mouse_Button bcooked,
     term_update(term);
 }
 
-int format_arrow_key(char *buf, Terminal *term, int xkey, int ctrl)
+int format_arrow_key(char *buf, Terminal *term, int xkey, bool ctrl)
 {
     char *p = buf;
 
@@ -6348,7 +6349,7 @@ void term_deselect(Terminal *term)
         term_out(term);
 }
 
-int term_ldisc(Terminal *term, int option)
+bool term_ldisc(Terminal *term, int option)
 {
     if (option == LD_ECHO)
 	return term->term_echoing;
@@ -6357,8 +6358,9 @@ int term_ldisc(Terminal *term, int option)
     return FALSE;
 }
 
-int term_data(Terminal *term, int is_stderr, const char *data, int len)
+size_t term_data(Terminal *term, bool is_stderr, const void *vdata, size_t len)
 {
+    const char *data = (const char *)vdata;
     bufchain_add(&term->inbuf, data, len);
 
     if (!term->in_term_out) {
@@ -6401,8 +6403,9 @@ int term_data(Terminal *term, int is_stderr, const char *data, int len)
  * The only control character that should be honoured is \n (which
  * will behave as a CRLF).
  */
-int term_data_untrusted(Terminal *term, const char *data, int len)
+size_t term_data_untrusted(Terminal *term, const void *vdata, size_t len)
 {
+    const char *data = (const char *)vdata;
     int i;
     /* FIXME: more sophisticated checking? */
     for (i = 0; i < len; i++) {
@@ -6419,7 +6422,7 @@ void term_provide_logctx(Terminal *term, LogContext *logctx)
     term->logctx = logctx;
 }
 
-void term_set_focus(Terminal *term, int has_focus)
+void term_set_focus(Terminal *term, bool has_focus)
 {
     term->has_focus = has_focus;
     term_schedule_cblink(term);
@@ -6453,7 +6456,7 @@ struct term_userpass_state {
  * input.
  */
 int term_get_userpass_input(Terminal *term, prompts_t *p,
-			    const unsigned char *in, int inlen)
+			    const unsigned char *in, size_t inlen)
 {
     struct term_userpass_state *s = (struct term_userpass_state *)p->data;
     if (!s) {

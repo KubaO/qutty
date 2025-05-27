@@ -406,9 +406,9 @@ Filename *filename_from_str(const char *str) {
 
 const char *filename_to_str(const Filename *fn) { return fn->path; }
 
-int filename_equal(const Filename *f1, const Filename *f2) { return !strcmp(f1->path, f2->path); }
+bool filename_equal(const Filename *f1, const Filename *f2) { return !strcmp(f1->path, f2->path); }
 
-int filename_is_null(const Filename *fn) { return !fn || fn->path[0] == '\0'; }
+bool filename_is_null(const Filename *fn) { return !fn || fn->path[0] == '\0'; }
 
 void filename_free(Filename *fn) {
   sfree(fn);

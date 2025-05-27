@@ -306,7 +306,7 @@ int wc_match(const char *wildcard, const char *target)
  * encountered. In the latter case the output string MAY not be
  * zero-terminated and you should not use it for anything!
  */
-int wc_unescape(char *output, const char *wildcard)
+bool wc_unescape(char *output, const char *wildcard)
 {
     while (*wildcard) {
 	if (*wildcard == '\\') {

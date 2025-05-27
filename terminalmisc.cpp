@@ -11,7 +11,7 @@
 #include "terminal.h"
 
 printer_job *printer_start_job(char * /*printer*/) { return NULL; }
-void printer_job_data(printer_job * /*pj*/, void * /*data*/, int /*len*/) {}
+void printer_job_data(printer_job * /*pj*/, const void * /*data*/, size_t /*len*/) {}
 void printer_finish_job(printer_job * /*pj*/) {}
 
 #if 0
@@ -24,7 +24,7 @@ void get_clip(void *frontend, wchar_t **p, int *len) {
 // int mk_wcwidth(wchar_t ucs){qDebug()<<"NOT_IMPL"<<__FUNCTION__;return 0;}
 // int mk_wcwidth_cjk(wchar_t ucs){qDebug()<<"NOT_IMPL"<<__FUNCTION__;return 0;}
 
-int is_dbcs_leadbyte(int /*codepage*/, char /*byte*/) {
+bool is_dbcs_leadbyte(int /*codepage*/, char /*byte*/) {
   qDebug() << "NOT_IMPL" << __FUNCTION__;
   return 0;
 }
@@ -37,7 +37,7 @@ int mb_to_wc(int codepage, int /*flags*/, const char *mbstr, int mblen, wchar_t 
 }
 
 int wc_to_mb(int codepage, int /*flags*/, const wchar_t *wcstr, int wclen, char *mbstr, int mblen,
-             const char * /*defchr*/, int * /*defused*/, struct unicode_data *ucsdata) {
+             const char * /*defchr*/, struct unicode_data *ucsdata) {
   QTextCodec *codec = nullptr;
   if (ucsdata) getTextCodec(ucsdata->line_codepage);
   if (!codec) codec = getTextCodec(codepage);
@@ -54,13 +54,13 @@ static bool qtwin_setup_draw_ctx(TermWin *win) {
 }
 
 static void qtwin_draw_text(TermWin *win, int x, int y, wchar_t *text, int len, unsigned long attrs,
-                            int line_attrs) {
+                            int line_attrs, truecolour tc) {
   GuiTerminalWindow *gw = container_of(win, GuiTerminalWindow, termwin);
   gw->drawText(y, x, text, len, attrs, line_attrs);
 }
 
 static void qtwin_draw_cursor(TermWin *, int x, int y, wchar_t *text, int len, unsigned long attrs,
-                              int line_attrs) {}
+                              int line_attrs, truecolour tc) {}
 
 /* Draw the sigil indicating that a line of text has come from
  * PuTTY itself rather than the far end (defence against end-of-
