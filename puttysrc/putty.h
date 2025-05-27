@@ -35,12 +35,14 @@
  * Fingerprints of the current and previous PGP master keys, to
  * establish a trust path between an executable and other files.
  */
-#define PGP_MASTER_KEY_FP \
+#define PGP_MASTER_KEY_YEAR "2018"
+#define PGP_MASTER_KEY_DETAILS "RSA, 4096-bit"
+#define PGP_MASTER_KEY_FP                                       \
+    "24E1 B1C5 75EA 3C9F F752  A922 76BC 7FE4 EBFD 2D9E"
+#define PGP_PREV_MASTER_KEY_YEAR "2015"
+#define PGP_PREV_MASTER_KEY_DETAILS "RSA, 4096-bit"
+#define PGP_PREV_MASTER_KEY_FP                                  \
     "440D E3B5 B7A1 CA85 B3CC  1718 AB58 5DC6 0467 6F7C"
-#define PGP_RSA_MASTER_KEY_FP \
-    "8F 15 97 DA 25 30 AB 0D  88 D1 92 54 11 CF 0C 4C"
-#define PGP_DSA_MASTER_KEY_FP \
-    "313C 3E76 4B74 C2C5 F2AE  83A8 4F5E 6DF5 6A93 B34E"
 
 /* Three attribute types: 
  * The ATTRs (normal attributes) are stored with the characters in
@@ -600,7 +602,6 @@ extern const char *const appname;
  */
 #define FLAG_VERBOSE     0x0001
 #define FLAG_INTERACTIVE 0x0002
-#define FLAG_STDERR      0x0004
 GLOBAL int flags;
 
 /*
@@ -682,7 +683,7 @@ typedef struct {
     void *data;		/* slot for housekeeping data, managed by
 			 * seat_get_userpass_input(); initially NULL */
 } prompts_t;
-prompts_t *new_prompts(void);
+prompts_t *new_prompts();
 void add_prompt(prompts_t *p, char *promptstr, bool echo);
 void prompt_set_result(prompt_t *pr, const char *newstr);
 void prompt_ensure_result_size(prompt_t *pr, int len);
@@ -1573,7 +1574,7 @@ typedef enum NoiseSourceId {
 void noise_get_heavy(void (*func) (void *, int));
 void noise_get_light(void (*func) (void *, int));
 void noise_regular(void);
-void noise_ultralight(unsigned long data);
+void noise_ultralight(NoiseSourceId id, unsigned long data);
 void random_save_seed(void);
 void random_destroy_seed(void);
 
@@ -1798,8 +1799,8 @@ void luni_send(Ldisc *, const wchar_t * widebuf, int len, bool interactive);
  * Exports from sshrand.c.
  */
 
-void random_add_noise(void *noise, int length);
-int random_byte(void);
+void random_add_noise(NoiseSourceId source, const void *noise, int length);
+void random_read(void *buf, size_t size);
 void random_get_savedata(void **data, int *len);
 extern int random_active;
 /* The random number subsystem is activated if at least one other entity
@@ -1902,10 +1903,10 @@ int mk_wcswidth_cjk(const unsigned int *pwcs, size_t n);
  */
 typedef struct agent_pending_query agent_pending_query;
 agent_pending_query *agent_query(
-    void *in, int inlen, void **out, int *outlen,
+    strbuf *in, void **out, int *outlen,
     void (*callback)(void *, void *, int), void *callback_ctx);
 void agent_cancel_query(agent_pending_query *);
-void agent_query_synchronous(void *in, int inlen, void **out, int *outlen);
+void agent_query_synchronous(strbuf *in, void **out, int *outlen);
 bool agent_exists(void);
 
 /*
@@ -1931,8 +1932,7 @@ bool have_ssh_host_key(const char *host, int port, const char *keytype);
  * that aren't equivalents to things in windlg.c et al.
  */
 extern bool console_batch_mode, console_antispoof_prompt;
-int console_get_userpass_input(prompts_t *p, const unsigned char *in,
-                               int inlen);
+int console_get_userpass_input(prompts_t *p);
 bool is_interactive(void);
 void console_print_error_msg(const char *prefix, const char *msg);
 void console_print_error_msg_fmt_v(

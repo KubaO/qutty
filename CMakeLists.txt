@@ -64,24 +64,48 @@ set(PROJECT_SOURCES
     QtSessionTreeModel.cpp
     QtCompleterWithAdvancedCompletion.cpp
 
+    puttysrc/agentf.c
     puttysrc/be_misc.c
+    puttysrc/ecc.c
     puttysrc/callback.c
     puttysrc/conf.c
     puttysrc/pgssapi.c
-    puttysrc/int64.c
     puttysrc/ssh.c
     puttysrc/proxy.c
     puttysrc/portfwd.c
     puttysrc/misc.c
+    puttysrc/mainchan.c
     puttysrc/marshal.c
     puttysrc/terminal.c
     puttysrc/ldisc.c
     puttysrc/ldiscucs.c
     puttysrc/memory.c
     puttysrc/miscucs.c
+    puttysrc/mpint.c
     puttysrc/timing.c
     puttysrc/utils.c
-    puttysrc/sshbn.c
+    puttysrc/noshare.c
+    puttysrc/noprint.c
+    puttysrc/nullplug.c
+    puttysrc/ssh1bpp.c
+    puttysrc/ssh1censor.c
+    puttysrc/ssh1connection.c
+    puttysrc/ssh1connection-client.c
+    puttysrc/ssh1login.c
+    puttysrc/ssh2bpp.c
+    puttysrc/ssh2bpp-bare.c
+    puttysrc/ssh2censor.c
+    puttysrc/ssh2connection.c
+    puttysrc/ssh2connection-client.c
+    puttysrc/ssh2kex-client.c
+    puttysrc/ssh2transhk.c
+    puttysrc/ssh2transport.c
+    puttysrc/ssh2userauth.c
+    puttysrc/sshauxcrypt.c
+    puttysrc/sshcommon.c
+    puttysrc/sshhmac.c
+    puttysrc/sshmac.c
+    puttysrc/sshprng.c
     puttysrc/sshpubk.c
     puttysrc/sshrand.c
     puttysrc/sshrsa.c
@@ -89,6 +113,8 @@ set(PROJECT_SOURCES
     puttysrc/sshsh512.c
     puttysrc/sshsha.c
     puttysrc/sshshare.c
+    puttysrc/sshverstring.c
+    puttysrc/stripctrl.c
     puttysrc/x11fwd.c
     puttysrc/tree234.c
     puttysrc/telnet.c
@@ -114,6 +140,7 @@ set(PROJECT_SOURCES
     puttysrc/be_qutty.c
     puttysrc/settings.c
     puttysrc/version.c
+    #puttysrc/windows/winucs.c
     tmux/TmuxBackend.cpp
     tmux/TmuxGateway.cpp
     tmux/TmuxWindowPane.cpp
@@ -146,25 +173,32 @@ set(PROJECT_SOURCES
     QtComboBoxWithTreeView.hpp
     QtCompleterWithAdvancedCompletion.hpp
 
+    puttysrc/defs.h
     puttysrc/ssh.h
     puttysrc/defs.h
     puttysrc/putty.h
     puttysrc/QtStuff.h
     puttysrc/puttyps.h
+    puttysrc/marshal.h
     puttysrc/network.h
     puttysrc/misc.h
     puttysrc/pageant.h
     puttysrc/puttymem.h
+    puttysrc/mpint.h
+    puttysrc/mpint_i.h
     puttysrc/terminal.h
     puttysrc/tree234.h
     puttysrc/sshgss.h
     puttysrc/pgssapi.h
+    puttysrc/ssh1connection.h
+    puttysrc/ssh2connection.h
+    puttysrc/ssh2transport.h
     puttysrc/sshblowf.h
-    puttysrc/sshbn.h
+    puttysrc/sshchan.h
     puttysrc/sshgssc.h
     puttysrc/sshsignals.h
+    puttysrc/sshttymodes.h
     puttysrc/proxy.h
-    puttysrc/int64.h
     puttysrc/ldisc.h
     puttysrc/storage.h
     puttysrc/version.h
@@ -208,12 +242,24 @@ set(BREAKPAD_SOURCES
     third-party/google-breakpad/google_breakpad/common/minidump_format.h
 )
 
+# winucs.c must disable functions we implement via Qt
+set(UCS_OVERRIDES
+    init_ucs=_init_ucs
+    is_dbcs_leadbyte=_is_dbcs_leadbyte
+    mb_to_wc=_mb_to_wc
+    wc_to_mb=_wc_to_mb
+)
+set_property(SOURCE
+    puttysrc/windows/winucs.c
+    PROPERTY COMPILE_DEFINITIONS "${UCS_OVERRIDES}"
+)
+
 if (WIN32)
     # winnoise.c and winstore.c must be built without UNICODE nor _UNICODE
     set_property(SOURCE
         ${PROJECT_SOURCES}
         puttysrc/windows/windefs.c
-        PROPERTY COMPILE_DEFINITIONS UNICODE _UNICODE
+        APPEND PROPERTY COMPILE_DEFINITIONS UNICODE _UNICODE
     )
     list(APPEND PROJECT_SOURCES
         qutty.rc

@@ -2812,7 +2812,7 @@ static void term_print_flush(Terminal *term)
 {
     size_t size;
     while ((size = bufchain_size(&term->printer_buf)) > 5) {
-	ptrlen data = bufchain_prefix1(&term->printer_buf);
+	ptrlen data = bufchain_prefix(&term->printer_buf);
 	if (data.len > size-5)
 	    data.len = size-5;
 	printer_job_data(term->print_job, data.ptr, data.len);
@@ -2829,7 +2829,7 @@ static void term_print_finish(Terminal *term)
 
     term_print_flush(term);
     while ((size = bufchain_size(&term->printer_buf)) > 0) {
-	ptrlen data = bufchain_prefix1(&term->printer_buf);
+	ptrlen data = bufchain_prefix(&term->printer_buf);
 	c = *(char *)data.ptr;
 	if (c == '\033' || c == '\233') {
 	    bufchain_consume(&term->printer_buf, size);
@@ -3147,7 +3147,7 @@ static void term_out(Terminal *term)
     while (nchars > 0 || unget != -1 || bufchain_size(&term->inbuf) > 0) {
 	if (unget == -1) {
 	    if (nchars == 0) {
-                ptrlen data = bufchain_prefix1(&term->inbuf);
+                ptrlen data = bufchain_prefix(&term->inbuf);
 		if (data.len > sizeof(localbuf))
 		    data.len = sizeof(localbuf);
 		memcpy(localbuf, data.ptr, data.len);

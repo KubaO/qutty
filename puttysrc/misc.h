@@ -117,8 +117,7 @@ void bufchain_init(bufchain *ch);
 void bufchain_clear(bufchain *ch);
 size_t bufchain_size(bufchain *ch);
 void bufchain_add(bufchain *ch, const void *data, size_t len);
-void bufchain_prefix(bufchain *ch, void **data, size_t *len);
-ptrlen bufchain_prefix1(bufchain *ch);
+ptrlen bufchain_prefix(bufchain *ch);
 void bufchain_consume(bufchain *ch, size_t len);
 void bufchain_fetch(bufchain *ch, void *data, size_t len);
 void bufchain_fetch_consume(bufchain *ch, void *data, size_t len);
@@ -362,9 +361,6 @@ static inline void PUT_16BIT_MSB_FIRST(void *vp, uint16_t value)
     p[1] = value;
     p[0] = (value) >> 8;
 }
-
-#define GET_32BIT(cp) GET_32BIT_MSB_FIRST(cp)
-#define PUT_32BIT(cp, value) PUT_32BIT_MSB_FIRST(cp, value)
 
 /* Replace NULL with the empty string, permitting an idiom in which we
  * get a string (pointer,length) pair that might be NULL,0 and can

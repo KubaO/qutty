@@ -41,14 +41,14 @@ void proxy_activate (ProxySocket *p)
     
     /* send buffered OOB writes */
     while (bufchain_size(&p->pending_oob_output_data) > 0) {
-        ptrlen data = bufchain_prefix1(&p->pending_oob_output_data);
+        ptrlen data = bufchain_prefix(&p->pending_oob_output_data);
 	output_after += sk_write_oob(p->sub_socket, data.ptr, data.len);
 	bufchain_consume(&p->pending_oob_output_data, data.len);
     }
 
     /* send buffered normal writes */
     while (bufchain_size(&p->pending_output_data) > 0) {
-	ptrlen data = bufchain_prefix1(&p->pending_output_data);
+	ptrlen data = bufchain_prefix(&p->pending_output_data);
 	output_after += sk_write(p->sub_socket, data.ptr, data.len);
 	bufchain_consume(&p->pending_output_data, data.len);
     }
@@ -159,7 +159,7 @@ static void sk_proxy_set_frozen (Socket *s, bool is_frozen)
 	 */
         while (!ps->freeze && bufchain_size(&ps->pending_input_data) > 0) {
 	    char databuf[512];
-	    ptrlen data = bufchain_prefix1(&ps->pending_input_data);
+	    ptrlen data = bufchain_prefix(&ps->pending_input_data);
 	    if (data.len > lenof(databuf))
 		data.len = lenof(databuf);
 	    memcpy(databuf, data.ptr, data.len);

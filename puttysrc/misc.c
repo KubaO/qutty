@@ -214,12 +214,6 @@ bool validate_manual_hostkey(char *key)
     return false;
 }
 
-bool match_ssh_id(int stringlen, const void *string, const char *id)
-{
-    int idlen = strlen(id);
-    return (idlen == stringlen && !memcmp(string, id, idlen));
-}
-
 char *buildinfo(const char *newline)
 {
     strbuf *buf = strbuf_new();
