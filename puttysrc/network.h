@@ -100,16 +100,16 @@ struct PlugVtable {
 /* NB, control of 'addr' is passed via new_connection, which takes
  * responsibility for freeing it */
 Socket *new_connection(SockAddr *addr, const char *hostname,
-                       int port, int privport,
-                       int oobinline, int nodelay, int keepalive,
+                       int port, bool privport,
+                       bool oobinline, bool nodelay, bool keepalive,
                        Plug *plug, Conf *conf);
 Socket *new_listener(const char *srcaddr, int port, Plug *plug,
                      bool local_host_only, Conf *conf, int addressfamily);
 SockAddr *name_lookup(const char *host, int port, char **canonicalname,
                       Conf *conf, int addressfamily, LogContext *logctx,
                       const char *lookup_reason_for_logging);
-int proxy_for_destination (SockAddr *addr, const char *hostname, int port,
-                           Conf *conf);
+bool proxy_for_destination (SockAddr *addr, const char *hostname, int port,
+                            Conf *conf);
 
 /* platform-dependent callback from new_connection() */
 /* (same caveat about addr as new_connection()) */

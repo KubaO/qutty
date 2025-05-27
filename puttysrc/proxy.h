@@ -10,14 +10,9 @@
 #ifndef PUTTY_PROXY_H
 #define PUTTY_PROXY_H
 
-#include "defs.h"
-#include "misc.h"
-#include "network.h"
-
 #define PROXY_ERROR_GENERAL 8000
 #define PROXY_ERROR_UNEXPECTED 8001
 
-typedef struct SockAddr SockAddr;
 typedef struct ProxySocket ProxySocket;
 
 struct ProxySocket {
@@ -30,9 +25,9 @@ struct ProxySocket {
 
     bufchain pending_output_data;
     bufchain pending_oob_output_data;
-    int pending_flush;
+    bool pending_flush;
     bufchain pending_input_data;
-    int pending_eof;
+    bool pending_eof;
 
 #define PROXY_STATE_NEW    -1
 #define PROXY_STATE_ACTIVE  0
@@ -42,10 +37,10 @@ struct ProxySocket {
 		* of the initialization/setup/negotiation with the
 		* proxy server.
 		*/
-    int freeze; /* should we freeze the underlying socket when
-		 * we are done with the proxy negotiation? this
-		 * simply caches the value of sk_set_frozen calls.
-		 */
+    bool freeze; /* should we freeze the underlying socket when
+                  * we are done with the proxy negotiation? this
+                  * simply caches the value of sk_set_frozen calls.
+                  */
 
 #define PROXY_CHANGE_NEW      -1
 #define PROXY_CHANGE_CLOSING   0
@@ -69,15 +64,12 @@ struct ProxySocket {
     /* closing */
     const char *closing_error_msg;
     int closing_error_code;
-    int closing_calling_back;
+    bool closing_calling_back;
 
     /* receive */
-    int receive_urgent;
-    char *receive_data;
+    bool receive_urgent;
+    const char *receive_data;
     int receive_len;
-
-    /* sent */
-    int sent_bufsize;
 
     /* accepting */
     accept_fn_t accepting_constructor;
@@ -113,7 +105,7 @@ char *format_telnet_command(SockAddr *addr, int port, Conf *conf);
  * These are implemented in cproxy.c or nocproxy.c, depending on
  * whether encrypted proxy authentication is available.
  */
-extern void proxy_socks5_offerencryptedauth(char *command, int *len);
+extern void proxy_socks5_offerencryptedauth(BinarySink *);
 extern int proxy_socks5_handlechap (ProxySocket *);
 extern int proxy_socks5_selectchap(ProxySocket *);
 
