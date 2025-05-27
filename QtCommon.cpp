@@ -677,3 +677,5 @@ void unescape_registry_key(const char *in, strbuf *out) {
     }
   }
 }
+
+bool open_for_write_would_lose_data(const Filename *fn) { return false; }

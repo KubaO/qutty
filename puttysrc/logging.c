@@ -31,7 +31,7 @@ static Filename *xlatlognam(Filename *s, char *hostname, int port,
  * isn't open, buffering data if it's in the process of being
  * opened asynchronously, etc.
  */
-static void logwrite(LogContext *ctx, void *data, int len)
+static void logwrite(LogContext *ctx, ptrlen data)
 {
     /*
      * In state L_CLOSED, we call logfopen, which will set the state
@@ -42,10 +42,10 @@ static void logwrite(LogContext *ctx, void *data, int len)
 	logfopen(ctx);
 
     if (ctx->state == L_OPENING) {
-	bufchain_add(&ctx->queue, data, len);
+	bufchain_add(&ctx->queue, data.ptr, data.len);
     } else if (ctx->state == L_OPEN) {
 	assert(ctx->lgfp);
-	if (fwrite(data, 1, len, ctx->lgfp) < (size_t)len) {
+	if (fwrite(data.ptr, 1, data.len, ctx->lgfp) < data.len) {
 	    logfclose(ctx);
 	    ctx->state = L_ERROR;
             lp_eventlog(ctx->lp, "Disabled writing session log "
@@ -67,7 +67,7 @@ static void logprintf(LogContext *ctx, const char *fmt, ...)
     data = dupvprintf(fmt, ap);
     va_end(ap);
 
-    logwrite(ctx, data, strlen(data));
+    logwrite(ctx, ptrlen_from_asciz(data));
     sfree(data);
 }
 
@@ -102,7 +102,7 @@ static void logfopen_callback(void *vctx, int mode)
         }
     }
 
-    if (ctx->state == L_OPEN) {
+    if (ctx->state == L_OPEN && conf_get_bool(ctx->conf, CONF_logheader)) {
 	/* Write header line into log file. */
 	tm = ltime();
 	strftime(buf, 24, "%Y.%m.%d %H:%M:%S", &tm);
@@ -137,11 +137,9 @@ static void logfopen_callback(void *vctx, int mode)
      */
     assert(ctx->state != L_OPENING);   /* make _sure_ it won't be requeued */
     while (bufchain_size(&ctx->queue)) {
-	void *data;
-	size_t len;
-	bufchain_prefix(&ctx->queue, &data, &len);
-	logwrite(ctx, data, len);
-	bufchain_consume(&ctx->queue, len);
+        ptrlen data = bufchain_prefix1(&ctx->queue);
+	logwrite(ctx, data);
+	bufchain_consume(&ctx->queue, data.len);
     }
     logflush(ctx);
 }
@@ -154,7 +152,6 @@ static void logfopen_callback(void *vctx, int mode)
 void logfopen(LogContext *ctx)
 {
     struct tm tm;
-    FILE *fp;
     int mode;
 
     /* Prevent repeat calls */
@@ -174,10 +171,8 @@ void logfopen(LogContext *ctx)
                    conf_get_str(ctx->conf, CONF_host),
                    conf_get_int(ctx->conf, CONF_port), &tm);
 
-    fp = f_open(ctx->currlogfilename, "r", FALSE);  /* file already present? */
-    if (fp) {
+    if (open_for_write_would_lose_data(ctx->currlogfilename)) {
 	int logxfovr = conf_get_int(ctx->conf, CONF_logxfovr);
-	fclose(fp);
 	if (logxfovr != LGXF_ASK) {
 	    mode = ((logxfovr == LGXF_OVR) ? 2 : 1);
 	} else
@@ -208,7 +203,7 @@ void logtraffic(LogContext *ctx, unsigned char c, int logmode)
 {
     if (ctx->logtype > 0) {
 	if (ctx->logtype == logmode)
-	    logwrite(ctx, &c, 1);
+	    logwrite(ctx, make_ptrlen(&c, 1));
     }
 }
 
@@ -383,7 +378,7 @@ void log_packet(LogContext *ctx, int direction, int type,
 	if (((p % 16) == 0) || (p == len) || omitted) {
 	    if (output_pos) {
 		strcpy(dumpdata + 10+1+3*16+2+output_pos, "\r\n");
-		logwrite(ctx, dumpdata, strlen(dumpdata));
+		logwrite(ctx, ptrlen_from_asciz(dumpdata));
 		output_pos = 0;
 	    }
 	}
@@ -455,14 +450,11 @@ static Filename *xlatlognam(Filename *src, char *hostname, int port,
 {
     char buf[32], *bufp;
     int size;
-    char *buffer;
-    int buflen, bufsize;
+    strbuf *buffer;
     const char *s;
     Filename *ret;
 
-    bufsize = FILENAME_MAX;
-    buffer = snewn(bufsize, char);
-    buflen = 0;
+    buffer = strbuf_new();
     s = filename_to_str(src);
 
     while (*s) {
@@ -509,20 +501,15 @@ static Filename *xlatlognam(Filename *src, char *hostname, int port,
 	    buf[0] = *s++;
 	    size = 1;
 	}
-        if (bufsize <= buflen + size) {
-            bufsize = (buflen + size) * 5 / 4 + 512;
-            buffer = sresize(buffer, bufsize, char);
-        }
         while (size-- > 0) {
             char c = *bufp++;
             if (sanitise)
                 c = filename_char_sanitise(c);
-            buffer[buflen++] = c;
+            put_byte(buffer, c);
         }
     }
-    buffer[buflen] = '\0';
 
-    ret = filename_from_str(buffer);
-    sfree(buffer);
+    ret = filename_from_str(buffer->s);
+    strbuf_free(buffer);
     return ret;
 }
