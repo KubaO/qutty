@@ -76,6 +76,7 @@ set(PROJECT_SOURCES
     puttysrc/terminal.c
     puttysrc/ldisc.c
     puttysrc/ldiscucs.c
+    puttysrc/memory.c
     puttysrc/miscucs.c
     puttysrc/timing.c
     puttysrc/sshbn.c
