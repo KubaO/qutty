@@ -630,6 +630,15 @@ char filename_char_sanitise(char c) {
 /* Dummy routine, only required in plink. */
 void frontend_echoedit_update(void *frontend, int echo, int edit) {}
 
+#ifndef NO_SECUREZEROMEMORY
+/*
+ * Windows implementation of smemclr (see misc.c) using SecureZeroMemory.
+ */
+void smemclr(void *b, size_t n) {
+  if (b && n > 0) SecureZeroMemory(b, n);
+}
+#endif
+
 void qtc_assert(const char *assertion, const char *file, int line) {
   qt_assert(assertion, file, line);
 }

@@ -180,7 +180,7 @@ typedef struct PacketProtocolLayer PacketProtocolLayer;
 /* Windows provides the API function 'SecureZeroMemory', which we use
  * unless the user has told us not to by defining NO_SECUREZEROMEMORY. */
 #ifndef NO_SECUREZEROMEMORY
-//#define PLATFORM_HAS_SMEMCLR
+#define PLATFORM_HAS_SMEMCLR
 #endif
 #endif
 
