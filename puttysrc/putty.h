@@ -22,6 +22,7 @@
 #include "puttyps.h"
 #include "network.h"
 #include "misc.h"
+#include "marshal.h"
 
 /*
  * We express various time intervals in unsigned long minutes, but may need to
@@ -818,7 +819,7 @@ struct SeatVtable {
      * ever do want to move password prompts into a dialog box, I'll
      * want a backend method for sending that notification.)
      */
-    int (*get_userpass_input)(Seat *seat, prompts_t *p, const unsigned char *in, int inlen);
+    int (*get_userpass_input)(Seat *seat, prompts_t *p, bufchain *input);
 
     /*
      * Notify the seat that the process running at the other end of
@@ -976,8 +977,8 @@ static inline size_t seat_output(
 static inline bool seat_eof(Seat *seat)
 { return seat->vt->eof(seat); }
 static inline int seat_get_userpass_input(
-    Seat *seat, prompts_t *p, const unsigned char *in, int inlen)
-{ return seat->vt->get_userpass_input(seat, p, in, inlen); }
+    Seat *seat, prompts_t *p, bufchain *input)
+{ return seat->vt->get_userpass_input(seat, p, input); }
 static inline void seat_notify_remote_exit(Seat *seat)
 { seat->vt->notify_remote_exit(seat); }
 static inline void seat_update_specials_menu(Seat *seat)
@@ -1135,9 +1136,9 @@ struct TermWinVtable {
 
     void (*bell)(TermWin *, int mode);
 
-    void (*clip_write)(TermWin *, wchar_t *text, int *attrs,
-                       int len, bool must_deselect);
-    void (*clip_request_paste)(TermWin *);
+    void (*clip_write)(TermWin *, int clipboard, wchar_t *text, int *attrs,
+                       truecolour *colours, int len, bool must_deselect);
+    void (*clip_request_paste)(TermWin *, int clipboard);
 
     void (*refresh)(TermWin *);
 
@@ -1191,11 +1192,11 @@ static inline void win_set_scrollbar(TermWin *win, int t, int s, int p)
 static inline void win_bell(TermWin *win, int mode)
 { win->vt->bell(win, mode); }
 static inline void win_clip_write(
-    TermWin *win, wchar_t *text, int *attrs,
-    int len, bool deselect)
-{ win->vt->clip_write(win, text, attrs, len, deselect); }
-static inline void win_clip_request_paste(TermWin *win)
-{ win->vt->clip_request_paste(win); }
+    TermWin *win, int clipboard, wchar_t *text, int *attrs,
+    truecolour *colours, int len, bool deselect)
+{ win->vt->clip_write(win, clipboard, text, attrs, colours, len, deselect); }
+static inline void win_clip_request_paste(TermWin *win, int clipboard)
+{ win->vt->clip_request_paste(win, clipboard); }
 static inline void win_refresh(TermWin *win)
 { win->vt->refresh(win); }
 static inline void win_request_resize(TermWin *win, int w, int h)
@@ -1619,26 +1620,24 @@ void term_mouse(Terminal *, Mouse_Button, Mouse_Button, Mouse_Action,
 		int, int, bool, bool, bool);
 void term_key(Terminal *, Key_Sym, wchar_t *, size_t, unsigned int,
 	      unsigned int);
-void term_deselect(Terminal *);
+void term_lost_clipboard_ownership(Terminal *, int clipboard);
 void term_update(Terminal *);
 void term_invalidate(Terminal *);
 void term_blink(Terminal *, bool set_cursor);
 void term_do_paste(Terminal *, const wchar_t *, int);
 void term_nopaste(Terminal *);
 bool term_ldisc(Terminal *, int option);
-void term_copyall(Terminal *);
+void term_copyall(Terminal *, const int *, int);
 void term_reconfig(Terminal *, Conf *);
 void term_request_copy(Terminal *, const int *clipboards, int n_clipboards);
-void term_request_paste(Terminal *);
+void term_request_paste(Terminal *, int clipboard);
 void term_seen_key_event(Terminal *); 
 size_t term_data(Terminal *, bool is_stderr, const void *data, size_t len);
-size_t term_data_untrusted(Terminal *, const void *data, size_t len);
 void term_provide_backend(Terminal *term, Backend *backend);
 void term_provide_logctx(Terminal *term, LogContext *logctx);
 void term_set_focus(Terminal *term, bool has_focus);
 char *term_get_ttymode(Terminal *term, const char *mode);
-int term_get_userpass_input(Terminal *term, prompts_t *p,
-			    const unsigned char *in, size_t inlen);
+int term_get_userpass_input(Terminal *term, prompts_t *p, bufchain *input);
 void term_set_trust_status(Terminal *term, bool trusted);
 
 typedef enum SmallKeypadKey {

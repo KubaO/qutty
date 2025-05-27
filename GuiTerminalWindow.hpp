@@ -112,9 +112,11 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
 
   void setTermFont(Conf *cfg);
   void cfgtopalette(Conf *cfg);
-  void requestPaste();
+  void requestPaste(int clipboard);
   void getClip(wchar_t **p, int *len);
-  void writeClip(wchar_t *data, int *attr, int len, int must_deselect);
+
+  void writeClip(int clipboard, wchar_t *data, int *attr, truecolour *colours, int len,
+                 int must_deselect);
   void paintText(QPainter &painter, int row, int col, const QString &str, unsigned long attr);
   void paintCursor(QPainter &painter, int row, int col, const QString &str, unsigned long attr);
 

@@ -155,7 +155,7 @@ int GuiTerminalWindow::TranslateKey(QKeyEvent *keyevent, char *output) {
 
   // shift-insert -> paste
   if (key == Key_Insert && ctrlshiftstate == ShiftModifier) {
-    this->requestPaste();
+    this->requestPaste(CLIP_SYSTEM);
     return 0;
   }
 
@@ -431,11 +431,6 @@ Filename *filename_deserialise(void *vdata, int maxsize, int *used) {
   end++;
   *used = end - data;
   return filename_from_str(data);
-}
-
-int from_backend_untrusted(void *frontend, const char *data, int len) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return term_data_untrusted(f->term, data, len);
 }
 
 struct tm ltime(void) {

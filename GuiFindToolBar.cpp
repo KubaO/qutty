@@ -104,7 +104,11 @@ void GuiMainWindow::contextMenuFindPrevious() {
 
 QString GuiFindToolBar::getSearchedText() { return searchedText->text(); }
 
-extern "C" termline *decompressline(unsigned char *data, int *bytes_used);
+typedef struct compressed_scrollback_line {
+  size_t len;
+} compressed_scrollback_line;
+
+extern "C" termline *decompressline(compressed_scrollback_line *line);
 
 void GuiFindToolBar::on_findUp() {
   termline *line;
@@ -151,8 +155,10 @@ void GuiFindToolBar::on_findUp() {
     }
     if (count234(term->scrollback) > currentRow) {
       whichtree = term->scrollback;
-      unsigned char *cline = (unsigned char *)index234(whichtree, currentRow);
-      line = (termline *)decompressline(cline, NULL);
+      // TODO FIXME this may be a wee bit optimistic
+      compressed_scrollback_line *cline =
+          (compressed_scrollback_line *)index234(whichtree, currentRow);
+      line = (termline *)decompressline(cline);
     } else {
       whichtree = term->screen;
       line = (termline *)index234(whichtree, currentRow - count234(term->scrollback));
@@ -242,8 +248,10 @@ void GuiFindToolBar::on_findDown() {
     }
     if (count234(term->scrollback) > currentRow) {
       whichtree = term->scrollback;
-      unsigned char *cline = (unsigned char *)index234(whichtree, currentRow);
-      line = (termline *)decompressline(cline, NULL);
+      // TODO FIXME this may be a wee bit optimistic
+      compressed_scrollback_line *cline =
+          (compressed_scrollback_line *)index234(whichtree, currentRow);
+      line = (termline *)decompressline(cline);
     } else {
       whichtree = term->screen;
       line = (termline *)index234(whichtree, abs(currentRow - count234(term->scrollback)));

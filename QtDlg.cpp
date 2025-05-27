@@ -70,11 +70,11 @@ int qt_askappend(LogPolicy * /*lp*/, Filename *filename,
   }
 }
 
-static int qt_get_userpass_input(Seat *seat, prompts_t *p, const unsigned char *in, int inlen) {
+static int qt_get_userpass_input(Seat *seat, prompts_t *p, bufchain *input) {
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   int ret = -1;
   // ret = cmdline_get_passwd_input(p, in, inlen);
-  if (ret == -1) ret = term_get_userpass_input(f->term, p, in, inlen);
+  if (ret == -1) ret = term_get_userpass_input(f->term, p, input);
   return ret;
 }
 

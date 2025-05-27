@@ -88,14 +88,15 @@ static void qtwin_set_scrollbar(TermWin *win, int total, int start, int page) {
 
 static void qtwin_bell(TermWin *, int mode) {}
 
-static void qtwin_clip_write(TermWin *win, wchar_t *text, int *attrs, int len, bool must_deselect) {
+static void qtwin_clip_write(TermWin *win, int clipboard, wchar_t *text, int *attrs,
+                             truecolour *colours, int len, bool must_deselect) {
   GuiTerminalWindow *gw = container_of(win, GuiTerminalWindow, termwin);
-  gw->writeClip(text, attrs, len, must_deselect);
+  gw->writeClip(clipboard, text, attrs, colours, len, must_deselect);
 }
 
-static void qtwin_clip_request_paste(TermWin *win) {
+static void qtwin_clip_request_paste(TermWin *win, int clipboard) {
   GuiTerminalWindow *gw = container_of(win, GuiTerminalWindow, termwin);
-  gw->requestPaste();
+  gw->requestPaste(clipboard);
 }
 
 static void qtwin_refresh(TermWin *win) {

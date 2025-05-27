@@ -4059,7 +4059,7 @@ int verify_ssh_manual_host_key(Ssh *ssh, const char *fingerprint,
 /*
  * Handle the key exchange and user authentication phases.
  */
-static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
+static int do_ssh1_login(Ssh *ssh, const unsigned char *in, const int inlen,
 			 struct Packet *pktin)
 {
     int i, j, ret;
@@ -4094,6 +4094,10 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 	Filename *keyfile;
         struct RSAKey servkey, hostkey;
     };
+    bufchain input;
+    bufchain_init(&input);
+    bufchain_add(&input, in, inlen);
+
     crState(do_ssh1_login_state);
 
     crBeginState;
@@ -4368,11 +4372,11 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 	    s->cur_prompt->to_server = TRUE;
 	    s->cur_prompt->name = dupstr("SSH login name");
 	    add_prompt(s->cur_prompt, dupstr("login as: "), TRUE);
-	    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
+	    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL);
 	    while (ret < 0) {
 		ssh->send_ok = 1;
 		crWaitUntil(!pktin);
-		ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
+		ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, &input);
 		ssh->send_ok = 0;
 	    }
 	    if (!ret) {
@@ -4675,11 +4679,11 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 		    add_prompt(s->cur_prompt,
 			       dupprintf("Passphrase for key \"%.100s\": ",
 					 s->publickey_comment), FALSE);
-		    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
+		    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL);
 		    while (ret < 0) {
 			ssh->send_ok = 1;
 			crWaitUntil(!pktin);
-			ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
+			ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, &input);
 			ssh->send_ok = 0;
 		    }
 		    if (!ret) {
@@ -4895,11 +4899,11 @@ static int do_ssh1_login(Ssh *ssh, const unsigned char *in, int inlen,
 	 */
 	{
 	    int ret; /* need not be kept over crReturn */
-	    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
+	    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL);
 	    while (ret < 0) {
 		ssh->send_ok = 1;
 		crWaitUntil(!pktin);
-		ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
+		ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, &input);
 		ssh->send_ok = 0;
 	    }
 	    if (!ret) {
@@ -9202,7 +9206,7 @@ static void ssh2_response_authconn(struct ssh_channel *c, struct Packet *pktin,
         do_ssh2_authconn(c->ssh, NULL, 0, pktin);
 }
 
-static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
+static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, const int inlen,
 			     struct Packet *pktin)
 {
     struct do_ssh2_authconn_state {
@@ -9255,6 +9259,9 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 	Ssh_gss_stat gss_stat;
 #endif
     };
+    bufchain input;
+    bufchain_init(&input);
+    bufchain_add(&input, in, inlen);
     crState(do_ssh2_authconn_state);
 
     crBeginState;
@@ -9535,11 +9542,11 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 	    s->cur_prompt->to_server = TRUE;
 	    s->cur_prompt->name = dupstr("SSH login name");
 	    add_prompt(s->cur_prompt, dupstr("login as: "), TRUE); 
-	    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
+	    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL);
 	    while (ret < 0) {
 		ssh->send_ok = 1;
 		crWaitUntilV(!pktin);
-		ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
+		ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, &input);
 		ssh->send_ok = 0;
 	    }
 	    if (!ret) {
@@ -9953,12 +9960,12 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 				   dupprintf("Passphrase for key \"%.100s\": ",
 					     s->publickey_comment),
 				   FALSE);
-			ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
+			ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL);
 			while (ret < 0) {
 			    ssh->send_ok = 1;
 			    crWaitUntilV(!pktin);
 			    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt,
-						     in, inlen);
+						     &input);
 			    ssh->send_ok = 0;
 			}
 			if (!ret) {
@@ -10370,11 +10377,11 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 		     */
 		    {
 			int ret; /* not live over crReturn */
-			ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
+			ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL);
 			while (ret < 0) {
 			    ssh->send_ok = 1;
 			    crWaitUntilV(!pktin);
-			    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
+			    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, &input);
 			    ssh->send_ok = 0;
 			}
 			if (!ret) {
@@ -10438,11 +10445,11 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 						    ssh->savedhost),
 			   FALSE);
 
-		ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
+		ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL);
 		while (ret < 0) {
 		    ssh->send_ok = 1;
 		    crWaitUntilV(!pktin);
-		    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
+		    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, &input);
 		    ssh->send_ok = 0;
 		}
 		if (!ret) {
@@ -10548,11 +10555,11 @@ static void do_ssh2_authconn(Ssh *ssh, const unsigned char *in, int inlen,
 		     */
 		    while (!got_new) {
 
-			ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL, 0);
+			ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, NULL);
 			while (ret < 0) {
 			    ssh->send_ok = 1;
 			    crWaitUntilV(!pktin);
-			    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, in, inlen);
+			    ret = seat_get_userpass_input(ssh->seat, s->cur_prompt, &input);
 			    ssh->send_ok = 0;
 			}
 			if (!ret) {

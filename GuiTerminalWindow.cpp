@@ -753,7 +753,7 @@ void GuiTerminalWindow::getClip(wchar_t **p, int *len) {
   }
 }
 
-void GuiTerminalWindow::requestPaste() {
+void GuiTerminalWindow::requestPaste(int clipboard) {
   auto text = QApplication::clipboard()->text().toStdWString();
   term_do_paste(term, text.c_str(), text.size());
 
@@ -762,7 +762,8 @@ void GuiTerminalWindow::requestPaste() {
   qutty_web_plugin_map.save();
 }
 
-void GuiTerminalWindow::writeClip(wchar_t *data, int * /*attr*/, int len, int /*must_deselect*/) {
+void GuiTerminalWindow::writeClip(int /*clipboard*/, wchar_t *data, int * /*attr*/,
+                                  truecolour * /*colours*/, int len, int /*must_deselect*/) {
   data[len] = 0;
   QString s = QString::fromWCharArray(data);
   QApplication::clipboard()->setText(s);
