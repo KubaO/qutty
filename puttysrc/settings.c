@@ -7,16 +7,21 @@
 #include <stdlib.h>
 #include "putty.h"
 #include "storage.h"
+#ifndef NO_GSSAPI
+#include "sshgssc.h"
+#include "sshgss.h"
+#endif
+
 
 /* The cipher order given here is the default order. */
 static const struct keyvalwhere ciphernames[] = {
     { "aes",        CIPHER_AES,             -1, -1 },
     { "chacha20",   CIPHER_CHACHA20,        CIPHER_AES, +1 },
-    { "blowfish",   CIPHER_BLOWFISH,        -1, -1 },
     { "3des",       CIPHER_3DES,            -1, -1 },
     { "WARN",       CIPHER_WARN,            -1, -1 },
+    { "des",        CIPHER_DES,             -1, -1 },
+    { "blowfish",   CIPHER_BLOWFISH,        -1, -1 },
     { "arcfour",    CIPHER_ARCFOUR,         -1, -1 },
-    { "des",        CIPHER_DES,             -1, -1 }
 };
 
 /* The default order here is sometimes overridden by the backward-
@@ -100,9 +105,9 @@ char *get_remote_username(Conf *conf)
     }
 }
 
-static char *gpps_raw(void *handle, const char *name, const char *def)
+static char *gpps_raw(settings_r *sesskey, const char *name, const char *def)
 {
-    char *ret = read_setting_s(handle, name);
+    char *ret = sesskey ? read_setting_s(sesskey, name) : NULL;
     if (!ret)
 	ret = platform_default_s(name);
     if (!ret)
@@ -110,10 +115,10 @@ static char *gpps_raw(void *handle, const char *name, const char *def)
     return ret;
 }
 
-static void gpps(void *handle, const char *name, const char *def,
+static void gpps(settings_r *sesskey, const char *name, const char *def,
 		 Conf *conf, int primary)
 {
-    char *val = gpps_raw(handle, name, def);
+    char *val = gpps_raw(sesskey, name, def);
     conf_set_str(conf, primary, val);
     sfree(val);
 }
@@ -123,45 +128,47 @@ static void gpps(void *handle, const char *name, const char *def,
  * format of a Filename or FontSpec is platform-dependent. So the
  * platform-dependent functions MUST return some sort of value.
  */
-static void gppfont(void *handle, const char *name, Conf *conf, int primary)
+static void gppfont(settings_r *sesskey, char *name,
+                    Conf *conf, int primary)
 {
-    FontSpec *result = read_setting_fontspec(handle, name);
+    FontSpec *result = sesskey ? read_setting_fontspec(sesskey, name) : NULL;
     if (!result)
         result = platform_default_fontspec(name);
     conf_set_fontspec(conf, primary, result);
     fontspec_free(result);
 }
-static void gppfile(void *handle, const char *name, Conf *conf, int primary)
+static void gppfile(settings_r *sesskey, const char *name,
+                    Conf *conf, int primary)
 {
-    Filename *result = read_setting_filename(handle, name);
+    Filename *result = sesskey ? read_setting_filename(sesskey, name) : NULL;
     if (!result)
 	result = platform_default_filename(name);
     conf_set_filename(conf, primary, result);
     filename_free(result);
 }
 
-static bool gppb_raw(void *handle, const char *name, bool def)
+static bool gppb_raw(settings_r *sesskey, const char *name, bool def)
 {
     def = platform_default_b(name, def);
-    return read_setting_i(handle, name, def) != 0;
+    return sesskey ? read_setting_i(sesskey, name, def) != 0 : def;
 }
 
-static void gppb(void *handle, const char *name, bool def,
+static void gppb(settings_r *sesskey, const char *name, bool def,
                  Conf *conf, int primary)
 {
-    conf_set_bool(conf, primary, gppb_raw(handle, name, def));
+    conf_set_bool(conf, primary, gppb_raw(sesskey, name, def));
 }
 
-static int gppi_raw(void *handle, const char *name, int def)
+static int gppi_raw(settings_r *sesskey, const char *name, int def)
 {
     def = platform_default_i(name, def);
-    return read_setting_i(handle, name, def);
+    return sesskey ? read_setting_i(sesskey, name, def) : def;
 }
 
-static void gppi(void *handle, const char *name, int def,
+static void gppi(settings_r *sesskey, const char *name, int def,
                  Conf *conf, int primary)
 {
-    conf_set_int(conf, primary, gppi_raw(handle, name, def));
+    conf_set_int(conf, primary, gppi_raw(sesskey, name, def));
 }
 
 /*
@@ -171,7 +178,8 @@ static void gppi(void *handle, const char *name, int def,
  * If there's no "=VALUE" (e.g. just NAME,NAME,NAME) then those keys
  * are mapped to the empty string.
  */
-static int gppmap(void *handle, const char *name, Conf *conf, int primary)
+static bool gppmap(settings_r *sesskey, const char *name,
+                   Conf *conf, int primary)
 {
     char *buf, *p, *q, *key, *val;
 
@@ -185,9 +193,9 @@ static int gppmap(void *handle, const char *name, Conf *conf, int primary)
      * Now read a serialised list from the settings and unmarshal it
      * into its components.
      */
-    buf = gpps_raw(handle, name, NULL);
+    buf = gpps_raw(sesskey, name, NULL);
     if (!buf)
-	return FALSE;
+	return false;
 
     p = buf;
     while (*p) {
@@ -231,15 +239,15 @@ static int gppmap(void *handle, const char *name, Conf *conf, int primary)
     }
     sfree(buf);
 
-    return TRUE;
+    return true;
 }
 
 /*
  * Write a set of name/value pairs in the above format, or just the
- * names if include_values is FALSE.
+ * names if include_values is false.
  */
-static void wmap(void *handle, char const *outkey, Conf *conf, int primary,
-                 int include_values)
+static void wmap(settings_w *sesskey, char const *outkey, Conf *conf,
+                 int primary, bool include_values)
 {
     char *buf, *p, *key, *realkey;
     const char *val, *q;
@@ -300,7 +308,7 @@ static void wmap(void *handle, char const *outkey, Conf *conf, int primary,
         }
     }
     *p = '\0';
-    write_setting_s(handle, outkey, buf);
+    write_setting_s(sesskey, outkey, buf);
     sfree(buf);
 }
 
@@ -411,7 +419,7 @@ static void gprefs_from_str(const char *str,
 /*
  * Read a preference list.
  */
-static void gprefs(void *sesskey, const char *name, const char *def,
+static void gprefs(settings_r *sesskey, const char *name, const char *def,
 		   const struct keyvalwhere *mapping, int nvals,
 		   Conf *conf, int primary)
 {
@@ -426,7 +434,7 @@ static void gprefs(void *sesskey, const char *name, const char *def,
 /* 
  * Write out a preference list.
  */
-static void wprefs(void *sesskey, const char *name,
+static void wprefs(settings_w *sesskey, const char *name,
 		   const struct keyvalwhere *mapping, int nvals,
 		   Conf *conf, int primary)
 {
@@ -460,13 +468,63 @@ static void wprefs(void *sesskey, const char *name,
     sfree(buf);
 }
 
-static void write_setting_b(void *handle, const char *key, bool value) {
-  write_setting_i(handle, key, value ? 1 : 0);
+static void write_setting_b(settings_w *handle, const char *key, bool value)
+{
+    write_setting_i(handle, key, value ? 1 : 0);
+}
+
+static void write_clip_setting(settings_w *sesskey, const char *savekey,
+                               Conf *conf, int confkey, int strconfkey)
+{
+    int val = conf_get_int(conf, confkey);
+    switch (val) {
+      case CLIPUI_NONE:
+      default:
+        write_setting_s(sesskey, savekey, "none");
+        break;
+      case CLIPUI_IMPLICIT:
+        write_setting_s(sesskey, savekey, "implicit");
+        break;
+      case CLIPUI_EXPLICIT:
+        write_setting_s(sesskey, savekey, "explicit");
+        break;
+      case CLIPUI_CUSTOM:
+        {
+            char *sval = dupcat("custom:", conf_get_str(conf, strconfkey),
+                                (const char *)NULL);
+            write_setting_s(sesskey, savekey, sval);
+            sfree(sval);
+        }
+        break;
+    }
+}
+
+static void read_clip_setting(settings_r *sesskey, char *savekey,
+                              int def, Conf *conf, int confkey, int strconfkey)
+{
+    char *setting = read_setting_s(sesskey, savekey);
+    int val;
+
+    conf_set_str(conf, strconfkey, "");
+    if (!setting) {
+        val = def;
+    } else if (!strcmp(setting, "implicit")) {
+        val = CLIPUI_IMPLICIT;
+    } else if (!strcmp(setting, "explicit")) {
+        val = CLIPUI_EXPLICIT;
+    } else if (!strncmp(setting, "custom:", 7)) {
+        val = CLIPUI_CUSTOM;
+        conf_set_str(conf, strconfkey, setting + 7);
+    } else {
+        val = CLIPUI_NONE;
+    }
+    conf_set_int(conf, confkey, val);
+    sfree(setting);
 }
 
 char *save_settings(const char *section, Conf *conf)
 {
-    void *sesskey;
+    struct settings_w *sesskey;
     char *errmsg;
 
     sesskey = open_settings_w(section, &errmsg);
@@ -477,7 +535,7 @@ char *save_settings(const char *section, Conf *conf)
     return NULL;
 }
 
-void save_open_settings(void *sesskey, Conf *conf)
+void save_open_settings(settings_w *sesskey, Conf *conf)
 {
     int i;
     const char *p;
@@ -488,6 +546,7 @@ void save_open_settings(void *sesskey, Conf *conf)
     write_setting_i(sesskey, "LogType", conf_get_int(conf, CONF_logtype));
     write_setting_i(sesskey, "LogFileClash", conf_get_int(conf, CONF_logxfovr));
     write_setting_b(sesskey, "LogFlush", conf_get_bool(conf, CONF_logflush));
+    write_setting_b(sesskey, "LogHeader", conf_get_bool(conf, CONF_logheader));
     write_setting_b(sesskey, "SSHLogOmitPasswords", conf_get_bool(conf, CONF_logomitpass));
     write_setting_b(sesskey, "SSHLogOmitData", conf_get_bool(conf, CONF_logomitdata));
     p = "raw";
@@ -509,7 +568,7 @@ void save_open_settings(void *sesskey, Conf *conf)
     write_setting_b(sesskey, "TCPKeepalives", conf_get_bool(conf, CONF_tcp_keepalives));
     write_setting_s(sesskey, "TerminalType", conf_get_str(conf, CONF_termtype));
     write_setting_s(sesskey, "TerminalSpeed", conf_get_str(conf, CONF_termspeed));
-    wmap(sesskey, "TerminalModes", conf, CONF_ttymodes, TRUE);
+    wmap(sesskey, "TerminalModes", conf, CONF_ttymodes, true);
 
     /* Address family selection */
     write_setting_i(sesskey, "AddressFamily", conf_get_int(conf, CONF_addressfamily));
@@ -539,12 +598,14 @@ void save_open_settings(void *sesskey, Conf *conf)
     wprefs(sesskey, "KEX", kexnames, KEX_MAX, conf, CONF_ssh_kexlist);
     wprefs(sesskey, "HostKey", hknames, HK_MAX, conf, CONF_ssh_hklist);
     write_setting_i(sesskey, "RekeyTime", conf_get_int(conf, CONF_ssh_rekey_time));
+    write_setting_i(sesskey, "GssapiRekey", conf_get_int(conf, CONF_gssapirekey));
     write_setting_s(sesskey, "RekeyBytes", conf_get_str(conf, CONF_ssh_rekey_data));
     write_setting_b(sesskey, "SshNoAuth", conf_get_bool(conf, CONF_ssh_no_userauth));
     write_setting_b(sesskey, "SshBanner", conf_get_bool(conf, CONF_ssh_show_banner));
     write_setting_b(sesskey, "AuthTIS", conf_get_bool(conf, CONF_try_tis_auth));
     write_setting_b(sesskey, "AuthKI", conf_get_bool(conf, CONF_try_ki_auth));
     write_setting_b(sesskey, "AuthGSSAPI", conf_get_bool(conf, CONF_try_gssapi_auth));
+    write_setting_b(sesskey, "AuthGSSAPIKEX", conf_get_bool(conf, CONF_try_gssapi_kex));
 #ifndef NO_GSSAPI
     wprefs(sesskey, "GSSLibs", gsslibkeywords, ngsslibs, conf, CONF_ssh_gsslist);
     write_setting_filename(sesskey, "GSSCustom", conf_get_filename(conf, CONF_ssh_gss_custom));
@@ -627,6 +688,7 @@ void save_open_settings(void *sesskey, Conf *conf)
     write_setting_b(sesskey, "TryPalette", conf_get_bool(conf, CONF_try_palette));
     write_setting_b(sesskey, "ANSIColour", conf_get_bool(conf, CONF_ansi_colour));
     write_setting_b(sesskey, "Xterm256Colour", conf_get_bool(conf, CONF_xterm_256_colour));
+    write_setting_b(sesskey, "TrueColour", conf_get_bool(conf, CONF_true_colour));
     write_setting_i(sesskey, "BoldAsColour", conf_get_int(conf, CONF_bold_style)-1);
 
     for (i = 0; i < 22; i++) {
@@ -639,9 +701,11 @@ void save_open_settings(void *sesskey, Conf *conf)
 	write_setting_s(sesskey, buf, buf2);
     }
     write_setting_b(sesskey, "RawCNP", conf_get_bool(conf, CONF_rawcnp));
+    write_setting_b(sesskey, "UTF8linedraw", conf_get_bool(conf, CONF_utf8linedraw));
     write_setting_b(sesskey, "PasteRTF", conf_get_bool(conf, CONF_rtf_paste));
     write_setting_i(sesskey, "MouseIsXterm", conf_get_int(conf, CONF_mouse_is_xterm));
     write_setting_b(sesskey, "RectSelect", conf_get_bool(conf, CONF_rect_select));
+    write_setting_b(sesskey, "PasteControls", conf_get_bool(conf, CONF_paste_controls));
     write_setting_b(sesskey, "MouseOverride", conf_get_bool(conf, CONF_mouse_override));
     for (i = 0; i < 256; i += 32) {
 	char buf[20], buf2[256];
@@ -655,6 +719,14 @@ void save_open_settings(void *sesskey, Conf *conf)
 	}
 	write_setting_s(sesskey, buf, buf2);
     }
+    write_setting_b(sesskey, "MouseAutocopy",
+                    conf_get_bool(conf, CONF_mouseautocopy));
+    write_clip_setting(sesskey, "MousePaste", conf,
+                       CONF_mousepaste, CONF_mousepaste_custom);
+    write_clip_setting(sesskey, "CtrlShiftIns", conf,
+                       CONF_ctrlshiftins, CONF_ctrlshiftins_custom);
+    write_clip_setting(sesskey, "CtrlShiftCV", conf,
+                       CONF_ctrlshiftcv, CONF_ctrlshiftcv_custom);
     write_setting_s(sesskey, "LineCodePage", conf_get_str(conf, CONF_line_codepage));
     write_setting_b(sesskey, "CJKAmbigWide", conf_get_bool(conf, CONF_cjk_ambig_wide));
     write_setting_b(sesskey, "UTF8Override", conf_get_bool(conf, CONF_utf8_override));
@@ -709,19 +781,22 @@ void save_open_settings(void *sesskey, Conf *conf)
     wmap(sesskey, "SSHManualHostKeys", conf, CONF_ssh_manual_hostkeys, false);
 }
 
-void load_settings(const char *section, Conf *conf)
+bool load_settings(const char *section, Conf *conf)
 {
-    void *sesskey;
+    settings_r *sesskey;
 
     sesskey = open_settings_r(section);
+    bool exists = (sesskey != NULL);
     load_open_settings(sesskey, conf);
     close_settings_r(sesskey);
 
-    if (conf_launchable(conf))
+    if (exists && conf_launchable(conf))
         add_session_to_jumplist(section);
+
+    return exists;
 }
 
-void load_open_settings(void *sesskey, Conf *conf)
+void load_open_settings(settings_r *sesskey, Conf *conf)
 {
     int i;
     char *prot;
@@ -736,6 +811,7 @@ void load_open_settings(void *sesskey, Conf *conf)
     gppi(sesskey, "LogType", 0, conf, CONF_logtype);
     gppi(sesskey, "LogFileClash", LGXF_ASK, conf, CONF_logxfovr);
     gppb(sesskey, "LogFlush", true, conf, CONF_logflush);
+    gppb(sesskey, "LogHeader", true, conf, CONF_logheader);
     gppb(sesskey, "SSHLogOmitPasswords", true, conf, CONF_logomitpass);
     gppb(sesskey, "SSHLogOmitData", false, conf, CONF_logomitdata);
 
@@ -871,7 +947,7 @@ void load_open_settings(void *sesskey, Conf *conf)
 	 * a server which offered it then choked, but we never got
 	 * a server version string or any other reports. */
 	const char *default_kexes,
-	           *normal_default = "ecdh,dh-gex-sha1,dh-group14-sha1,rsa,"
+		   *normal_default = "ecdh,dh-gex-sha1,dh-group14-sha1,rsa,"
 		       "WARN,dh-group1-sha1",
 		   *bugdhgex2_default = "ecdh,dh-group14-sha1,rsa,"
 		       "WARN,dh-group1-sha1,dh-gex-sha1";
@@ -901,12 +977,20 @@ void load_open_settings(void *sesskey, Conf *conf)
 	    sfree(raw);
 	    raw = dupstr(normal_default);
 	}
-	gprefs_from_str(raw, kexnames, KEX_MAX, conf, CONF_ssh_kexlist);
+	/* (For the record: after 0.70, the default algorithm list
+	 * very briefly contained the string 'gss-sha1-krb5'; this was
+	 * never used in any committed version of code, but was left
+	 * over from a pre-commit version of GSS key exchange.
+	 * Mentioned here as it is remotely possible that it will turn
+	 * up in someone's saved settings in future.) */
+
+        gprefs_from_str(raw, kexnames, KEX_MAX, conf, CONF_ssh_kexlist);
 	sfree(raw);
     }
     gprefs(sesskey, "HostKey", "ed25519,ecdsa,rsa,dsa,WARN",
            hknames, HK_MAX, conf, CONF_ssh_hklist);
     gppi(sesskey, "RekeyTime", 60, conf, CONF_ssh_rekey_time);
+    gppi(sesskey, "GssapiRekey", GSS_DEF_REKEY_MINS, conf, CONF_gssapirekey);
     gpps(sesskey, "RekeyBytes", "1G", conf, CONF_ssh_rekey_data);
     {
 	/* SSH-2 only by default */
@@ -924,6 +1008,7 @@ void load_open_settings(void *sesskey, Conf *conf)
     gppb(sesskey, "AuthTIS", false, conf, CONF_try_tis_auth);
     gppb(sesskey, "AuthKI", true, conf, CONF_try_ki_auth);
     gppb(sesskey, "AuthGSSAPI", true, conf, CONF_try_gssapi_auth);
+    gppb(sesskey, "AuthGSSAPIKEX", true, conf, CONF_try_gssapi_kex);
 #ifndef NO_GSSAPI
     gprefs(sesskey, "GSSLibs", "\0",
 	   gsslibkeywords, ngsslibs, conf, CONF_ssh_gsslist);
@@ -1026,6 +1111,7 @@ void load_open_settings(void *sesskey, Conf *conf)
     gppb(sesskey, "TryPalette", false, conf, CONF_try_palette);
     gppb(sesskey, "ANSIColour", true, conf, CONF_ansi_colour);
     gppb(sesskey, "Xterm256Colour", true, conf, CONF_xterm_256_colour);
+    gppb(sesskey, "TrueColour", true, conf, CONF_true_colour);
     i = gppi_raw(sesskey, "BoldAsColour", 1); conf_set_int(conf, CONF_bold_style, i+1);
 
     for (i = 0; i < 22; i++) {
@@ -1048,9 +1134,11 @@ void load_open_settings(void *sesskey, Conf *conf)
 	sfree(buf2);
     }
     gppb(sesskey, "RawCNP", false, conf, CONF_rawcnp);
+    gppb(sesskey, "UTF8linedraw", false, conf, CONF_utf8linedraw);
     gppb(sesskey, "PasteRTF", false, conf, CONF_rtf_paste);
     gppi(sesskey, "MouseIsXterm", 0, conf, CONF_mouse_is_xterm);
     gppb(sesskey, "RectSelect", false, conf, CONF_rect_select);
+    gppb(sesskey, "PasteControls", false, conf, CONF_paste_controls);
     gppb(sesskey, "MouseOverride", true, conf, CONF_mouse_override);
     for (i = 0; i < 256; i += 32) {
 	static const char *const defaults[] = {
@@ -1078,6 +1166,14 @@ void load_open_settings(void *sesskey, Conf *conf)
 	}
 	sfree(buf2);
     }
+    gppb(sesskey, "MouseAutocopy", CLIPUI_DEFAULT_AUTOCOPY,
+         conf, CONF_mouseautocopy);
+    read_clip_setting(sesskey, "MousePaste", CLIPUI_DEFAULT_MOUSE,
+                      conf, CONF_mousepaste, CONF_mousepaste_custom);
+    read_clip_setting(sesskey, "CtrlShiftIns", CLIPUI_DEFAULT_INS,
+                      conf, CONF_ctrlshiftins, CONF_ctrlshiftins_custom);
+    read_clip_setting(sesskey, "CtrlShiftCV", CLIPUI_NONE,
+                      conf, CONF_ctrlshiftcv, CONF_ctrlshiftcv_custom);
     /*
      * The empty default for LineCodePage will be converted later
      * into a plausible default for the locale.
@@ -1150,9 +1246,9 @@ void load_open_settings(void *sesskey, Conf *conf)
     gppmap(sesskey, "SSHManualHostKeys", conf, CONF_ssh_manual_hostkeys);
 }
 
-void do_defaults(const char *session, Conf *conf)
+bool do_defaults(const char *session, Conf *conf)
 {
-    load_settings(session, conf);
+    return load_settings(session, conf);
 }
 
 static int sessioncmp(const void *av, const void *bv)
@@ -1175,34 +1271,22 @@ static int sessioncmp(const void *av, const void *bv)
     return strcmp(a, b);	       /* otherwise, compare normally */
 }
 
-void get_sesslist(struct sesslist *list, int allocate)
+void get_sesslist(struct sesslist *list, bool allocate)
 {
-    char otherbuf[2048];
-    int buflen, bufsize, i;
-    char *p, *ret;
-    void *handle;
+    int i;
+    char *p;
+    settings_e *handle;
 
     if (allocate) {
+        strbuf *sb = strbuf_new();
 
-	buflen = bufsize = 0;
-	list->buffer = NULL;
 	if ((handle = enum_settings_start()) != NULL) {
-	    do {
-		ret = enum_settings_next(handle, otherbuf, sizeof(otherbuf));
-		if (ret) {
-		    int len = strlen(otherbuf) + 1;
-		    if (bufsize < buflen + len) {
-			bufsize = buflen + len + 2048;
-			list->buffer = sresize(list->buffer, bufsize, char);
-		    }
-		    strcpy(list->buffer + buflen, otherbuf);
-		    buflen += strlen(list->buffer + buflen) + 1;
-		}
-	    } while (ret);
+            while (enum_settings_next(handle, sb))
+                put_byte(sb, '\0');
 	    enum_settings_finish(handle);
 	}
-	list->buffer = sresize(list->buffer, buflen + 1, char);
-	list->buffer[buflen] = '\0';
+        put_byte(sb, '\0');
+	list->buffer = strbuf_to_str(sb);
 
 	/*
 	 * Now set up the list of sessions. Note that "Default

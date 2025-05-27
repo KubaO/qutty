@@ -26,6 +26,8 @@ typedef enum Ssh_gss_stat {
 typedef gss_buffer_desc Ssh_gss_buf;
 typedef gss_name_t Ssh_gss_name;
 
+#define GSS_DEF_REKEY_MINS 2	/* Default minutes between GSS cache checks */
+
 /* Functions, provided by either wingss.c or sshgssc.c */
 
 struct ssh_gss_library;

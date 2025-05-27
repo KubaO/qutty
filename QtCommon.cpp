@@ -633,3 +633,38 @@ void frontend_echoedit_update(void *frontend, int echo, int edit) {}
 void qtc_assert(const char *assertion, const char *file, int line) {
   qt_assert(assertion, file, line);
 }
+
+void escape_registry_key(const char *in, strbuf *out) {
+  bool candot = false;
+  static const char hex[17] = "0123456789ABCDEF";
+
+  while (*in) {
+    if (*in == ' ' || *in == '\\' || *in == '*' || *in == '?' || *in == '%' || *in < ' ' ||
+        *in > '~' || (*in == '.' && !candot)) {
+      put_byte(out, '%');
+      put_byte(out, hex[((unsigned char)*in) >> 4]);
+      put_byte(out, hex[((unsigned char)*in) & 15]);
+    } else
+      put_byte(out, *in);
+    in++;
+    candot = true;
+  }
+}
+
+void unescape_registry_key(const char *in, strbuf *out) {
+  while (*in) {
+    if (*in == '%' && in[1] && in[2]) {
+      int i, j;
+
+      i = in[1] - '0';
+      i -= (i > 9 ? 7 : 0);
+      j = in[2] - '0';
+      j -= (j > 9 ? 7 : 0);
+
+      put_byte(out, (i << 4) + j);
+      in += 3;
+    } else {
+      put_byte(out, *in++);
+    }
+  }
+}

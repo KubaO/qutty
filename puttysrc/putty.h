@@ -1299,7 +1299,9 @@ NORETURN void cleanup_exit(int);
     X(BOOL, NONE, try_tis_auth) \
     X(BOOL, NONE, try_ki_auth) \
     X(BOOL, NONE, try_gssapi_auth) /* attempt gssapi auth via ssh userauth */ \
+    X(BOOL, NONE, try_gssapi_kex) /* attempt gssapi auth via ssh kex */ \
     X(BOOL, NONE, gssapifwd) /* forward tgt via gss */ \
+    X(INT, NONE, gssapirekey) /* KEXGSS refresh interval (mins) */ \
     X(INT, INT, ssh_gsslist) /* preference order for local GSS libs */ \
     X(FILENAME, NONE, ssh_gss_custom) \
     X(BOOL, NONE, ssh_subsys) /* run a subsystem rather than a command */ \
@@ -1338,7 +1340,7 @@ NORETURN void cleanup_exit(int);
     X(BOOL, NONE, no_dbackspace) /* disable destructive backspace */ \
     X(BOOL, NONE, no_remote_charset) /* disable remote charset config */ \
     X(INT, NONE, remote_qtitle_action) /* remote win title query action
-                                      * (TITLE_NONE, TITLE_EMPTY, ...) */ \
+                                       * (TITLE_NONE, TITLE_EMPTY, ...) */ \
     X(BOOL, NONE, app_cursor) \
     X(BOOL, NONE, app_keypad) \
     X(BOOL, NONE, nethack_keypad) \
@@ -1387,6 +1389,7 @@ NORETURN void cleanup_exit(int);
     X(INT, NONE, logtype) /* LGTYP_NONE, LGTYPE_ASCII, ... */ \
     X(INT, NONE, logxfovr) /* LGXF_OVR, LGXF_APN, LGXF_ASK */ \
     X(BOOL, NONE, logflush) \
+    X(BOOL, NONE, logheader) \
     X(BOOL, NONE, logomitpass) \
     X(BOOL, NONE, logomitdata) \
     X(BOOL, NONE, hide_mouseptr) \
@@ -1399,6 +1402,7 @@ NORETURN void cleanup_exit(int);
     /* Colour options */ \
     X(BOOL, NONE, ansi_colour) \
     X(BOOL, NONE, xterm_256_colour) \
+    X(BOOL, NONE, true_colour) \
     X(BOOL, NONE, system_colour) \
     X(BOOL, NONE, try_palette) \
     X(INT, NONE, bold_style) /* 1=font 2=colour (3=both) */ \
@@ -1406,10 +1410,19 @@ NORETURN void cleanup_exit(int);
     /* Selection options */ \
     X(INT, NONE, mouse_is_xterm) /* 0=compromise 1=xterm 2=Windows */ \
     X(BOOL, NONE, rect_select) \
+    X(BOOL, NONE, paste_controls) \
     X(BOOL, NONE, rawcnp) \
+    X(BOOL, NONE, utf8linedraw) \
     X(BOOL, NONE, rtf_paste) \
     X(BOOL, NONE, mouse_override) \
     X(INT, INT, wordness) \
+    X(BOOL, NONE, mouseautocopy) \
+    X(INT, NONE, mousepaste) /* CLIPUI_IMPLICIT, CLIPUI_EXPLICIT, ... */ \
+    X(INT, NONE, ctrlshiftins) /* CLIPUI_IMPLICIT, CLIPUI_EXPLICIT, ... */ \
+    X(INT, NONE, ctrlshiftcv) /* CLIPUI_IMPLICIT, CLIPUI_EXPLICIT, ... */ \
+    X(STR, NONE, mousepaste_custom) \
+    X(STR, NONE, ctrlshiftins_custom) \
+    X(STR, NONE, ctrlshiftcv_custom) \
     /* translations */ \
     X(INT, NONE, vtmode) /* VT_XWINDOWS, VT_OEMANSI, ... */ \
     X(STR, NONE, line_codepage) \
@@ -1575,11 +1588,11 @@ const struct BackendVtable *backend_vt_from_name(const char *name);
 const struct BackendVtable *backend_vt_from_proto(int proto);
 char *get_remote_username(Conf *conf); /* dynamically allocated */
 char *save_settings(const char *section, Conf *conf);
-void save_open_settings(void *sesskey, Conf *conf);
-void load_settings(const char *section, Conf *conf);
-void load_open_settings(void *sesskey, Conf *conf);
-void get_sesslist(struct sesslist *, int allocate);
-void do_defaults(const char *, Conf *);
+void save_open_settings(settings_w *sesskey, Conf *conf);
+bool load_settings(const char *section, Conf *conf);
+void load_open_settings(settings_r *sesskey, Conf *conf);
+void get_sesslist(struct sesslist *, bool allocate);
+bool do_defaults(const char *, Conf *);
 void registry_cleanup(void);
 
 /*

@@ -1512,12 +1512,14 @@ void term_copy_stuff_from_conf(Terminal *term)
     term->no_remote_wintitle = conf_get_bool(term->conf, CONF_no_remote_wintitle);
     term->no_remote_clearscroll = conf_get_bool(term->conf, CONF_no_remote_clearscroll);
     term->rawcnp = conf_get_bool(term->conf, CONF_rawcnp);
+    term->utf8linedraw = conf_get_bool(term->conf, CONF_utf8linedraw);
     term->rect_select = conf_get_bool(term->conf, CONF_rect_select);
     term->remote_qtitle_action = conf_get_int(term->conf, CONF_remote_qtitle_action);
     term->rxvt_homeend = conf_get_bool(term->conf, CONF_rxvt_homeend);
     term->scroll_on_disp = conf_get_bool(term->conf, CONF_scroll_on_disp);
     term->scroll_on_key = conf_get_bool(term->conf, CONF_scroll_on_key);
     term->xterm_256_colour = conf_get_bool(term->conf, CONF_xterm_256_colour);
+    term->true_colour = conf_get_bool(term->conf, CONF_true_colour);
 
     /*
      * Parse the control-character escapes in the configured
@@ -6333,7 +6335,7 @@ static bool wstartswith(const wchar_t *a, size_t alen,
 void term_do_paste(Terminal *term, const wchar_t *data, int len)
 {
     const wchar_t *p;
-    bool paste_controls = true;
+    bool paste_controls = conf_get_bool(term->conf, CONF_paste_controls);
 
     /*
      * Pasting data into the terminal counts as a keyboard event (for
