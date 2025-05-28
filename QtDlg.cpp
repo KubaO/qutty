@@ -19,10 +19,11 @@ extern "C" {
  * Ask whether the selected algorithm is acceptable (since it was
  * below the configured 'warn' threshold).
  */
-int askalg(void *frontend, const char *algtype, const char *algname,
-           void (*/*callback*/)(void *ctx, int result), void * /*ctx*/) {
-  assert(frontend);
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
+int qt_seat_confirm_weak_crypto_primitive(Seat *seat, const char *algtype, const char *algname,
+                                          void (* /*callback*/)(void *ctx, int result),
+                                          void * /*ctx*/) {
+  assert(seat);
+  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   QString msg = QString("The first " + QString(algtype) +
                         " supported by the server\n"
                         "is " +
@@ -45,8 +46,8 @@ int askalg(void *frontend, const char *algtype, const char *algname,
  * Ask whether to wipe a session log file before writing to it.
  * Returns 2 for wipe, 1 for append, 0 for cancel (don't log).
  */
-int askappend(void * /*frontend*/, Filename *filename, void (* /*callback*/)(void *ctx, int result),
-              void * /*ctx*/) {
+int qt_askappend(LogPolicy * /*lp*/, Filename *filename,
+                 void (* /*callback*/)(void *ctx, int result), void * /*ctx*/) {
   // assert(frontend);
   QString msg = QString("The session log file \"") + QString(filename->path) +
                 QString(
@@ -69,11 +70,11 @@ int askappend(void * /*frontend*/, Filename *filename, void (* /*callback*/)(voi
   }
 }
 
-int get_userpass_input_v2(void *frontend, prompts_t *p, const unsigned char *in, int inlen) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
+static int qt_get_userpass_input(Seat *seat, prompts_t *p, bufchain *input) {
+  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   int ret = -1;
   // ret = cmdline_get_passwd_input(p, in, inlen);
-  if (ret == -1) ret = term_get_userpass_input(f->term, p, in, inlen);
+  if (ret == -1) ret = term_get_userpass_input(f->term, p, input);
   return ret;
 }
 
@@ -97,83 +98,6 @@ int verify_host_key(const char *hostname, int port, const char *keytype, const c
   return 0;
 }
 
-int verify_ssh_host_key(void *frontend, char *host, int port, char *keytype, char *keystr,
-                        char *fingerprint, void (*/*callback*/)(void *ctx, int result),
-                        void * /*ctx*/) {
-  assert(frontend);
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  int ret = 1;
-  QString absentmsg = QString(
-                          "The server's host key is not cached in the registry. You\n"
-                          "have no guarantee that the server is the computer you\n"
-                          "think it is.\n"
-                          "The server's " +
-                          QString(keytype) + " key fingerprint is:\n") +
-                      QString(fingerprint) +
-                      QString(
-                          "\n"
-                          "If you trust this host, hit Yes to add the key to\n" APPNAME
-                          "'s cache and carry on connecting.\n"
-                          "If you want to carry on connecting just once, without\n"
-                          "adding the key to the cache, hit No.\n"
-                          "If you do not trust this host, hit Cancel to abandon the\n"
-                          "connection.\n");
-
-  QString wrongmsg = QString(
-      "WARNING - POTENTIAL SECURITY BREACH!\n"
-      "\n"
-      "The server's host key does not match the one " APPNAME
-      " has\n"
-      "cached in the registry. This means that either the\n"
-      "server administrator has changed the host key, or you\n"
-      "have actually connected to another computer pretending\n"
-      "to be the server.\n"
-      "The new " +
-      QString(keytype) + " key fingerprint is:\n" + QString(fingerprint) +
-      "\n"
-      "If you were expecting this change and trust the new key,\n"
-      "hit Yes to update " APPNAME
-      "'s cache and continue connecting.\n"
-      "If you want to carry on connecting but without updating\n"
-      "the cache, hit No.\n"
-      "If you want to abandon the connection completely, hit\n"
-      "Cancel. Hitting Cancel is the ONLY guaranteed safe\n"
-      "choice.\n");
-
-  /*
-   * Verify the key against the registry.
-   */
-  ret = verify_host_key(host, port, keytype, keystr);
-  if (ret == 0) /* success - key matched OK */
-    return 1;
-  else if (ret == 2) { /* key was different */
-    switch (QMessageBox::critical(f->getMainWindow(), QString(APPNAME " Security Alert"), wrongmsg,
-                                  QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
-                                  QMessageBox::Cancel)) {
-      case QMessageBox::Yes:
-        store_host_key(host, port, keytype, keystr);
-        return 2;
-      case QMessageBox::No:
-        return 1;
-      default:
-        return 0;
-    }
-  } else if (ret == 1) { /* key was absent */
-    switch (QMessageBox::warning(f->getMainWindow(), QString(APPNAME " Security Alert"), absentmsg,
-                                 QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
-                                 QMessageBox::Cancel)) {
-      case QMessageBox::Yes:
-        store_host_key(host, port, keytype, keystr);
-        return 2;
-      case QMessageBox::No:
-        return 1;
-      default:
-        return 0;
-    }
-  }
-  return 0; /* abandon the connection */
-}
-
 void old_keyfile_warning(void) {
   QMessageBox::warning(NULL, QString(APPNAME "%s Key File Warning"),
                        QString(
@@ -189,35 +113,21 @@ void old_keyfile_warning(void) {
                        QMessageBox::Ok);
 }
 
-static void qt_vmessage_box(void *frontend, const char *title, const char *fmt, va_list args) {
+static void qt_vmessage_box(GuiTerminalWindow *frontend, const char *title, const char *fmt,
+                            va_list args) {
   QString msg;
   assert(frontend);
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  QMessageBox::critical(f, QString(title), msg.vasprintf(fmt, args), QMessageBox::Ok);
+  QMessageBox::critical(frontend, QString(title), msg.vasprintf(fmt, args), QMessageBox::Ok);
 }
 
-static void qutty_connection_fatal(void *frontend, const char *fmt, va_list args) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  if (f->userClosingTab || f->isSockDisconnected) return;
-
-  // prevent recursive calling
-  f->isSockDisconnected = true;
-
-  QByteArray msg = QString::vasprintf(fmt, args).toLatin1();
-  qt_critical_msgbox(frontend, "%s", msg.data());
-
-  if (conf_get_int(f->getCfg(), CONF_close_on_exit) == FORCE_ON) f->closeTerminal();
-  f->setSessionTitle(f->getSessionTitle() + " (inactive)");
-}
-
-void qt_message_box(void *frontend, const char *title, const char *fmt, ...) {
+void qt_message_box(GuiTerminalWindow *frontend, const char *title, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   qt_vmessage_box(frontend, title, fmt, args);
   va_end(args);
 }
 
-void qt_critical_msgbox(void *frontend, const char *fmt, ...) {
+static void qt_critical_msgbox(GuiTerminalWindow *frontend, const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   qt_vmessage_box(frontend, APPNAME " Fatal Error", fmt, args);
@@ -231,36 +141,40 @@ void nonfatal(const char *fmt, ...) {
   va_end(args);
 }
 
-void connection_fatal(void *frontend, const char *fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-  qutty_connection_fatal(frontend, fmt, args);
-  va_end(args);
-}
-
-void fatalbox(const char *fmt, ...) {
-  va_list args;
-  va_start(args, fmt);
-  qt_vmessage_box(nullptr, APPNAME " Fatal Error", fmt, args);
-  va_end(args);
-}
-
 void modalfatalbox(const char *fmt, ...) {
   va_list args;
   va_start(args, fmt);
   qt_vmessage_box(nullptr, APPNAME " Fatal Error", fmt, args);
   va_end(args);
+  abort();
 }
 
-void update_specials_menu(void *) {}
+static void qt_connection_fatal(Seat *seat, const char *msg) {
+  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  if (f->userClosingTab || f->isSockDisconnected) return;
 
-void logevent(void *frontend, const char *string) { qDebug() << frontend << string; }
+  // prevent recursive calling
+  f->isSockDisconnected = true;
+
+  qt_critical_msgbox(f, "%s", msg);
+
+  if (conf_get_int(f->getCfg(), CONF_close_on_exit) == FORCE_ON) f->closeTerminal();
+  f->setSessionTitle(f->getSessionTitle() + " (inactive)");
+}
+
+void qt_update_specials_menu(Seat *) {}
+
+void qt_eventlog(LogPolicy *lp, const char *event) { qDebug() << lp << event; }
+
+void qt_logging_error(LogPolicy *lp, const char *event) { qDebug() << lp << event; }
 
 // from putty-0.69/windlg.c
-int verify_ssh_host_key(void *frontend, char *host, int port, const char *keytype, char *keystr,
-                        char *fingerprint, void (*callback)(void *ctx, int result), void *ctx) {
+int qt_verify_ssh_host_key(Seat *seat, const char *host, int port, const char *keytype,
+                           char *keystr, char *fingerprint, void (*callback)(void *ctx, int result),
+                           void *ctx) {
+  assert(seat);
+  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   int ret;
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
 
   static const char absentmsg[] =
       "The server's host key is not cached in the registry. You\n"
@@ -335,9 +249,10 @@ int verify_ssh_host_key(void *frontend, char *host, int port, const char *keytyp
 }
 
 // from putty-0.69/windlg.c
-int askhk(void *frontend, const char *algname, const char *betteralgs,
-          void (*callback)(void *ctx, int result), void *ctx) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
+int qt_seat_confirm_weak_cached_hostkey(Seat *seat, const char *algname, const char *betteralgs,
+                                        void (*callback)(void *ctx, int result), void *ctx) {
+  assert(seat);
+  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   static const char mbtitle[] = "%s Security Alert";
   static const char msg[] =
       "The first host key type we have stored for this server\n"
@@ -362,3 +277,81 @@ int askhk(void *frontend, const char *algname, const char *betteralgs,
   else
     return 0;
 }
+
+static void qt_set_busy_status(Seat * /*seat*/, BusyStatus /*status*/) {
+  // TODO not implemented
+  // busy_status = status;
+  // update_mouse_pointer();
+}
+
+static bool qt_eof(Seat *seat) { return true; /* do respond to incoming EOF with outgoing */ }
+
+static void qt_notify_remote_exit(Seat *seat) {
+  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  int exitcode = backend_exitcode(f->backend);
+
+  if (f->userClosingTab || f->isSockDisconnected) return;
+
+  if (exitcode >= 0) {
+    int close_on_exit = conf_get_int(f->getCfg(), CONF_close_on_exit);
+    if (close_on_exit == FORCE_ON || (close_on_exit == AUTO && exitcode != INT_MAX)) {
+      f->closeTerminal();
+    } else {
+      /* exitcode == INT_MAX indicates that the connection was closed
+       * by a fatal error, so an error box will be coming our way and
+       * we should not generate this informational one. */
+      if (exitcode != INT_MAX) {
+        qt_message_box(f, APPNAME " Fatal Error", "Connection closed by remote host");
+        f->setSessionTitle(f->getSessionTitle() + " (inactive)");
+        // prevent recursive calling
+        f->isSockDisconnected = true;
+      }
+    }
+  }
+}
+
+char *qt_get_ttymode(Seat *seat, const char *mode) {
+  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  return term_get_ttymode(f->term, mode);
+}
+
+bool qt_is_utf8(Seat *seat) {
+  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  return win_is_utf8(&f->termwin);
+}
+
+/*
+ * Provide output from the remote session. 'is_stderr' indicates
+ * that the output should be sent to a separate error message
+ * channel, if the seat has one. But combining both channels into
+ * one is OK too; that's what terminal-window based seats do.
+ *  * The return value is the current size of the output backlog.
+ */
+size_t qt_output(Seat *seat, bool is_stderr, const void *data, size_t len) {
+  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  return f->from_backend(is_stderr, (const char *)data, len);
+}
+
+static const LogPolicyVtable default_logpolicy_vt = {qt_eventlog, qt_askappend, qt_logging_error};
+LogPolicy default_logpolicy[1] = {&default_logpolicy_vt};
+
+static const SeatVtable qtseat_vt = {
+    qt_output,
+    qt_eof,
+    qt_get_userpass_input,
+    qt_notify_remote_exit,
+    qt_connection_fatal,
+    qt_update_specials_menu,
+    qt_get_ttymode,
+    qt_set_busy_status,
+    qt_verify_ssh_host_key,
+    qt_seat_confirm_weak_crypto_primitive,
+    qt_seat_confirm_weak_cached_hostkey,
+    qt_is_utf8,
+    nullseat_echoedit_update,
+    nullseat_get_x_display,
+    nullseat_get_windowid,
+    nullseat_get_window_pixel_size,
+    nullseat_stripctrl_new,
+    nullseat_set_trust_status,
+};

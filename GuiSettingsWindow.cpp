@@ -491,6 +491,7 @@ static const std::unordered_map<std::string, KeyValue> UI_TO_KV = {UI_MAPPING(UI
 enum Type {
   TYPE_NONE,
   TYPE_STR,
+  TYPE_BOOL,
   TYPE_INT,
   TYPE_FILENAME,
   TYPE_FONT,
@@ -524,8 +525,12 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
     if (opt & UI::Optional && !confKeyExists(cfg.get(), key)) continue;
     QCheckBox *cb = qobject_cast<QCheckBox *>(widget);
     if (cb) {
-      assert(type == TYPE_INT);
-      cb->setChecked(conf_get_int(cfg.get(), key));
+      if (type == TYPE_BOOL)
+        cb->setChecked(conf_get_bool(cfg.get(), key));
+      else if (type == TYPE_INT)
+        cb->setChecked(conf_get_int(cfg.get(), key));
+      else
+        assert(false);
       continue;
     }
     QLineEdit *le = qobject_cast<QLineEdit *>(widget);
@@ -536,6 +541,8 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
         le->setText(QString::number(conf_get_int(cfg.get(), key)));
       else if (type == TYPE_FILENAME)
         le->setText(conf_get_filename(cfg.get(), key)->path);
+      else
+        assert(false);
       continue;
     }
     QButtonGroup *bg = qobject_cast<QButtonGroup *>(widget);
@@ -546,13 +553,20 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
     }
     QRadioButton *rb = qobject_cast<QRadioButton *>(widget);
     if (rb) {
-      assert(type == TYPE_INT);
-      int cv = conf_get_int(cfg.get(), key);
+      int cv;
+      if (type == TYPE_BOOL)
+        cv = conf_get_bool(cfg.get(), key);
+      else if (type == TYPE_INT)
+        cv = conf_get_int(cfg.get(), key);
+      else
+        assert(false);
+
       if (kv.is_bool) {
         if (cv && value || !cb && !value) rb->click();
       } else {
         if (cv == value) rb->click();
       }
+
       continue;
     }
   }
@@ -640,8 +654,12 @@ Conf *GuiSettingsWindow::getConfig() {
 
     QCheckBox *cb = qobject_cast<QCheckBox *>(widget);
     if (cb) {
-      assert(type == TYPE_INT);
-      conf_set_int(cfg, key, cb->isChecked());
+      if (type == TYPE_BOOL)
+        conf_set_bool(cfg, key, cb->isChecked());
+      else if (type == TYPE_INT)
+        conf_set_int(cfg, key, cb->isChecked());
+      else
+        assert(false);
       continue;
     }
     QLineEdit *le = qobject_cast<QLineEdit *>(widget);
@@ -656,7 +674,8 @@ Conf *GuiSettingsWindow::getConfig() {
         Filename fn = *conf_get_filename(cfg, key);
         qstring_to_char(fn.path, le->text(), sizeof(fn.path));
         conf_set_filename(cfg, key, &fn);
-      }
+      } else
+        assert(false);
       continue;
     }
     QButtonGroup *bg = qobject_cast<QButtonGroup *>(widget);
@@ -667,8 +686,12 @@ Conf *GuiSettingsWindow::getConfig() {
     }
     QRadioButton *rb = qobject_cast<QRadioButton *>(widget);
     if (rb) {
-      assert(type == TYPE_INT);
-      if (rb->isChecked()) conf_set_int(cfg, key, value);
+      if (type == TYPE_BOOL) {
+        if (rb->isChecked()) conf_set_bool(cfg, key, value);
+      } else if (type == TYPE_INT) {
+        if (rb->isChecked()) conf_set_int(cfg, key, value);
+      } else
+        assert(false);
       continue;
     }
   }

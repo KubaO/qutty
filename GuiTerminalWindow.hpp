@@ -8,11 +8,12 @@
 #define TERMINALWINDOW_H
 
 #include <QAbstractScrollArea>
+#include <QAbstractSocket>
 #include <QElapsedTimer>
 #include <QFont>
 #include <QFontInfo>
 #include <QFontMetrics>
-#include <QtNetwork/QTcpSocket>
+#include <QPointer>
 
 #include "GuiBase.hpp"
 #include "GuiDrag.hpp"
@@ -44,8 +45,8 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   QFont _font;
   int fontWidth, fontHeight, fontAscent;
   struct unicode_data ucsdata = {};
-  Actual_Socket as = nullptr;
-  QTcpSocket *qtsock = nullptr;
+  QtSocket *as = nullptr;
+  QPointer<QAbstractSocket> qtsock;
   bool _any_update = false;
   QRegion termrgn;
   QColor colours[NALLCOLOURS];
@@ -74,8 +75,9 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
  public:
   Terminal *term = nullptr;
   Backend *backend = nullptr;
-  void *backhandle = nullptr;
-  void *ldisc = nullptr;
+  Ldisc *ldisc = nullptr;
+  TermWin termwin = {};
+  Seat seat = {};
 
   bool userClosingTab = false;
   bool isSockDisconnected = false;
@@ -110,9 +112,11 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
 
   void setTermFont(Conf *cfg);
   void cfgtopalette(Conf *cfg);
-  void requestPaste();
+  void requestPaste(int clipboard);
   void getClip(wchar_t **p, int *len);
-  void writeClip(wchar_t *data, int *attr, int len, int must_deselect);
+
+  void writeClip(int clipboard, wchar_t *data, int *attr, truecolour *colours, int len,
+                 int must_deselect);
   void paintText(QPainter &painter, int row, int col, const QString &str, unsigned long attr);
   void paintCursor(QPainter &painter, int row, int col, const QString &str, unsigned long attr);
 
@@ -168,13 +172,13 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void focusOutEvent(QFocusEvent *e) override;
 
  public slots:
-  void readyRead();
   void vertScrollBarAction(int action);
   void vertScrollBarMoved(int value);
   void detachTmuxControllerMode();
-  void sockError(QAbstractSocket::SocketError socketError);
-  void sockDisconnected();
   void on_sessionTitleChange(bool force = false);
 };
+
+extern const TermWinVtable qttermwin_vt;
+extern const SeatVtable qtseat_vt;
 
 #endif  // TERMINALWINDOW_H

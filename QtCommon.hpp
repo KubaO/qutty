@@ -30,68 +30,45 @@ class GuiTerminalWindow;
 extern QTimer *qtimer;
 extern long timing_next_time;
 
-typedef struct Socket_tag *Actual_Socket;
+typedef struct QtSocket QtSocket;
 
-struct Socket_tag {
-  const struct socket_function_table *fn;
-  /* the above variable absolutely *must* be the first in this structure */
+struct QtSocket {
   const char *error;
-  // SOCKET s;
-  Plug plug;
+  QTcpSocket *qtsock;
+  Plug *plug;
   void *private_ptr;
   bufchain output_data;
-  int connected;
-  int writable;
-  int frozen;          /* this causes readability notifications to be ignored */
-  int frozen_readable; /* this means we missed at least one readability
-                        * notification while we were frozen */
-  int localhost_only;  /* for listening sockets */
+  bool connected;
+  bool writable;
+  bool frozen;          /* this causes readability notifications to be ignored */
+  bool frozen_readable; /* this means we missed at least one readability
+                         * notification while we were frozen */
+  bool localhost_only;  /* for listening sockets */
   char oobdata[1];
   int sending_oob;
-  int oobinline, nodelay, keepalive, privport;
-  SockAddr addr;
-  // SockAddrStep step;
+  bool oobinline, nodelay, keepalive, privport;
+  SockAddr *addr;
   int port;
-  int pending_error; /* in case send() returns error */
-                     /*
-                      * We sometimes need pairs of Socket structures to be linked:
-                      * if we are listening on the same IPv6 and v4 port, for
-                      * example. So here we define `parent' and `child' pointers to
-                      * track this link.
-                      */
-  Actual_Socket parent, child;
-  QTcpSocket *qtsock;
+  bool pending_error; /* in case send() returns error */
+
+  /*
+   * We sometimes need pairs of Socket structures to be linked:
+   * if we are listening on the same IPv6 and v4 port, for
+   * example. So here we define `parent' and `child' pointers to
+   * track this link.
+   */
+  QtSocket *parent, *child;
+
+  Socket sock;
 };
-
-typedef struct telnet_tag {
-  const struct plug_function_table *fn;
-  /* the above field _must_ be first in the structure */
-
-  Socket s;
-
-  void *frontend;
-  void *ldisc;
-  int term_width, term_height;
-
-  int opt_states[20];
-
-  int echoing, editing;
-  int activated;
-  int bufsize;
-  int in_synch;
-  int sb_opt, sb_len;
-  unsigned char *sb_buf;
-  int sb_size;
-  int state;
-
-  Conf *cfg;
-
-  Pinger pinger;
-} * Telnet;
 
 void qstring_to_char(char *dst, const QString &src, int dstlen);
 
 class QTextCodec;
 QTextCodec *getTextCodec(int line_codepage);
+bool qtwin_is_utf8(TermWin *win);
+
+class GuiTerminalWindow;
+void qt_message_box(GuiTerminalWindow *frontend, const char *title, const char *fmt, ...);
 
 #endif  // QTCOMMON_H

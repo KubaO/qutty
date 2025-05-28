@@ -302,7 +302,7 @@ void GuiMainWindow::contextMenuPaste() {
   GuiTerminalWindow *term = menuCookieTermWnd;
   if (!term) term = this->getCurrentTerminal();
   if (terminalList.indexOf(term) == -1) return;
-  term->requestPaste();
+  term->requestPaste(CLIP_SYSTEM);
 }
 
 void GuiMainWindow::contextMenuDuplicateSessionTriggered() {

@@ -7,67 +7,66 @@ extern "C" {
 #include "tmux/TmuxGateway.hpp"
 #include "tmux/tmux.h"
 
-extern "C" {
-typedef struct __tmux_window_pane_t {
-  const struct plug_function_table *fn;
-  /* the above field _must_ be first in the structure */
-
+struct TmuxBackend {
   TmuxGateway *gateway;
   int paneid;
-} tmux_window_pane_t;
-}
 
-extern "C" void tmux_log(Plug /*plug*/, int /*type*/, SockAddr /*addr*/, int /*port*/,
-                         const char * /*error_msg*/, int /*error_code*/) {
+  Plug plug;
+  Backend backend;
+  LogContext *logctx;
+};
+
+void tmux_log(Plug * /*plug*/, int /*type*/, SockAddr * /*addr*/, int /*port*/,
+              const char * /*error_msg*/, int /*error_code*/) {
   qDebug() << __FUNCTION__;
 }
 
-extern "C" void tmux_closing(Plug /*plug*/, const char * /*error_msg*/, int /*error_code*/,
-                             int /*calling_back*/) {
+void tmux_closing(Plug * /*plug*/, const char * /*error_msg*/, int /*error_code*/,
+                  bool /*calling_back*/) {
   qDebug() << __FUNCTION__;
 }
 
-extern "C" void tmux_receive(Plug /*plug*/, int /*urgent*/, char * /*data*/, int /*len*/) {
+void tmux_receive(Plug * /*plug*/, int /*urgent*/, const char * /*data*/, size_t /*len*/) {
   qDebug() << __FUNCTION__;
 }
 
-extern "C" void tmux_sent(Plug /*plug*/, int /*bufsize*/) { qDebug() << __FUNCTION__; }
+void tmux_sent(Plug * /*plug*/, size_t /*bufsize*/) { qDebug() << __FUNCTION__; }
 
 /*
  * Called to set up the Tmux client connection.
  *
  * Returns an error message, or NULL on success.
  */
-extern "C" const char *tmux_client_init(void *frontend_handle, void **backend_handle,
-                                        Conf * /*cfg*/, const char * /*host*/, int port,
-                                        char ** /*realhost*/, int /*nodelay*/, int /*keepalive*/) {
-  static const struct plug_function_table fn_table = {tmux_log, tmux_closing, tmux_receive,
-                                                      tmux_sent, NULL};
+const char *tmux_client_init(Seat *seat, Backend **backend_out, LogContext *logctx, Conf * /*cfg*/,
+                             const char * /*host*/, int port, char ** /*realhost*/,
+                             bool /*nodelay*/, bool /*keepalive*/) {
+  static const struct PlugVtable vtable = {tmux_log, tmux_closing, tmux_receive, tmux_sent, NULL};
 
-  GuiTerminalWindow *termWnd = static_cast<GuiTerminalWindow *>(frontend_handle);
+  GuiTerminalWindow *termWnd = container_of(seat, GuiTerminalWindow, seat);
   assert(termWnd->tmuxGateway());
 
-  tmux_window_pane_t *handle = new tmux_window_pane_t;
-  *backend_handle = handle;
-  handle->gateway = termWnd->tmuxGateway();
-  handle->paneid = port;  // HACK - port is actually paneid
-  handle->fn = &fn_table;
+  TmuxBackend *tb = new TmuxBackend();
+  *backend_out = &tb->backend;
+  tb->gateway = termWnd->tmuxGateway();
+  tb->paneid = port;  // HACK - port is actually paneid
+  tb->plug.vt = &vtable;
+  tb->logctx = logctx;
 
   return NULL;
 }
 
-extern "C" void tmux_free(void *plug) {
-  tmux_window_pane_t *handle = (tmux_window_pane_t *)plug;
-  delete handle;
+void tmux_free(Backend *be) {
+  TmuxBackend *tb = container_of(be, TmuxBackend, backend);
+  delete tb;
 }
 
-extern "C" void tmux_reconfig(void * /*handle*/, Conf * /*cfg*/) {}
+void tmux_reconfig(Backend * /*be*/, Conf * /*cfg*/) {}
 
 /*
  * Called to send data down the backend connection.
  */
-extern "C" int tmux_send(void *handle, const char *buf, int len) {
-  tmux_window_pane_t *tmuxpane = static_cast<tmux_window_pane_t *>(handle);
+size_t tmux_send(Backend *be, const char *buf, size_t len) {
+  TmuxBackend *tmuxpane = container_of(be, TmuxBackend, backend);
   const size_t wbuf_len = 20480;
   wchar_t wbuf[wbuf_len];  // for plenty of speed
   const char *rem_buf = buf;
@@ -89,49 +88,46 @@ extern "C" int tmux_send(void *handle, const char *buf, int len) {
 /*
  * Called to query the current socket sendability status.
  */
-extern "C" int tmux_sendbuffer(void * /*handle*/) {
+size_t tmux_sendbuffer(Backend * /*be*/) {
   qDebug() << __FUNCTION__;
   return 1;
 }
 
-extern "C" void tmux_unthrottle(void * /*handle*/, int /*backlog*/) {
+void tmux_unthrottle(Backend * /*be*/, size_t /*backlog*/) {
   qDebug() << __FUNCTION__;
   // sk_set_frozen(telnet->s, backlog > TELNET_MAX_BACKLOG);
 }
 
-extern "C" int tmux_ldisc(void * /*handle*/, int option) {
-  if (option == LD_ECHO) return FALSE;
-  if (option == LD_EDIT) return FALSE;
-  return FALSE;
+bool tmux_ldisc(Backend * /*be*/, int option) {
+  if (option == LD_ECHO) return false;
+  if (option == LD_EDIT) return false;
+  return false;
 }
 
-extern "C" void tmux_provide_ldisc(void * /*handle*/, void * /*ldisc*/) {
+void tmux_provide_ldisc(Backend * /*be*/, Ldisc * /*ldisc*/) {
   // telnet->ldisc = ldisc;
 }
 
-extern "C" void tmux_provide_logctx(void * /*handle*/, void * /*logctx*/) { /* This is a stub. */ }
-
-extern "C" int tmux_cfg_info(void * /*handle*/) { return 0; }
+int tmux_cfg_info(Backend * /*be*/) { return 0; }
 
 static const char tmux_client_backend_name[] = "tmux_client_backend";
 
-Backend tmux_client_backend = {tmux_client_init,
-                               tmux_free,
-                               tmux_reconfig,
-                               tmux_send,
-                               tmux_sendbuffer,
-                               NULL /*size*/,
-                               NULL /*special*/,
-                               NULL /*get_specials*/,
-                               NULL /*connected*/,
-                               NULL /*exitcode*/,
-                               NULL /*sendok*/,
-                               tmux_ldisc,
-                               tmux_provide_ldisc,
-                               tmux_provide_logctx,
-                               tmux_unthrottle,
-                               tmux_cfg_info,
-                               NULL /*test_for_upstream*/,
-                               tmux_client_backend_name,
-                               PROT_TMUX_CLIENT,
-                               -1};
+BackendVtable tmux_client_backend = {tmux_client_init,
+                                     tmux_free,
+                                     tmux_reconfig,
+                                     tmux_send,
+                                     tmux_sendbuffer,
+                                     NULL /*size*/,
+                                     NULL /*special*/,
+                                     NULL /*get_specials*/,
+                                     NULL /*connected*/,
+                                     NULL /*exitcode*/,
+                                     NULL /*sendok*/,
+                                     tmux_ldisc,
+                                     tmux_provide_ldisc,
+                                     tmux_unthrottle,
+                                     tmux_cfg_info,
+                                     NULL /*test_for_upstream*/,
+                                     tmux_client_backend_name,
+                                     PROT_TMUX_CLIENT,
+                                     -1};

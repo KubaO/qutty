@@ -1,5 +1,6 @@
 #ifndef TMUXWINDOWPANE_H
 #define TMUXWINDOWPANE_H
+
 #include "tmux/TmuxGateway.hpp"
 #include "tmux/tmux.h"
 

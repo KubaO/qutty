@@ -155,7 +155,7 @@ int GuiTerminalWindow::TranslateKey(QKeyEvent *keyevent, char *output) {
 
   // shift-insert -> paste
   if (key == Key_Insert && ctrlshiftstate == ShiftModifier) {
-    this->requestPaste();
+    this->requestPaste(CLIP_SYSTEM);
     return 0;
   }
 
@@ -406,71 +406,17 @@ Filename *filename_from_str(const char *str) {
 
 const char *filename_to_str(const Filename *fn) { return fn->path; }
 
-int filename_equal(const Filename *f1, const Filename *f2) { return !strcmp(f1->path, f2->path); }
+bool filename_equal(const Filename *f1, const Filename *f2) { return !strcmp(f1->path, f2->path); }
 
-int filename_is_null(const Filename *fn) { return !fn || fn->path[0] == '\0'; }
+bool filename_is_null(const Filename *fn) { return !fn || fn->path[0] == '\0'; }
 
 void filename_free(Filename *fn) {
   sfree(fn);
 }
 
-int filename_serialise(const Filename *f, void *vdata) {
-  char *data = (char *)vdata;
-  int len = strlen(f->path) + 1; /* include trailing NUL */
-  if (data) {
-    strcpy(data, f->path);
-  }
-  return len;
-}
+void filename_serialise(BinarySink *bs, const Filename *f) { put_asciz(bs, f->path); }
 
-Filename *filename_deserialise(void *vdata, int maxsize, int *used) {
-  char *data = (char *)vdata;
-  char *end;
-  end = (char *)memchr(data, '\0', maxsize);
-  if (!end) return NULL;
-  end++;
-  *used = end - data;
-  return filename_from_str(data);
-}
-
-int from_backend_untrusted(void *frontend, const char *data, int len) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return term_data_untrusted(f->term, data, len);
-}
-
-int from_backend(void *frontend, int is_stderr, const char *data, int len) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return f->from_backend(is_stderr, data, (size_t)len);
-}
-
-void notify_remote_exit(void *frontend) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  int exitcode = f->backend->exitcode(f->backhandle);
-
-  if (f->userClosingTab || f->isSockDisconnected) return;
-
-  if (exitcode >= 0) {
-    int close_on_exit = conf_get_int(f->getCfg(), CONF_close_on_exit);
-    if (close_on_exit == FORCE_ON || (close_on_exit == AUTO && exitcode != INT_MAX)) {
-      f->closeTerminal();
-    } else {
-      /* exitcode == INT_MAX indicates that the connection was closed
-       * by a fatal error, so an error box will be coming our way and
-       * we should not generate this informational one. */
-      if (exitcode != INT_MAX) {
-        qt_message_box(frontend, APPNAME " Fatal Error", "Connection closed by remote host");
-        f->setSessionTitle(f->getSessionTitle() + " (inactive)");
-        // prevent recursive calling
-        f->isSockDisconnected = true;
-      }
-    }
-  }
-}
-
-char *get_ttymode(void *frontend, const char *mode) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return term_get_ttymode(f->term, mode);
-}
+Filename *filename_deserialise(BinarySource *src) { return filename_from_str(get_asciz(src)); }
 
 struct tm ltime(void) {
   time_t rawtime;
@@ -482,12 +428,6 @@ struct tm ltime(void) {
   return *timeinfo;
 }
 
-void set_busy_status(void * /*frontend*/, int /*status*/) {
-  // TODO not implemented
-  // busy_status = status;
-  // update_mouse_pointer();
-}
-
 char *platform_get_x_display(void) {
   /* We may as well check for DISPLAY in case it's useful. */
   return dupstr(getenv("DISPLAY"));
@@ -496,14 +436,14 @@ char *platform_get_x_display(void) {
 /*
  * called to initalize tmux mode
  */
-int tmux_init_tmux_mode(void *frontend, char *tmux_version) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return f->initTmuxControllerMode(tmux_version);
+int tmux_init_tmux_mode(TermWin *win, char *tmux_version) {
+  GuiTerminalWindow *gw = container_of(win, GuiTerminalWindow, termwin);
+  return gw->initTmuxControllerMode(tmux_version);
 }
 
-size_t tmux_from_backend(void *frontend, int is_stderr, const char *data, int len) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return f->tmuxGateway()->fromBackend(is_stderr, data, len);
+size_t tmux_from_backend(TermWin *win, int is_stderr, const char *data, int len) {
+  GuiTerminalWindow *gw = container_of(win, GuiTerminalWindow, termwin);
+  return gw->tmuxGateway()->fromBackend(is_stderr, data, len);
 }
 
 void qstring_to_char(char *dst, const QString &src, int dstlen) {
@@ -529,35 +469,19 @@ FontSpec *fontspec_copy(const FontSpec *f) {
 
 void fontspec_free(FontSpec *f) { sfree(f); }
 
-int fontspec_serialise(FontSpec *f, void *vdata) {
-  char *data = (char *)vdata;
-  int len = strlen(f->name) + 1; /* include trailing NUL */
-  if (data) {
-    strcpy(data, f->name);
-    PUT_32BIT_MSB_FIRST(data + len, f->isbold);
-    PUT_32BIT_MSB_FIRST(data + len + 4, f->height);
-    PUT_32BIT_MSB_FIRST(data + len + 8, f->charset);
-  }
-  return len + 12; /* also include three 4-byte ints */
+void fontspec_serialise(BinarySink *bs, FontSpec *f) {
+  put_asciz(bs, f->name);
+  put_uint32(bs, f->isbold);
+  put_uint32(bs, f->height);
+  put_uint32(bs, f->charset);
 }
 
-FontSpec *fontspec_deserialise(void *vdata, int maxsize, int *used) {
-  char *data = (char *)vdata;
-  char *end;
-  if (maxsize < 13) return NULL;
-  end = (char *)memchr(data, '\0', maxsize - 12);
-  if (!end) return NULL;
-  end++;
-  *used = end - data + 12;
-  return fontspec_new(data, GET_32BIT_MSB_FIRST(end), GET_32BIT_MSB_FIRST(end + 4),
-                      GET_32BIT_MSB_FIRST(end + 8));
-}
-
-int from_backend_eof(void *frontend) { return TRUE; /* do respond to incoming EOF with outgoing */ }
-
-int frontend_is_utf8(void *frontend) {
-  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
-  return f->term->ucsdata->line_codepage == CP_UTF8;
+FontSpec *fontspec_deserialise(BinarySource *src) {
+  const char *name = get_asciz(src);
+  unsigned isbold = get_uint32(src);
+  unsigned height = get_uint32(src);
+  unsigned charset = get_uint32(src);
+  return fontspec_new(name, isbold, height, charset);
 }
 
 char *get_username(void) {
@@ -685,7 +609,7 @@ extern "C" const char *win_strerror(int error) {
     es->text = snewn(bufsize, char);
     if (!FormatMessageA((FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS), NULL, error,
                         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), es->text, bufsize, NULL)) {
-      sprintf(es->text, "Windows error code %d (and FormatMessage returned %d)", error,
+      sprintf(es->text, "Windows error code %d (and FormatMessage returned %lu)", error,
               GetLastError());
     } else {
       int len = strlen(es->text);
@@ -705,3 +629,53 @@ char filename_char_sanitise(char c) {
 
 /* Dummy routine, only required in plink. */
 void frontend_echoedit_update(void *frontend, int echo, int edit) {}
+
+#ifndef NO_SECUREZEROMEMORY
+/*
+ * Windows implementation of smemclr (see misc.c) using SecureZeroMemory.
+ */
+void smemclr(void *b, size_t n) {
+  if (b && n > 0) SecureZeroMemory(b, n);
+}
+#endif
+
+void qtc_assert(const char *assertion, const char *file, int line) {
+  qt_assert(assertion, file, line);
+}
+
+void escape_registry_key(const char *in, strbuf *out) {
+  bool candot = false;
+  static const char hex[17] = "0123456789ABCDEF";
+
+  while (*in) {
+    if (*in == ' ' || *in == '\\' || *in == '*' || *in == '?' || *in == '%' || *in < ' ' ||
+        *in > '~' || (*in == '.' && !candot)) {
+      put_byte(out, '%');
+      put_byte(out, hex[((unsigned char)*in) >> 4]);
+      put_byte(out, hex[((unsigned char)*in) & 15]);
+    } else
+      put_byte(out, *in);
+    in++;
+    candot = true;
+  }
+}
+
+void unescape_registry_key(const char *in, strbuf *out) {
+  while (*in) {
+    if (*in == '%' && in[1] && in[2]) {
+      int i, j;
+
+      i = in[1] - '0';
+      i -= (i > 9 ? 7 : 0);
+      j = in[2] - '0';
+      j -= (j > 9 ? 7 : 0);
+
+      put_byte(out, (i << 4) + j);
+      in += 3;
+    } else {
+      put_byte(out, *in++);
+    }
+  }
+}
+
+bool open_for_write_would_lose_data(const Filename *fn) { return false; }

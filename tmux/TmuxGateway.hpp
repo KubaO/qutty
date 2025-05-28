@@ -1,6 +1,10 @@
 #ifndef TMUXGATEWAY_H
 #define TMUXGATEWAY_H
 
+#ifdef _WIN32
+#include <msxml.h>  // otherwise marshal.h:get_data interferes with it
+#endif
+
 class GuiSplitter;
 class GuiTerminalWindow;
 class TmuxGateway;
