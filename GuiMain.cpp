@@ -14,7 +14,9 @@
 #include "client/windows/handler/exception_handler.h"
 #endif
 
-void callback_notify(void *frontend) { QTimer::singleShot(0, qApp, run_toplevel_callbacks); }
+void callback_notify(void *frontend) {
+  QTimer::singleShot(0, qApp, [] { while (run_toplevel_callbacks()); });
+}
 
 extern "C" toplevel_callback_notify_fn_t notify_frontend;
 
