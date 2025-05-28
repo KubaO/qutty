@@ -130,10 +130,6 @@ int GuiTerminalWindow::initTerminal() {
       assert(0);
   }
   qtsock = as->qtsock;
-  QObject::connect(as->qtsock, SIGNAL(readyRead()), this, SLOT(readyRead()));
-  QObject::connect(as->qtsock, SIGNAL(errorOccurred(QAbstractSocket::SocketError)), this,
-                   SLOT(sockError(QAbstractSocket::SocketError)));
-  QObject::connect(as->qtsock, SIGNAL(disconnected()), this, SLOT(sockDisconnected()));
 
   /*
    * Connect the terminal to the backend for resize purposes.
@@ -362,16 +358,6 @@ void GuiTerminalWindow::keyPressEvent(QKeyEvent *e) {
 
 void GuiTerminalWindow::keyReleaseEvent(QKeyEvent *e) {
   noise_ultralight(NOISE_SOURCE_KEY, e->key());
-}
-
-void GuiTerminalWindow::readyRead() {
-  char buf[20480];
-  int len = qtsock->read(buf, sizeof(buf));
-  noise_ultralight(NOISE_SOURCE_IOLEN, len);
-
-  plug_receive(as->plug, 0, buf, len);
-
-  if (qtsock->bytesAvailable() > 0) readyRead();
 }
 
 void GuiTerminalWindow::highlightSearchedText(QPainter &painter) {
@@ -881,18 +867,6 @@ void GuiTerminalWindow::detachTmuxControllerMode() {
   delete _tmuxGateway;
   _tmuxGateway = NULL;
   _tmuxMode = TMUX_MODE_NONE;
-}
-
-void GuiTerminalWindow::sockError(QAbstractSocket::SocketError socketError) {
-  char errStr[256];
-  qstring_to_char(errStr, as->qtsock->errorString(), sizeof(errStr));
-  plug_closing(as->plug, errStr, socketError, 0);
-}
-
-void GuiTerminalWindow::sockDisconnected() {
-  char errStr[256];
-  qstring_to_char(errStr, as->qtsock->errorString(), sizeof(errStr));
-  plug_closing(as->plug, errStr, as->qtsock->error(), 0);
 }
 
 void GuiTerminalWindow::closeTerminal() {

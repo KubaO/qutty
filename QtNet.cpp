@@ -19,6 +19,34 @@ struct SockAddr {
   const char *error;
 };
 
+static void on_connected(QtSocket *s) {
+  QTcpSocket *qtsock = s->qtsock;
+  s->connected = true;
+  if (s->nodelay) qtsock->setSocketOption(QAbstractSocket::LowDelayOption, true);
+}
+
+static void on_readyRead(QtSocket *s) {
+  QTcpSocket *qtsock = s->qtsock;
+
+  do {
+    char buf[20480];
+    int len = qtsock->read(buf, sizeof(buf));
+    noise_ultralight(NOISE_SOURCE_IOLEN, len);
+
+    plug_receive(s->plug, 0, buf, len);
+  } while (qtsock->bytesAvailable());
+}
+
+static void on_error(QtSocket *s, QTcpSocket::SocketError err) {
+  QByteArray errStr = s->qtsock->errorString().toLocal8Bit();
+  plug_closing(s->plug, errStr, s->qtsock->error(), 0);
+}
+
+static void on_disconnected(QtSocket *s) {
+  QByteArray errStr = s->qtsock->errorString().toLocal8Bit();
+  plug_closing(s->plug, errStr, s->qtsock->error(), 0);
+}
+
 static void sk_tcp_flush(Socket * /*s*/) {}
 
 static const char *sk_tcp_socket_error(Socket *sock) {
@@ -28,6 +56,13 @@ static const char *sk_tcp_socket_error(Socket *sock) {
 
 static size_t sk_tcp_write(Socket *sock, const void *data, size_t len) {
   QtSocket *s = container_of(sock, QtSocket, sock);
+  // This is a hack, since connections are made asynchronously.
+  // I assume that some time post-0.71, the connection code in PuTTY becomes asynchornous,
+  // and this hack won't be necessary anymore. If nothing changes up to and including PuTTY-0.83,
+  // then I'll have to submit a patch.
+  // TODO
+  while (!s->connected && !s->error && !s->pending_error) QCoreApplication::processEvents();
+  assert(s->connected);
   int i, j;
   char pr[10000];
   for (i = 0, j = 0; i < len; i++)
@@ -41,6 +76,7 @@ static size_t sk_tcp_write(Socket *sock, const void *data, size_t len) {
 
 static size_t sk_tcp_write_oob(Socket *sock, const void *data, size_t len) {
   QtSocket *s = container_of(sock, QtSocket, sock);
+  assert(s->connected);
   int ret = s->qtsock->write((const char *)data, len);
   qDebug() << "tcp_write_oob ret " << ret << "\n";
   return ret;
@@ -207,6 +243,7 @@ bool sk_address_is_special_local(SockAddr *addr) {
 
 Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline, bool nodelay,
                bool keepalive, Plug *plug) {
+  QTcpSocket *qtsock = nullptr;
   QtSocket *ret = snew(QtSocket);
   memset(ret, 0, sizeof(QtSocket));
 
@@ -225,10 +262,16 @@ Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline, bool nod
     goto cu0;
   }
 
-  ret->qtsock = new QTcpSocket();
-  ret->qtsock->connectToHost(*addr->qtaddr, port);
+  qtsock = new QTcpSocket();
+  ret->qtsock = qtsock;
 
-  if (nodelay) ret->qtsock->setSocketOption(QAbstractSocket::LowDelayOption, 1);
+  QObject::connect(qtsock, &QTcpSocket::readyRead, qApp, [ret] { on_readyRead(ret); });
+  QObject::connect(qtsock, &QTcpSocket::disconnected, qApp, [ret] { on_disconnected(ret); });
+  QObject::connect(qtsock, &QTcpSocket::errorOccurred, qApp,
+                   [ret](QTcpSocket::SocketError err) { on_error(ret, err); });
+  QObject::connect(qtsock, &QTcpSocket::connected, qApp, [ret] { on_connected(ret); });
+
+  qtsock->connectToHost(*addr->qtaddr, port);
 
 cu0:
   return &ret->sock;

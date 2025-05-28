@@ -172,12 +172,9 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void focusOutEvent(QFocusEvent *e) override;
 
  public slots:
-  void readyRead();
   void vertScrollBarAction(int action);
   void vertScrollBarMoved(int value);
   void detachTmuxControllerMode();
-  void sockError(QAbstractSocket::SocketError socketError);
-  void sockDisconnected();
   void on_sessionTitleChange(bool force = false);
 };
 
