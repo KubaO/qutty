@@ -77,6 +77,8 @@ static void qtwin_set_cursor_pos(TermWin *win, int x, int y) {
 
 static void qtwin_set_raw_mouse_mode(TermWin *, bool enable) {}
 
+static void qtwin_set_raw_mouse_mode_pointer(TermWin *, bool enable) {}
+
 static void qtwin_set_scrollbar(TermWin *win, int total, int start, int page) {
   GuiTerminalWindow *gw = container_of(win, GuiTerminalWindow, termwin);
   gw->setScrollBar(total, start, page);
@@ -117,8 +119,6 @@ void qtwin_set_icon_title(TermWin *, const char *icontitle) {}
 
 void qtwin_set_minimised(TermWin *, bool minimised) {}
 
-bool qtwin_is_minimised(TermWin *) { return false; }
-
 void qtwin_set_maximised(TermWin *, bool maximised) {}
 
 //
@@ -126,32 +126,13 @@ void qtwin_set_maximised(TermWin *, bool maximised) {}
 void qtwin_move(TermWin *, int x, int y) {}
 void qtwin_set_zorder(TermWin *, bool top) {}
 
-bool qtwin_palette_get(TermWin *, int n, int *r, int *g, int *b) { return false; }
-void qtwin_palette_set(TermWin *, int n, int r, int g, int b) {}
-void qtwin_palette_reset(TermWin *) {}
-
-/*
- * Report the window's position, for terminal reports.
- */
-void qtwin_get_pos(TermWin *, int *x, int *y) {
-  *x = 1;
-  *y = 1;
-}
-
-/*
- * Report the window's pixel size, for terminal reports.
- */
-void qtwin_get_pixels(TermWin *, int *x, int *y) {
-  *x = 80 * 10;
-  *y = 24 * 10;
-}
-
-const char *qtwin_get_title(TermWin *, bool icon) { return icon ? "icon_name" : "window_name"; }
-
-bool qtwin_is_utf8(TermWin *win) {
+void qtwin_palette_set(TermWin *win, unsigned start, unsigned ncolours, const rgb *colours) {
+  qDebug() << __FUNCTION__ << start << ncolours;
   GuiTerminalWindow *gw = container_of(win, GuiTerminalWindow, termwin);
-  return gw->term->ucsdata->line_codepage == CP_UTF8;
+  gw->setPalette(start, ncolours, colours);
 }
+
+void qtwin_palette_get_overrides(TermWin *) { qDebug() << __FUNCTION__; }
 
 const TermWinVtable qttermwin_vt = {
     qtwin_setup_draw_ctx,
@@ -162,6 +143,7 @@ const TermWinVtable qttermwin_vt = {
     qtwin_free_draw_ctx,
     qtwin_set_cursor_pos,
     qtwin_set_raw_mouse_mode,
+    qtwin_set_raw_mouse_mode_pointer,
     qtwin_set_scrollbar,
     qtwin_bell,
     qtwin_clip_write,
@@ -172,15 +154,17 @@ const TermWinVtable qttermwin_vt = {
     qtwin_set_icon_title,
     //
     qtwin_set_minimised,
-    qtwin_is_minimised,
     qtwin_set_maximised,
     qtwin_move,
     qtwin_set_zorder,
-    qtwin_palette_get,
     qtwin_palette_set,
+    qtwin_palette_get_overrides,
+};
+
+#if 0        
     qtwin_palette_reset,
     qtwin_get_pos,
     qtwin_get_pixels,
     qtwin_get_title,
     qtwin_is_utf8,
-};
+#endif

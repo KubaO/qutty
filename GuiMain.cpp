@@ -18,14 +18,12 @@ void callback_notify(void *frontend) {
   QTimer::singleShot(0, qApp, [] { while (run_toplevel_callbacks()); });
 }
 
-extern "C" toplevel_callback_notify_fn_t notify_frontend;
-
 // Connection sharing is not implemented yet
-extern "C" const int share_can_be_downstream;
-extern "C" const int share_can_be_upstream;
+extern "C" const bool share_can_be_downstream;
+extern "C" const bool share_can_be_upstream;
 
-const int share_can_be_downstream = FALSE;
-const int share_can_be_upstream = FALSE;
+const bool share_can_be_downstream = false;
+const bool share_can_be_upstream = false;
 
 int main(int argc, char *argv[]) {
   QDir dumps_dir(QDir::home().filePath("qutty/dumps"));
@@ -39,7 +37,8 @@ int main(int argc, char *argv[]) {
 #endif
 
   QApplication app(argc, argv);
-  notify_frontend = callback_notify;
+
+  request_callback_notifications(callback_notify, nullptr);
 
   // restore all settings from qutty.xml
   qutty_config.restoreConfig();
@@ -50,6 +49,7 @@ int main(int argc, char *argv[]) {
   mainWindow->show();
 
   int rc = app.exec();
-  notify_frontend = nullptr;
+
+  request_callback_notifications(nullptr, nullptr);
   return rc;
 }

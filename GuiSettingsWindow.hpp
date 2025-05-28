@@ -44,8 +44,6 @@ class GuiSettingsWindow : public QDialog {
     GUI_PAGE_CONNECTION,
     GUI_PAGE_DATA,
     GUI_PAGE_PROXY,
-    GUI_PAGE_TELNET,
-    GUI_PAGE_RLOGIN,
     GUI_PAGE_SSH,
     GUI_PAGE_KEX,
     GUI_PAGE_HOST_KEYS,
@@ -56,7 +54,10 @@ class GuiSettingsWindow : public QDialog {
     GUI_PAGE_X11,
     GUI_PAGE_TUNNELS,
     GUI_PAGE_BUGS,
-    GUI_PAGE_SERIAL
+    GUI_PAGE_SERIAL,
+    GUI_PAGE_TELNET,
+    GUI_PAGE_RLOGIN,
+    GUI_PAGE_SUPDUP,
   } gui_page_names_t;
   enum {
     GUI_LOGLVL_NONE,

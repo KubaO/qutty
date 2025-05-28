@@ -85,7 +85,6 @@ int GuiTerminalWindow::initTerminal() {
   memset(&ucsdata, 0, sizeof(struct unicode_data));
   init_ucs(cfg, &ucsdata);
   setTermFont(cfg);
-  cfgtopalette(cfg);
 
   LogContext *logctx = log_init(default_logpolicy, cfg);
 
@@ -227,8 +226,6 @@ int GuiTerminalWindow::reconfigureTerminal(Conf *new_cfg) {
    */
   if (ldisc) ldisc_send(ldisc, NULL, 0, 0);
 
-  cfgtopalette(cfg);
-
   /* Pass new config data to the terminal */
   term_reconfig(term, cfg);
 
@@ -260,7 +257,6 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   memset(&ucsdata, 0, sizeof(struct unicode_data));
   init_ucs(cfg, &ucsdata);
   setTermFont(cfg);
-  cfgtopalette(cfg);
 
   term = term_init(cfg, &ucsdata, &termwin);
   LogContext *logctx = log_init(default_logpolicy, cfg);
@@ -556,29 +552,10 @@ void GuiTerminalWindow::setTermFont(Conf *cfg) {
   fontAscent = fontMetrics.ascent();
 }
 
-void GuiTerminalWindow::cfgtopalette(Conf *cfg) {
-  int i;
-  static const int ww[NCFGCOLOURS] = {256, 257, 258, 259, 260, 261, 0,  8, 1,  9, 2,
-                                      10,  3,   11,  4,   12,  5,   13, 6, 14, 7, 15};
-
-  for (i = 0; i < NCFGCOLOURS; i++) {
-    int r = conf_get_int_int(cfg, CONF_colours, i * 3 + 0);
-    int g = conf_get_int_int(cfg, CONF_colours, i * 3 + 1);
-    int b = conf_get_int_int(cfg, CONF_colours, i * 3 + 2);
-    colours[ww[i]] = QColor::fromRgb(r, g, b);
-  }
-  for (i = 0; i < NEXTCOLOURS; i++) {
-    if (i < 216) {
-      int r = i / 36, g = (i / 6) % 6, b = i % 6;
-      r = r ? r * 40 + 55 : 0;
-      g = g ? g * 40 + 55 : 0;
-      b = b ? b * 40 + 55 : 0;
-      colours[i + 16] = QColor::fromRgb(r, g, b);
-    } else {
-      int shade = i - 216;
-      shade = shade * 10 + 8;
-      colours[i + 16] = QColor::fromRgb(shade, shade, shade);
-    }
+void GuiTerminalWindow::setPalette(unsigned start, unsigned ncolours, const rgb *colours) {
+  for (int i = start; i < start + ncolours; ++i) {
+    const rgb &c = colours[i];
+    this->colours[i] = QColor::fromRgb(c.r, c.g, c.b);
   }
 
   /* Override with system colours if appropriate * /

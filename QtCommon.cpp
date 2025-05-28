@@ -8,16 +8,16 @@
 #include "QtCommon.hpp"
 #define SECURITY_WIN32
 
+extern "C" {
+#include "ssh.h"
+}
+
 #include <QKeyEvent>
 #include <cstring>
 
 #include "GuiTerminalWindow.hpp"
 #include "QtTimer.hpp"
-extern "C" {
-#include "putty.h"
-#include "terminal.h"
-#include "ssh.h"
-}
+
 #ifndef __linux
 #include <security.h>
 #include <windows.h>

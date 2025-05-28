@@ -15,6 +15,8 @@ extern "C" {
 #include "GuiTerminalWindow.hpp"
 #include "QtConfig.hpp"
 
+using namespace Qt::Literals::StringLiterals;
+
 /*
  * Ask whether the selected algorithm is acceptable (since it was
  * below the configured 'warn' threshold).
@@ -170,44 +172,44 @@ void qt_logging_error(LogPolicy *lp, const char *event) { qDebug() << lp << even
 
 // from putty-0.69/windlg.c
 int qt_verify_ssh_host_key(Seat *seat, const char *host, int port, const char *keytype,
-                           char *keystr, char *fingerprint, void (*callback)(void *ctx, int result),
-                           void *ctx) {
+                           char *keystr, const char *keydisp, char **key_fingerprints,
+                           void (*callback)(void *ctx, int result), void *ctx) {
   assert(seat);
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   int ret;
 
-  static const char absentmsg[] =
+  static auto absentmsg =
       "The server's host key is not cached in the registry. You\n"
       "have no guarantee that the server is the computer you\n"
       "think it is.\n"
-      "The server's %s key fingerprint is:\n"
-      "%s\n"
+      "The server's %1 key fingerprint is:\n"
+      "%2\n"
       "If you trust this host, hit Yes to add the key to\n"
-      "%s's cache and carry on connecting.\n"
+      "%3's cache and carry on connecting.\n"
       "If you want to carry on connecting just once, without\n"
       "adding the key to the cache, hit No.\n"
       "If you do not trust this host, hit Cancel to abandon the\n"
-      "connection.\n";
+      "connection.\n"_L1;
 
-  static const char wrongmsg[] =
+  static auto wrongmsg =
       "WARNING - POTENTIAL SECURITY BREACH!\n"
       "\n"
-      "The server's host key does not match the one %s has\n"
+      "The server's host key does not match the one %1 has\n"
       "cached in the registry. This means that either the\n"
       "server administrator has changed the host key, or you\n"
       "have actually connected to another computer pretending\n"
       "to be the server.\n"
-      "The new %s key fingerprint is:\n"
-      "%s\n"
+      "The new %2 key fingerprints are:\n"
+      "%3\n"
       "If you were expecting this change and trust the new key,\n"
-      "hit Yes to update %s's cache and continue connecting.\n"
+      "hit Yes to update %4's cache and continue connecting.\n"
       "If you want to carry on connecting but without updating\n"
       "the cache, hit No.\n"
       "If you want to abandon the connection completely, hit\n"
       "Cancel. Hitting Cancel is the ONLY guaranteed safe\n"
-      "choice.\n";
+      "choice.\n"_L1;
 
-  static const char mbtitle[] = "%s Security Alert";
+  static auto mbtitle = "%1 Security Alert"_L1;
 
   /*
    * Verify the key against the registry.
@@ -216,29 +218,27 @@ int qt_verify_ssh_host_key(Seat *seat, const char *host, int port, const char *k
 
   if (ret == 0) /* success - key matched OK */
     return 1;
-  else if (ret == 2) { /* key was different */
-    QMessageBox::StandardButton mbret;
-    char *text = dupprintf(wrongmsg, appname, keytype, fingerprint, appname);
-    char *caption = dupprintf(mbtitle, appname);
-    mbret = QMessageBox::warning(f, caption, text,
-                                 QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+
+  QString caption = QString(mbtitle).arg(appname);
+  FingerprintType fpType = ssh2_pick_default_fingerprint(key_fingerprints);
+
+  if (ret == 2) {
+    /* key was different */
+    QString text = QString(wrongmsg).arg(appname, keytype, key_fingerprints[fpType], appname);
+    auto mbret = QMessageBox::warning(f, caption, text,
+                                      QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
     assert(mbret == QMessageBox::Yes || mbret == QMessageBox::No || mbret == QMessageBox::Cancel);
-    sfree(text);
-    sfree(caption);
     if (mbret == QMessageBox::Yes) {
       store_host_key(host, port, keytype, keystr);
       return 1;
     } else if (mbret == QMessageBox::No)
       return 1;
-  } else if (ret == 1) { /* key was absent */
-    int mbret;
-    char *text = dupprintf(absentmsg, keytype, fingerprint, appname);
-    char *caption = dupprintf(mbtitle, appname);
-    mbret = QMessageBox::warning(f, caption, text,
-                                 QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
+  } else if (ret == 1) {
+    /* key was absent */
+    QString text = QString(absentmsg).arg(keytype, key_fingerprints[fpType], appname);
+    auto mbret = QMessageBox::warning(f, caption, text,
+                                      QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
     assert(mbret == QMessageBox::Yes || mbret == QMessageBox::No || mbret == QMessageBox::Cancel);
-    sfree(text);
-    sfree(caption);
     if (mbret == QMessageBox::Yes) {
       store_host_key(host, port, keytype, keystr);
       return 1;
@@ -317,7 +317,7 @@ char *qt_get_ttymode(Seat *seat, const char *mode) {
 
 bool qt_is_utf8(Seat *seat) {
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
-  return win_is_utf8(&f->termwin);
+  return f->term->ucsdata->line_codepage == CP_UTF8;
 }
 
 /*

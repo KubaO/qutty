@@ -19,3 +19,7 @@ agent_pending_query *agent_query(strbuf * /*in*/, void ** /*out*/, int * /*outle
 void agent_cancel_query(agent_pending_query *q) {
   assert(0 && "Windows agent queries are never asynchronous!");
 }
+
+Socket *agent_connect(Plug *plug) {
+  return new_error_socket_fmt(plug, "QuTTY: agent_connect is not implemented yet");
+}
