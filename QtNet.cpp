@@ -28,6 +28,11 @@ static void on_connected(QtSocket *s) {
 static void on_readyRead(QtSocket *s) {
   QTcpSocket *qtsock = s->qtsock;
 
+  if (s->frozen) {
+    s->frozen_readable = true;
+    return;
+  }
+
   do {
     char buf[20480];
     int len = qtsock->read(buf, sizeof(buf));
@@ -98,8 +103,14 @@ static void sk_tcp_close(Socket *sock) {
   sfree(s);
 }
 
-static void sk_tcp_set_frozen(Socket * /*sock*/, bool /*is_frozen*/) {
-  qDebug() << "sk_tcp_set_frozen() NOT IMPL\n";
+static void sk_tcp_set_frozen(Socket *sock, bool is_frozen) {
+  QtSocket *s = container_of(sock, QtSocket, sock);
+
+  if (s->frozen == is_frozen) return;
+  qDebug() << __FUNCTION__ << s << is_frozen;
+  s->frozen = is_frozen;
+  if (!is_frozen && s->frozen_readable) on_readyRead(s);
+  s->frozen_readable = false;
 }
 
 static Plug *sk_tcp_plug(Socket *sock, Plug *p) {
