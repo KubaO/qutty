@@ -251,7 +251,7 @@ static inline void sshfwd_x11_sharing_handover(
     const char *addr, int port, int endian, int maj, int min,
     const void *idata, int ilen)
 { c->vt->x11_sharing_handover(c, cs, sch, addr, port, endian,
-                                     maj, min, idata, ilen); }
+                              maj, min, idata, ilen); }
 static inline void sshfwd_send_exit_status(SshChannel *c, int status)
 { c->vt->send_exit_status(c, status); }
 static inline void sshfwd_send_exit_signal(

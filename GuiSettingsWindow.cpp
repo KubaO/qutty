@@ -374,8 +374,8 @@ QString formatTTYMode(const QString &value);
   X("rb_featqtitle_wndtitle", remote_qtitle_action, TITLE_REAL)                \
   X("chb_no_dbackspace", no_dbackspace)                                        \
   X("chb_no_remote_charset", no_remote_charset)                                \
-  X("chb_no_arabic", arabicshaping)                                            \
-  X("chb_no_bidi", bidi)                                                       \
+  X("chb_no_arabic", no_arabicshaping)                                         \
+  X("chb_no_bidi", no_bidi)                                                    \
   /* Window */                                                                 \
   X("le_window_column", width)                                                 \
   X("le_window_row", height)                                                   \
