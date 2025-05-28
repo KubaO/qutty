@@ -24,10 +24,8 @@
 #include "tmux/tmux.h"
 extern "C" {
 #include "putty.h"
+#include "terminal.h"
 }
-
-#define NEXTCOLOURS 240
-#define NALLCOLOURS (NCFGCOLOURS + NEXTCOLOURS)
 
 class GuiMainWindow;
 
@@ -49,7 +47,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   QPointer<QAbstractSocket> qtsock;
   bool _any_update = false;
   QRegion termrgn;
-  QColor colours[NALLCOLOURS];
+  std::array<QColor, OSC4_NCOLOURS> colours;
 
   // to detect mouse double/triple clicks
   Mouse_Action mouseButtonAction;
@@ -111,7 +109,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void drawText(int row, int col, wchar_t *ch, int len, unsigned long attr, int lattr);
 
   void setTermFont(Conf *cfg);
-  void cfgtopalette(Conf *cfg);
+  void setPalette(unsigned start, unsigned ncolours, const rgb *colours);
   void requestPaste(int clipboard);
   void getClip(wchar_t **p, int *len);
 

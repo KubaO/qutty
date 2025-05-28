@@ -71,4 +71,6 @@ bool qtwin_is_utf8(TermWin *win);
 class GuiTerminalWindow;
 void qt_message_box(GuiTerminalWindow *frontend, const char *title, const char *fmt, ...);
 
+extern LogPolicy default_logpolicy[1];
+
 #endif  // QTCOMMON_H

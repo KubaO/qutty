@@ -19,6 +19,7 @@ option(HAS_GSSAPI "Enable GSS API" TRUE)
 add_compile_definitions(
     IS_QUTTY=1
     QUTTY_RELEASE_VERSION="${PROJECT_VERSION}"
+    CURSORBLINK=1000
 )
 
 if(NOT HAS_GSSAPI)

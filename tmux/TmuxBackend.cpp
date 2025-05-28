@@ -16,7 +16,7 @@ struct TmuxBackend {
   LogContext *logctx;
 };
 
-void tmux_log(Plug * /*plug*/, int /*type*/, SockAddr * /*addr*/, int /*port*/,
+void tmux_log(Plug * /*plug*/, PlugLogType /*type*/, SockAddr * /*addr*/, int /*port*/,
               const char * /*error_msg*/, int /*error_code*/) {
   qDebug() << __FUNCTION__;
 }
@@ -37,9 +37,9 @@ void tmux_sent(Plug * /*plug*/, size_t /*bufsize*/) { qDebug() << __FUNCTION__; 
  *
  * Returns an error message, or NULL on success.
  */
-const char *tmux_client_init(Seat *seat, Backend **backend_out, LogContext *logctx, Conf * /*cfg*/,
-                             const char * /*host*/, int port, char ** /*realhost*/,
-                             bool /*nodelay*/, bool /*keepalive*/) {
+char *tmux_client_init(const BackendVtable *vt, Seat *seat, Backend **backend_out,
+                       LogContext *logctx, Conf * /*cfg*/, const char * /*host*/, int port,
+                       char ** /*realhost*/, bool /*nodelay*/, bool /*keepalive*/) {
   static const struct PlugVtable vtable = {tmux_log, tmux_closing, tmux_receive, tmux_sent, NULL};
 
   GuiTerminalWindow *termWnd = container_of(seat, GuiTerminalWindow, seat);
@@ -98,7 +98,7 @@ void tmux_unthrottle(Backend * /*be*/, size_t /*backlog*/) {
   // sk_set_frozen(telnet->s, backlog > TELNET_MAX_BACKLOG);
 }
 
-bool tmux_ldisc(Backend * /*be*/, int option) {
+bool tmux_ldisc_option_state(Backend * /*be*/, int option) {
   if (option == LD_ECHO) return false;
   if (option == LD_EDIT) return false;
   return false;
@@ -108,8 +108,11 @@ void tmux_provide_ldisc(Backend * /*be*/, Ldisc * /*ldisc*/) {
   // telnet->ldisc = ldisc;
 }
 
+char *tmux_close_warn_text(Backend *be) { return (char *)"tmux_close_warn_text"; }
+
 int tmux_cfg_info(Backend * /*be*/) { return 0; }
 
+static const char tmux_id[] = "tmux_id_NOTIMPL";
 static const char tmux_client_backend_name[] = "tmux_client_backend";
 
 BackendVtable tmux_client_backend = {tmux_client_init,
@@ -123,11 +126,13 @@ BackendVtable tmux_client_backend = {tmux_client_init,
                                      NULL /*connected*/,
                                      NULL /*exitcode*/,
                                      NULL /*sendok*/,
-                                     tmux_ldisc,
+                                     tmux_ldisc_option_state,
                                      tmux_provide_ldisc,
                                      tmux_unthrottle,
                                      tmux_cfg_info,
                                      NULL /*test_for_upstream*/,
+                                     tmux_close_warn_text,
+                                     tmux_id,
                                      tmux_client_backend_name,
                                      PROT_TMUX_CLIENT,
                                      -1};

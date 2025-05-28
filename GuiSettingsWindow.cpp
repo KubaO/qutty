@@ -1479,7 +1479,7 @@ void GuiSettingsWindow::on_btn_colour_modify_clicked() {
     ui->le_colour_g->setText(QString::number(qGreen(rgb)));
     ui->le_colour_b->setText(QString::number(qBlue(rgb)));
     int curr = ui->l_colour->currentIndex().row();
-    if (curr >= 0 && curr < NCFGCOLOURS) setColour(cfg.get(), curr, rgb);
+    if (curr >= 0 && curr < CONF_NCOLOURS) setColour(cfg.get(), curr, rgb);
   }
 }
 
@@ -1493,13 +1493,13 @@ void GuiSettingsWindow::on_l_colour_currentItemChanged(QListWidgetItem *current,
     curr = ui->l_colour->row(current);
   }
   qDebug() << prev << curr;
-  if (prev >= 0 && prev < NCFGCOLOURS) {
+  if (prev >= 0 && prev < CONF_NCOLOURS) {
     int r = ui->le_colour_r->text().toInt();
     int g = ui->le_colour_g->text().toInt();
     int b = ui->le_colour_b->text().toInt();
     setColour(cfg.get(), prev, qRgb(r, g, b));
   }
-  if (curr >= 0 && curr < NCFGCOLOURS) {
+  if (curr >= 0 && curr < CONF_NCOLOURS) {
     QRgb rgb = getColour(cfg.get(), curr);
     ui->le_colour_r->setText(QString::number(qRed(rgb)));
     ui->le_colour_g->setText(QString::number(qGreen(rgb)));
