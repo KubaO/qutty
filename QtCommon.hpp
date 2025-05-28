@@ -38,25 +38,25 @@ struct QtSocket {
   Plug *plug;
   void *private_ptr;
   bufchain output_data;
-  int connected;
-  int writable;
-  int frozen;          /* this causes readability notifications to be ignored */
-  int frozen_readable; /* this means we missed at least one readability
-                        * notification while we were frozen */
-  int localhost_only;  /* for listening sockets */
+  bool connected;
+  bool writable;
+  bool frozen;          /* this causes readability notifications to be ignored */
+  bool frozen_readable; /* this means we missed at least one readability
+                         * notification while we were frozen */
+  bool localhost_only;  /* for listening sockets */
   char oobdata[1];
   int sending_oob;
-  int oobinline, nodelay, keepalive, privport;
+  bool oobinline, nodelay, keepalive, privport;
   SockAddr *addr;
-  // SockAddrStep *step;
   int port;
-  int pending_error; /* in case send() returns error */
-                     /*
-                      * We sometimes need pairs of Socket structures to be linked:
-                      * if we are listening on the same IPv6 and v4 port, for
-                      * example. So here we define `parent' and `child' pointers to
-                      * track this link.
-                      */
+  bool pending_error; /* in case send() returns error */
+
+  /*
+   * We sometimes need pairs of Socket structures to be linked:
+   * if we are listening on the same IPv6 and v4 port, for
+   * example. So here we define `parent' and `child' pointers to
+   * track this link.
+   */
   QtSocket *parent, *child;
 
   Socket sock;
