@@ -231,9 +231,6 @@ void GuiMainWindow::on_changeSettingsTabComplete(Conf *cfg, GuiTerminalWindow *t
   termWnd->reconfigureTerminal(cfg);
 }
 
-extern "C" Socket *get_ssh_socket(void *handle);
-extern "C" Socket *get_telnet_socket(void *handle);
-
 void GuiMainWindow::currentChanged(int index) {
   if (index < 0) return;
   if (index < (signed)widgetAtIndex.size()) {
