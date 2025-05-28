@@ -17,11 +17,7 @@ FontSpec *platform_default_fontspec(const char *name)
 Filename *platform_default_filename(const char *name)
 {
     if (!strcmp(name, "LogFileName"))
-#ifdef IS_QUTTY
-        return filename_from_str("qutty.log");
-#else
         return filename_from_str("putty.log");
-#endif
     else
         return filename_from_str("");
 }
