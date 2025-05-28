@@ -17,6 +17,7 @@
 #include <QTableWidgetItem>
 #include <QTreeWidgetItem>
 #include <QVariant>
+#include <variant>
 
 #include "GuiMainWindow.hpp"
 #include "GuiTerminalWindow.hpp"
@@ -36,6 +37,8 @@ using std::vector;
 QtConfig qutty_config;
 
 static int QUTTY_ROLE_FULL_SESSNAME = Qt::UserRole + 3;
+static Qt::ItemFlags const CONST_FLAGS =
+    Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable;
 
 void adjust_sessname_hierarchy(QTreeWidgetItem *item);
 
@@ -67,6 +70,7 @@ GuiSettingsWindow::GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmod
   ui->treeWidget->topLevelItem(2)->child(1)->setData(0, Qt::UserRole, GUI_PAGE_BEHAVIOUR);
   ui->treeWidget->topLevelItem(2)->child(2)->setData(0, Qt::UserRole, GUI_PAGE_TRANSLATION);
   ui->treeWidget->topLevelItem(2)->child(3)->setData(0, Qt::UserRole, GUI_PAGE_SELECTION);
+  ui->treeWidget->topLevelItem(2)->child(3)->child(0)->setData(0, Qt::UserRole, GUI_PAGE_COPY);
   ui->treeWidget->topLevelItem(2)->child(4)->setData(0, Qt::UserRole, GUI_PAGE_COLOURS);
   ui->treeWidget->topLevelItem(3)->setData(0, Qt::UserRole, GUI_PAGE_CONNECTION);
   ui->treeWidget->topLevelItem(3)->child(0)->setData(0, Qt::UserRole, GUI_PAGE_DATA);
@@ -106,9 +110,33 @@ GuiSettingsWindow::GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmod
 
   // set focus to hostname/ipaddress
   this->ui->le_hostname->setFocus();
+
+  initCodepages();
+  initWordness();
 }
 
 GuiSettingsWindow::~GuiSettingsWindow() { delete ui; }
+
+void GuiSettingsWindow::initCodepages() {
+  ui->cb_codepage->clear();
+  const char *cpname;
+  int i = 0;
+  while ((cpname = cp_enumerate(i++))) ui->cb_codepage->addItem(cpname);
+}
+
+void GuiSettingsWindow::initWordness() {
+  QTableWidget *table = ui->tb_char_classes;
+  table->setRowCount(256);
+  table->horizontalHeader()->hide();
+  for (int ch = 0; ch < 256; ch++) {
+    auto *col0 = new QTableWidgetItem(QString::asprintf("(0x%02X)", ch));
+    auto *col1 = new QTableWidgetItem((ch >= 32 && ch <= 127) ? QString(QChar(ch)) : QString());
+    col0->setFlags(CONST_FLAGS);
+    col1->setFlags(CONST_FLAGS);
+    table->setItem(ch, 0, col0);
+    table->setItem(ch, 1, col1);
+  }
+}
 
 void GuiSettingsWindow::on_rb_contype_telnet_clicked() {
   ui->sw_target->setCurrentIndex(0);
@@ -163,16 +191,100 @@ void GuiSettingsWindow::saveConfigChanges() {
 }
 
 enum class UI {
-  None = 0,
   Optional = 1,
+  CurrentText = 2,
+  CurrentUserRole3 = 4,
+  UserRole0 = 8,
+  TwoColumns = 16,
+  Col0IsEditable = 32,
+  Col0IsSorted = 64,
+  Col1IsEditable = 128,
+  Col1IsFormatted = 256,
+  DontWrite = 512,
+  TwoColumnsEditable = TwoColumns | Col0IsEditable | Col1IsEditable,
+  TTYMode = TwoColumns | Col0IsSorted | Col1IsFormatted | DontWrite,
 };
 
 Q_DECLARE_FLAGS(UIFlags, UI)
 Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
 
+struct DataItem {
+  const char *text;
+  int data;
+  DataItem(const char *text, int data = 0) : text(text), data(data) {}
+};
+
+struct DataList {
+  const DataItem *items;
+  size_t count;
+  config_primary_key key;
+
+  constexpr DataList(config_primary_key key, int count, const DataItem items[])
+      : items(items), count(count), key(key) {}
+
+  void initList(QListWidget *list) const {
+    list->clear();
+    for (int i = 0; i < count; i++) {
+      auto *item = new QListWidgetItem(items[i].text);
+      item->setData(Qt::UserRole, items[i].data);
+      list->addItem(item);
+    }
+  }
+};
+
+// From putty-0.63/config.c
+static const DataItem ciphers[] = {{"ChaCha20 (SSH-2 only)", CIPHER_CHACHA20},
+                                   {"3DES", CIPHER_3DES},
+                                   {"Blowfish", CIPHER_BLOWFISH},
+                                   {"DES", CIPHER_DES},
+                                   {"AES (SSH-2 only)", CIPHER_AES},
+                                   {"Arcfour (SSH-2 only)", CIPHER_ARCFOUR},
+                                   {"-- warn below here --", CIPHER_WARN}};
+
+static const DataItem kexes[] = {{"Diffie-Hellman group 1", KEX_DHGROUP1},
+                                 {"Diffie-Hellman group 14", KEX_DHGROUP14},
+                                 {"Diffie-Hellman group exchange", KEX_DHGEX},
+                                 {"RSA-based key exchange", KEX_RSA},
+                                 {"ECDH key exchange", KEX_ECDH},
+                                 {"-- warn below here --", KEX_WARN}};
+
+// From putty-0.69/config.c
+static const DataItem hks[] = {{"Ed25519", HK_ED25519},
+                               {"ECDSA", HK_ECDSA},
+                               {"DSA", HK_DSA},
+                               {"RSA", HK_RSA},
+                               {"-- warn below here --", HK_WARN}};
+
+// From putty-0.63/windows/wingss.c
+static const DataItem _gsslibnames[3] = {{"MIT Kerberos GSSAPI32.DLL", 0},
+                                         {"Microsoft SSPI SECUR32.DLL", 1},
+                                         {"User-specified GSSAPI DLL", 2}};
+
+// From putty-0.63/config.c
+static const DataItem colours[] = {"Default Foreground", "Default Bold Foreground",
+                                   "Default Background", "Default Bold Background",
+                                   "Cursor Text",        "Cursor Colour",
+                                   "ANSI Black",         "ANSI Black Bold",
+                                   "ANSI Red",           "ANSI Red Bold",
+                                   "ANSI Green",         "ANSI Green Bold",
+                                   "ANSI Yellow",        "ANSI Yellow Bold",
+                                   "ANSI Blue",          "ANSI Blue Bold",
+                                   "ANSI Magenta",       "ANSI Magenta Bold",
+                                   "ANSI Cyan",          "ANSI Cyan Bold",
+                                   "ANSI White",         "ANSI White Bold"};
+
+static const DataList cipherDataList(CONF_ssh_cipherlist, CIPHER_MAX, ciphers);
+static const DataList kexDataList(CONF_ssh_kexlist, KEX_MAX, kexes);
+static const DataList hkDataList(CONF_ssh_hklist, HK_MAX, hks);
+static const DataList gssDataList(CONF_ssh_gsslist, 3, _gsslibnames);
+static const DataList coloursDataList(CONF_colours, sizeof(colours) / sizeof(colours[0]), colours);
+
+QString formatTTYMode(const QString &value);
+
 #define UI_MAPPING(X)                                                          \
   /* control name, keyword, value (opt) */                                     \
                                                                                \
+  X("l_saved_sess", config_name, UI::CurrentUserRole3)                         \
   /* Session */                                                                \
   X("le_hostname", host)                                                       \
   X("le_port", port)                                                           \
@@ -197,12 +309,13 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("rb_sessionlog_append", logxfovr, LGXF_APN)                                \
   X("rb_sessionlog_askuser", logxfovr, LGXF_ASK)                               \
   X("chb_sessionlog_flush", logflush)                                          \
+  X("chb_logheader", logheader)                                                \
   X("chb_sessionlog_omitpasswd", logomitpass)                                  \
   X("chb_sessionlog_omitdata", logomitdata)                                    \
   /* Terminal Emulation */                                                     \
   X("chb_terminaloption_autowrap", wrap_mode)                                  \
   X("chb_terminaloption_decorigin", dec_om)                                    \
-  X("chb_terminaloption_lf", lfhascr)                                          \
+  X("chb_terminaloption_cr", lfhascr)                                          \
   X("chb_terminaloption_lf", crhaslf)                                          \
   X("chb_terminaloption_bgcolor", bce)                                         \
   X("chb_terminaloption_blinktext", blinktext)                                 \
@@ -300,7 +413,7 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("chb_behaviour_top", alwaysontop)                                          \
   X("chb_behaviour_alt_enter", fullscreenonaltenter)                           \
   /* Character Set Translation */                                              \
-  X("cb_codepage", line_codepage)                                              \
+  X("cb_codepage", line_codepage, UI::CurrentText)                             \
   X("chb_utf8_override", utf8_override)                                        \
   X("chb_cjk_ambig_wide", cjk_ambig_wide)                                      \
   X("chb_xlat_capslockcyr", xlat_capslockcyr)                                  \
@@ -310,6 +423,7 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("rb_translation_ansi_oem", vtmode, VT_OEMANSI)                             \
   X("rb_translation_oem", vtmode, VT_OEMONLY)                                  \
   X("chb_translation_copy_paste", rawcnp)                                      \
+  X("chb_utf8linedraw", utf8linedraw)                                          \
   /* Selection */                                                              \
   X("rb_cpmouseaction_windows", mouse_is_xterm, 0)                             \
   X("rb_cpmouseaction_compromise", mouse_is_xterm, 2) /* TODO chk */           \
@@ -317,17 +431,24 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("chb_cpmouseaction_shift", mouse_override)                                 \
   X("rb_cpmouseaction_defaultnormal", rect_select, 0)                          \
   X("rb_cpmouseaction_defaultrect", rect_select, 1)                            \
+  X("chb_mouseautocopy", mouseautocopy)                                        \
+  X("cb_mousepaste", mousepaste)                                               \
+  X("cb_ctrlshiftins", ctrlshiftins)                                           \
+  X("cb_ctrlshiftcv", ctrlshiftcv)                                             \
+  X("chb_paste_controls", paste_controls)                                      \
+  /* Copy */                                                                   \
   X("l_char_classes", wordness)                                                \
   X("chb_rtf_paste", rtf_paste)                                                \
-  /* Colour */                                                                 \
+  /* Colours */                                                                \
   X("chb_coloursoption_ansi", ansi_colour)                                     \
   X("chb_coloursoption_xterm", xterm_256_colour)                               \
+  X("chb_true_colour", true_colour)                                            \
   X("rb_bold_font", bold_style, 1)                                             \
   X("rb_bold_colour", bold_style, 2)                                           \
   X("rb_bold_both", bold_style, 3)                                             \
   X("chb_colouroption_palette", try_palette)                                   \
   X("chb_colouroption_usesystem", system_colour)                               \
-  X("l_colour", colours)                                                       \
+  X("l_colour", colours, &coloursDataList)                                     \
   /* Connection  */                                                            \
   X("le_ping_interval", ping_interval)                                         \
   X("chb_tcp_nodelay", tcp_nodelay)                                            \
@@ -342,7 +463,7 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("rb_datausername_prompt", username_from_env, false)                        \
   X("le_termtype", termtype)                                                   \
   X("le_termspeed", termspeed)                                                 \
-  X("l_env_vars", environmt)                                                   \
+  X("tb_env_vars", environmt, UI::TwoColumnsEditable)                          \
   /* Proxy */                                                                  \
   X("rb_proxytype_none", proxy_type, PROXY_NONE)                               \
   X("rb_proxy_socks4", proxy_type, PROXY_SOCKS4)                               \
@@ -376,20 +497,22 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("le_remote_cmd", remote_cmd)                                               \
   X("chb_ssh_no_shell", ssh_no_shell)                                          \
   X("chb_compression", compression)                                            \
-  X("rb_sshprotocol_1only", sshprot, 0)                                        \
-  X("rb_sshprotocol_2only", sshprot, 3)                                        \
+  X("rb_sshprotocol_1_only", sshprot, 0)                                       \
+  X("rb_sshprotocol_2_only", sshprot, 3)                                       \
   X("cb_ssh_connection_sharing", ssh_connection_sharing)                       \
   X("cb_ssh_connection_sharing_upstream", ssh_connection_sharing_upstream)     \
   X("cb_ssh_connection_sharing_downstream", ssh_connection_sharing_downstream) \
   /* SSH Key Exchange */                                                       \
-  X("l_ssh_kexlist", ssh_kexlist)                                              \
+  X("l_ssh_kexlist", ssh_kexlist, &kexDataList, UI::UserRole0)                 \
+  X("chb_try_gssapi_kex_1", try_gssapi_kex)                                    \
   X("le_ssh_rekey_time", ssh_rekey_time)                                       \
-  X("le_ssh_rekey_time", ssh_rekey_data)                                       \
+  X("le_gssapirekey", gssapirekey)                                             \
+  X("le_ssh_rekey_data", ssh_rekey_data)                                       \
   /* SSH Host Keys */                                                          \
-  X("l_ssh_hklist", ssh_hklist)                                                \
+  X("l_ssh_hklist", ssh_hklist, &hkDataList, UI::UserRole0)                    \
   X("l_ssh_manual_hostkeys", ssh_manual_hostkeys)                              \
   /* SSH Cipher */                                                             \
-  X("l_ssh_cipherlist", ssh_cipherlist)                                        \
+  X("l_ssh_cipherlist", ssh_cipherlist, &cipherDataList, UI::UserRole0)        \
   X("chb_ssh2_des_cbc", ssh2_des_cbc)                                          \
   /* SSH Authentication */                                                     \
   X("chb_ssh_no_userauth", ssh_no_userauth)                                    \
@@ -402,22 +525,24 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
   X("le_ssh_auth_keyfile", keyfile)                                            \
   /* GSSAPI Authentication */                                                  \
   X("chb_gssapi_authen", try_gssapi_auth)                                      \
+  X("chb_try_gssapi_auth", try_gssapi_auth)                                    \
+  X("chb_try_gssapi_kex", try_gssapi_kex)                                      \
   X("chb_gssapi_credential", gssapifwd)                                        \
-  X("l_ssh_gsslist", ssh_gsslist)                                              \
+  X("l_ssh_gsslist", ssh_gsslist, &gssDataList, UI::UserRole0)                 \
   X("le_ssh_gss_custom", ssh_gss_custom, UI::Optional)                         \
   /* Remote Terminal */                                                        \
   X("chb_nopty", nopty)                                                        \
-  X("l_ttymodes", ttymodes)                                                    \
+  X("tb_ttymodes", ttymodes, formatTTYMode, UI::TTYMode)                       \
   /* X11 */                                                                    \
   X("chb_x11_forward", x11_forward)                                            \
   X("le_x11_display", x11_display)                                             \
-  X("rb_x11remote_mit", x11_auth, 0)                                           \
-  X("rb_x11remote_xdm", x11_auth, 1)                                           \
+  X("rb_x11remote_mit", x11_auth, X11_MIT)                                     \
+  X("rb_x11remote_xdm", x11_auth, X11_XDM)                                     \
   X("le_xauthfile", xauthfile)                                                 \
   /* SSH Port Forwarding */                                                    \
   X("chb_lport_acceptall", lport_acceptall)                                    \
   X("chb_rport_acceptall", rport_acceptall)                                    \
-  X("l_portfwd", portfwd)                                                      \
+  X("tb_portfwd", portfwd, UI::TwoColumns | UI::Col0IsSorted)                  \
   /* SSH Server Bug Workarounds */                                             \
   X("cb_sshbug_ignore1", sshbug_ignore1)                                       \
   X("cb_sshbug_plainpw1", sshbug_plainpw1)                                     \
@@ -472,109 +597,255 @@ Q_DECLARE_OPERATORS_FOR_FLAGS(UIFlags)
 #define CONF_VALIDATOR(name, key, ...) key = CONF_##key,
 enum class UI_MAPPING_TODO_VALID { UI_MAPPING_TODO(CONF_VALIDATOR) };
 
-#define UI_TO_KEY_ENTRY(ui, key, ...) {ui, {CONF_##key __VA_OPT__(, ) __VA_ARGS__}},
-struct KeyValue {
-  config_primary_key key;
-  int value = -1;
-  bool is_bool = false;
-  UIFlags options = UI::None;
-
-  KeyValue(config_primary_key key, bool value, UIFlags opt = UI::None)
-      : key(key), value(int(value)), is_bool(true), options(opt) {}
-  KeyValue(config_primary_key key, int value, UIFlags opt = UI::None)
-      : key(key), value(value), options(opt) {}
-  KeyValue(config_primary_key key, UIFlags opt = UI::None) : key(key), options(opt) {}
-};
-
-static const std::unordered_map<std::string, KeyValue> UI_TO_KV = {UI_MAPPING(UI_TO_KEY_ENTRY)};
-
-enum Type {
+enum Type : uint8_t {
   TYPE_NONE,
   TYPE_STR,
-  TYPE_BOOL,
+  TYPE_STR_NONE = TYPE_STR,
   TYPE_INT,
+  TYPE_INT_NONE = TYPE_INT,
+  TYPE_BOOL,
+  TYPE_BOOL_NONE = TYPE_BOOL,
   TYPE_FILENAME,
+  TYPE_FILENAME_NONE = TYPE_FILENAME,
   TYPE_FONT,
+  TYPE_FONT_NONE = TYPE_FONT,
+  TYPE_INT_INT,
+  TYPE_STR_STR,
 };
 
-#define KEY_TO_TYPE_ENTRY(value, subkey, key) {CONF_##key, TYPE_##value},
+static const char *typeName[] = {"None",     "str",  "int",     "bool",
+                                 "filename", "font", "int/int", "str/str"};
+
+extern const std::unordered_map<config_primary_key, Type> KEY_TO_TYPE;
+
+using UIFormatter = QString (*)(const QString &);
+using KVValue = std::variant<bool, int, std::vector<int>, const DataList *, UIFormatter>;
+
+#define UI_TO_KEY_ENTRY(ui, key, ...) {ui, {CONF_##key __VA_OPT__(, ) __VA_ARGS__}},
+struct KeyValue {
+  KVValue _value;
+  config_primary_key key;
+  UIFlags options = {};
+  Type const type = KEY_TO_TYPE.at(key);
+
+  KeyValue(config_primary_key key, std::initializer_list<int> cb_values, UIFlags opt = {})
+      : key(key), _value(cb_values), options(opt) {}
+  KeyValue(config_primary_key key, const DataList *dataList, UIFlags opt = {})
+      : key(key), _value(dataList), options(opt) {}
+  KeyValue(config_primary_key key, UIFormatter formatter, UIFlags opt = {})
+      : key(key), _value(formatter), options(opt) {}
+  KeyValue(config_primary_key key, bool value, UIFlags opt = {})
+      : key(key), _value(value), options(opt) {}
+  KeyValue(config_primary_key key, int value, UIFlags opt = {})
+      : key(key), _value(value), options(opt) {}
+  KeyValue(config_primary_key key, UIFlags opt = {}) : key(key), options(opt) {}
+
+  template <typename T>
+  bool holds() const {
+    return std::holds_alternative<T>(_value);
+  }
+  template <typename T>
+  T value() const {
+    return std::get<T>(_value);
+  }
+};
+
+const KeyValue *kvForWidget(QWidget *w) {
+  static const std::unordered_map<std::string, KeyValue> UI_TO_KV = {UI_MAPPING(UI_TO_KEY_ENTRY)};
+#ifdef _DEBUG
+  static const QVector<std::string> IGNORE_TYPES = {
+      "QLabel", "QGroupBox",   "QWidget",        "QScrollBar",  "QDialogButtonBox",
+      "QFrame", "QScrollArea", "QStackedWidget", "QPushButton",
+  };
+#endif
+  auto ikv = UI_TO_KV.find(w->objectName().toStdString());
+  if (ikv == UI_TO_KV.end()) {
+#ifdef _DEBUG
+    const char *className = w->metaObject()->className();
+    bool ignoredType = IGNORE_TYPES.contains(className);
+    if (!w->objectName().isEmpty() && !ignoredType)
+      qDebug() << "no kv for" << className << w->objectName();
+#endif
+    return nullptr;
+  }
+  return &ikv->second;
+}
+
+static void setTableRow(QTableWidget *table, int row, const QString &left, const QString &right) {
+  const KeyValue *kv = kvForWidget(table);
+  if (!left.isNull()) {
+    auto *col0 = new QTableWidgetItem(left);
+    if (!(kv->options & UI::Col0IsEditable)) col0->setFlags(CONST_FLAGS);
+    table->setItem(row, 0, col0);
+  }
+  if (!right.isNull()) {
+    auto *col1 = new QTableWidgetItem(right);
+    if (!(kv->options & UI::Col1IsEditable)) col1->setFlags(CONST_FLAGS);
+    table->setItem(row, 1, col1);
+  }
+}
+
+static bool contains(QListWidget *lw, const QString &text) {
+  for (int i = 0; i < lw->count(); i++) {
+    auto *item = lw->item(i);
+    if (item && item->text() == text) return true;
+  }
+  return false;
+}
+
+static void unhandledEntry(const QWidget *w, const KeyValue &kv, bool store) {
+  qDebug() << "!!" << w->metaObject()->className() << w->objectName() << "is"
+           << (store ? "stored to" : "loaded from") << "an unhandled type" << typeName[kv.type];
+}
+
+template <typename T>
+static bool set(QWidget *w, Conf *conf, const KeyValue &kv) {
+  T *concrete = qobject_cast<T *>(w);
+  if (concrete) return setW(concrete, conf, kv);
+  return false;
+}
+
+static bool setW(QCheckBox *chb, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_BOOL) {
+    chb->setChecked(conf_get_bool(conf, kv.key));
+    return true;
+  }
+  return false;
+}
+
+static bool setW(QRadioButton *rb, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_INT || kv.type == TYPE_BOOL) {
+    int cv = 0;
+    if (kv.type == TYPE_INT)
+      cv = conf_get_int(conf, kv.key);
+    else
+      cv = conf_get_bool(conf, kv.key);
+    if (kv.holds<bool>()) {
+      bool val = kv.value<bool>();
+      if (cv && val || !cv && !val) rb->click();
+      return true;
+    }
+    if (kv.holds<int>()) {
+      int val = kv.value<int>();
+      if (cv == val) rb->click();
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool setW(QLineEdit *le, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_STR) {
+    le->setText(conf_get_str(conf, kv.key));
+    return true;
+  } else if (kv.type == TYPE_INT) {
+    le->setText(QString::number(conf_get_int(conf, kv.key)));
+    return true;
+  } else if (kv.type == TYPE_FILENAME) {
+    le->setText(conf_get_filename(conf, kv.key)->path);
+    return true;
+  }
+  return false;
+}
+
+static bool setW(QComboBox *cb, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_INT) {
+    cb->setCurrentIndex(conf_get_int(conf, kv.key));
+    return true;
+  } else if (kv.type == TYPE_STR) {
+    int ind = cb->findText(conf_get_str(conf, kv.key));
+    if (ind == -1) ind = 0;
+    cb->setCurrentIndex(ind);
+    return true;
+  }
+  return false;
+}
+
+static bool setW(QListWidget *lw, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_INT_INT && kv.holds<const DataList *>()) {
+    auto &dataList = *kv.value<const DataList *>();
+    if (kv.options & UI::UserRole0) {
+      // priority ordered lists
+      std::unordered_map<int, QListWidgetItem *> items;
+      for (int i = 0; i < dataList.count; i++) {
+        int data = dataList.items[i].data;
+        auto *item = new QListWidgetItem(dataList.items[i].text);
+        item->setData(Qt::UserRole, data);
+        items[data] = item;
+      }
+      lw->clear();
+      for (int i = 0; i < items.size(); i++) {
+        int value = conf_get_int_int(conf, kv.key, i);
+        auto it = items.find(value);
+        if (it != items.end()) lw->addItem(it->second);
+      }
+    } else {
+      for (int i = 0; i < dataList.count; i++) lw->addItem(dataList.items[i].text);
+    }
+    return true;
+  } else if (kv.type == TYPE_STR_STR) {
+    lw->clear();
+    char *subkey = nullptr;
+    while (conf_get_str_strs(conf, kv.key, subkey, &subkey)) lw->addItem(subkey);
+    return true;
+  }
+  return false;
+}
+
+static int conf_get_str_count(Conf *conf, config_primary_key key) {
+  int rows = 0;
+  char *subkey = nullptr;
+  while (conf_get_str_strs(conf, key, subkey, &subkey)) rows++;
+  return rows;
+}
+
+static bool setW(QTableWidget *tw, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_STR_STR && kv.options & UI::TwoColumns) {
+    tw->setRowCount(0);  // tw->clear() would retain dimensions
+    tw->verticalHeader()->hide();
+    tw->horizontalHeader()->hide();
+
+    char *value = nullptr;
+    char *subkey = nullptr;
+    int row = 0;
+    UIFormatter formatter = kv.holds<UIFormatter>() ? kv.value<UIFormatter>() : nullptr;
+    while ((value = conf_get_str_strs(conf, kv.key, subkey, &subkey))) {
+      tw->insertRow(row);
+      qDebug() << "inserting row" << row;
+      if (kv.options & UI::Col1IsFormatted)
+        setTableRow(tw, row, subkey, formatter(value).toLatin1());
+      else
+        setTableRow(tw, row, subkey, value);
+      row++;
+    }
+    if (kv.options & UI::Col0IsSorted) tw->sortItems(0);
+    qDebug() << "rows:" << tw->rowCount();
+    return true;
+  }
+  return false;
+}
+
+#define KEY_TO_TYPE_ENTRY(value, subkey, key) {CONF_##key, TYPE_##value##_##subkey},
 static const std::unordered_map<config_primary_key, Type> KEY_TO_TYPE = {
     CONFIG_OPTIONS(KEY_TO_TYPE_ENTRY)};
 
 void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
-  int ind;
-
   this->cfg = std::move(_cfg);
 
-  // update the ui with the given settings
-
   for (QWidget *widget : findChildren<QWidget *>()) {
-    auto ikv = UI_TO_KV.find(widget->objectName().toStdString());
-    if (ikv == UI_TO_KV.end()) continue;
-
-    const KeyValue &kv = ikv->second;
-    config_primary_key const key = kv.key;
-    int const value = kv.value;
-    Type const type = KEY_TO_TYPE.at(key);
-    UIFlags opt = kv.options;
-
-#ifndef OSX_META_KEY_CONFIG
-    // if (key == CONF_osx_command_meta || key == CONF_osx_option_meta) continue;
-#endif
-
-    if (opt & UI::Optional && !confKeyExists(cfg.get(), key)) continue;
-    QCheckBox *cb = qobject_cast<QCheckBox *>(widget);
-    if (cb) {
-      if (type == TYPE_BOOL)
-        cb->setChecked(conf_get_bool(cfg.get(), key));
-      else if (type == TYPE_INT)
-        cb->setChecked(conf_get_int(cfg.get(), key));
-      else
-        assert(false);
-      continue;
-    }
-    QLineEdit *le = qobject_cast<QLineEdit *>(widget);
-    if (le) {
-      if (type == TYPE_STR)
-        le->setText(conf_get_str(cfg.get(), key));
-      else if (type == TYPE_INT)
-        le->setText(QString::number(conf_get_int(cfg.get(), key)));
-      else if (type == TYPE_FILENAME)
-        le->setText(conf_get_filename(cfg.get(), key)->path);
-      else
-        assert(false);
-      continue;
-    }
-    QButtonGroup *bg = qobject_cast<QButtonGroup *>(widget);
-    if (bg) {
-      assert(type == TYPE_INT);
-      bg->button(conf_get_int(cfg.get(), key))->click();
-      continue;
-    }
-    QRadioButton *rb = qobject_cast<QRadioButton *>(widget);
-    if (rb) {
-      int cv;
-      if (type == TYPE_BOOL)
-        cv = conf_get_bool(cfg.get(), key);
-      else if (type == TYPE_INT)
-        cv = conf_get_int(cfg.get(), key);
-      else
-        assert(false);
-
-      if (kv.is_bool) {
-        if (cv && value || !cb && !value) rb->click();
-      } else {
-        if (cv == value) rb->click();
-      }
-
-      continue;
-    }
+    const KeyValue *kv = kvForWidget(widget);
+    if (!kv) continue;
+    if (kv->options & UI::Optional && !confKeyExists(cfg.get(), kv->key)) continue;
+    if (set<QCheckBox>(widget, cfg.get(), *kv)) continue;
+    if (set<QRadioButton>(widget, cfg.get(), *kv)) continue;
+    if (set<QLineEdit>(widget, cfg.get(), *kv)) continue;
+    if (set<QComboBox>(widget, cfg.get(), *kv)) continue;
+    if (set<QListWidget>(widget, cfg.get(), *kv)) continue;
+    if (set<QTableWidget>(widget, cfg.get(), *kv)) continue;
+    unhandledEntry(widget, *kv, false);
   }
 
-  if (0) {  // FIXME - does this matter?
-    char *host = conf_get_str(cfg.get(), CONF_host);
-    if (host[0] != '\0') ui->le_hostname->setText(host);
-  }
+  setWordness();
 
   char *config_name = conf_get_str(cfg.get(), CONF_config_name);
   auto cfg_name_split = qutty_string_split(string(config_name), QUTTY_SESSION_NAME_SPLIT);
@@ -592,121 +863,132 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
   ui->lbl_fontsel->setText(
       QString("%1, %2%3-point")
           .arg(font.name, font.isbold ? "Bold, " : "", QString::number(font.height)));
-  ind = ui->cb_codepage->findText(conf_get_str(cfg.get(), CONF_line_codepage));
-  if (ind == -1) ind = 0;
-  ui->cb_codepage->setCurrentIndex(ind);
-
-  initWordness();
-  initColours();
-  initEnvVars();
-  initCipherList();
-  initHKList();
-  initKexList();
-  initTTYModes();
-  initPortFwds();
-#ifndef NO_GSSAPI
-  initGSSList();
-#endif
 }
 
-static void getChecked(Conf *conf, config_primary_key key, QAbstractButton *src) {
-  conf_set_int(conf, key, src->isChecked() ? 1 : 0);
+template <typename T>
+static bool get(QWidget *w, Conf *conf, const KeyValue &kv) {
+  T *concrete = qobject_cast<T *>(w);
+  if (concrete) return getW(concrete, conf, kv);
+  return false;
 }
 
-static void getCheckedId(Conf *conf, config_primary_key key, QButtonGroup *src) {
-  conf_set_int(conf, key, src->checkedId());
+static bool getW(QCheckBox *chb, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_BOOL) {
+    conf_set_bool(conf, kv.key, chb->isChecked());
+    return true;
+  }
+  return false;
 }
 
-static void getText(Conf *conf, config_primary_key key, QLineEdit *src) {
-  QByteArray text = src->text().toUtf8();
-  conf_set_str(conf, key, text.data());
+static bool getW(QRadioButton *rb, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_INT && kv.holds<int>()) {
+    if (rb->isChecked()) conf_set_int(conf, kv.key, kv.value<int>());
+    return true;
+  }
+  if (kv.type == TYPE_BOOL && kv.holds<bool>()) {
+    if (rb->isChecked()) conf_set_bool(conf, kv.key, kv.value<bool>());
+    return true;
+  }
+  return false;
 }
 
-static void getTextVariant(Conf *conf, config_primary_key key, const QVariant &var) {
-  QByteArray text = var.toString().toUtf8();
-  conf_set_str(conf, key, text);
+static bool getW(QLineEdit *le, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_STR) {
+    QByteArray text = le->text().toUtf8();
+    conf_set_str(conf, kv.key, text.data());
+    return true;
+  }
+  if (kv.type == TYPE_INT) {
+    bool ok;
+    int i = le->text().toInt(&ok);
+    if (ok) conf_set_int(conf, kv.key, i);
+    return true;
+  }
+  if (kv.type == TYPE_FILENAME) {
+    Filename *fn = conf_get_filename(conf, kv.key);
+    qstring_to_char(fn->path, le->text(), sizeof(fn->path));
+    conf_set_filename(conf, kv.key, fn);
+    return true;
+  }
+  return false;
 }
 
-static void getTextPath(Conf *conf, config_primary_key key, QLineEdit *src) {
-  Filename *fn = conf_get_filename(conf, key);
-  qstring_to_char(fn->path, src->text(), sizeof(fn->path));
-  conf_set_filename(conf, key, fn);
+static bool getW(QComboBox *cb, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_STR && (kv.options & UI::CurrentText)) {
+    QByteArray text = cb->currentText().toUtf8();
+    conf_set_str(conf, kv.key, text.data());
+    return true;
+  }
+  if (kv.type == TYPE_INT) {
+    int i = cb->currentIndex();
+    if (i >= 0) conf_set_int(conf, kv.key, i);
+    return true;
+  }
+  return false;
 }
 
-static void getTextAsNumber(Conf *conf, config_primary_key key, QLineEdit *src) {
-  QByteArray text = src->text().toUtf8();
-  conf_set_int(conf, key, text.toInt());
+static bool getW(QTreeWidget *tw, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_STR && (kv.options & UI::CurrentUserRole3)) {
+    QByteArray text = tw->currentItem()->data(0, 3).toString().toUtf8();
+    conf_set_str(conf, kv.key, text);
+    return true;
+  }
+  return false;
+}
+
+static bool getW(QListWidget *lw, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_STR) {
+    QByteArray text = lw->currentItem()->text().toUtf8();
+    conf_set_str(conf, kv.key, text.data());
+    return true;
+  } else if (kv.type == TYPE_INT_INT && (kv.options & UI::UserRole0)) {
+    for (int i = 0; i < lw->count(); i++) {
+      bool ok;
+      int value = lw->item(i)->data(Qt::UserRole).toInt(&ok);
+      if (ok) conf_set_int_int(conf, kv.key, i, value);
+    }
+    return true;
+  }
+  return false;
+}
+
+static bool getW(QTableWidget *tw, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_STR_STR && kv.options & UI::TwoColumns) {
+    if (kv.options & UI::DontWrite) return true;
+    std::unordered_set<QString> confVars;
+    char *varName = nullptr;
+    while (conf_get_str_strs(conf, kv.key, varName, &varName)) {
+      confVars.insert(varName);
+    }
+    int rows = conf_get_str_count(conf, kv.key);
+    for (int i = 0; i < tw->rowCount(); i++) {
+      auto col0 = tw->item(i, 0)->text().toLatin1();
+      auto col1 = tw->item(i, 1)->text().toLatin1();
+      conf_set_str_str(conf, kv.key, col0, col1);
+      confVars.erase(col0);
+    }
+    for (const QString &varName : confVars) {
+      conf_del_str_str(conf, kv.key, varName.toLatin1());
+    }
+    return true;
+  }
+  return false;
 }
 
 Conf *GuiSettingsWindow::getConfig() {
-  Conf *cfg = this->cfg.get();
-
-  // update the config with current ui selection and return it
-
   for (QWidget *const widget : findChildren<QWidget *>()) {
-    auto ikv = UI_TO_KV.find(widget->objectName().toStdString());
-    if (ikv == UI_TO_KV.end()) continue;
-
-    const KeyValue &kv = ikv->second;
-    config_primary_key const key = kv.key;
-    int const value = kv.value;
-    Type const type = KEY_TO_TYPE.at(key);
-
-    QCheckBox *cb = qobject_cast<QCheckBox *>(widget);
-    if (cb) {
-      if (type == TYPE_BOOL)
-        conf_set_bool(cfg, key, cb->isChecked());
-      else if (type == TYPE_INT)
-        conf_set_int(cfg, key, cb->isChecked());
-      else
-        assert(false);
-      continue;
-    }
-    QLineEdit *le = qobject_cast<QLineEdit *>(widget);
-    if (le) {
-      if (type == TYPE_STR)
-        conf_set_str(cfg, key, le->text().toUtf8());
-      else if (type == TYPE_INT) {
-        bool ok;
-        int i = le->text().toInt(&ok);
-        if (ok) conf_set_int(cfg, key, i);
-      } else if (type == TYPE_FILENAME) {
-        Filename fn = *conf_get_filename(cfg, key);
-        qstring_to_char(fn.path, le->text(), sizeof(fn.path));
-        conf_set_filename(cfg, key, &fn);
-      } else
-        assert(false);
-      continue;
-    }
-    QButtonGroup *bg = qobject_cast<QButtonGroup *>(widget);
-    if (bg) {
-      assert(type == TYPE_INT);
-      conf_set_int(cfg, key, bg->checkedId());
-      continue;
-    }
-    QRadioButton *rb = qobject_cast<QRadioButton *>(widget);
-    if (rb) {
-      if (type == TYPE_BOOL) {
-        if (rb->isChecked()) conf_set_bool(cfg, key, value);
-      } else if (type == TYPE_INT) {
-        if (rb->isChecked()) conf_set_int(cfg, key, value);
-      } else
-        assert(false);
-      continue;
-    }
+    const KeyValue *kv = kvForWidget(widget);
+    if (!kv) continue;
+    if (get<QCheckBox>(widget, cfg.get(), *kv)) continue;
+    if (get<QRadioButton>(widget, cfg.get(), *kv)) continue;
+    if (get<QLineEdit>(widget, cfg.get(), *kv)) continue;
+    if (get<QComboBox>(widget, cfg.get(), *kv)) continue;
+    if (get<QTreeWidget>(widget, cfg.get(), *kv)) continue;
+    if (get<QListWidget>(widget, cfg.get(), *kv)) continue;
+    if (get<QTableWidget>(widget, cfg.get(), *kv)) continue;
+    unhandledEntry(widget, *kv, true);
   }
-
-  if (ui->l_saved_sess->currentItem())
-    getTextVariant(cfg, CONF_config_name,
-                   ui->l_saved_sess->currentItem()->data(0, QUTTY_ROLE_FULL_SESSNAME));
-
-  /* Session Logging */
-  getCheckedId(cfg, CONF_logxfovr, ui->gp_logfile);
-
-  /* Window */
-  conf_set_str(cfg, CONF_line_codepage, ui->cb_codepage->currentText().toUtf8());
-
-  return cfg;
+  return cfg.get();
 }
 
 void GuiSettingsWindow::loadSessionNames() {
@@ -901,79 +1183,32 @@ void GuiSettingsWindow::on_b_sess_copy_clicked() {
   pending_session_changes = true;
 }
 
-static Qt::ItemFlags const CONST_FLAGS =
-    Qt::ItemFlag::ItemIsEnabled | Qt::ItemFlag::ItemIsSelectable;
-
-void GuiSettingsWindow::initWordness() {
-  QTableWidget *table = ui->l_char_classes;
-  table->setRowCount(256);
-  table->setColumnCount(3);
-  table->horizontalHeader()->hide();
-  table->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
+void GuiSettingsWindow::setWordness() {
   for (int ch = 0; ch < 256; ch++) {
     int wordness = conf_get_int_int(cfg.get(), CONF_wordness, ch);
-    auto *col0 = new QTableWidgetItem(QString::asprintf("(0x%02X)", ch));
-    auto *col1 = new QTableWidgetItem((ch >= 32 && ch <= 127) ? QString(QChar(ch)) : QString());
     auto *col2 = new QTableWidgetItem(QString::number(wordness));
-    col0->setFlags(CONST_FLAGS);
-    col1->setFlags(CONST_FLAGS);
-    table->setItem(ch, 0, col0);
-    table->setItem(ch, 1, col1);
-    table->setItem(ch, 2, col2);
+    ui->tb_char_classes->setItem(ch, 2, col2);
   }
 }
 
-void GuiSettingsWindow::on_l_char_classes_currentItemChanged(QTableWidgetItem *item) {
-  QTableWidget *table = ui->l_char_classes;
-  ui->le_char_class->setText(table->item(item->row(), 2)->text());
+void GuiSettingsWindow::on_tb_char_classes_currentItemChanged(QTableWidgetItem *item) {
+  item = ui->tb_char_classes->item(item->row(), 2);
+  ui->le_char_class->setText(item->text());
 }
 
-void GuiSettingsWindow::on_btn_char_class_set_clicked() {
+void GuiSettingsWindow::on_pb_char_class_set_clicked() {
   bool ok;
   int cclass = ui->le_char_class->text().toInt(&ok);
   if (ok) {
-    QTableWidget *table = ui->l_char_classes;
+    QTableWidget *table = ui->tb_char_classes;
     int ch = table->currentRow();
     table->item(ch, 2)->setText(QString::number(cclass));
     conf_set_int_int(cfg.get(), CONF_wordness, ch, cclass);
   }
 }
 
-static void setEnvRow(QTableWidget *table, int row, const QString &text0, const QString &text1) {
-  auto *col0 = new QTableWidgetItem(text0);
-  auto *col1 = new QTableWidgetItem(text1);
-  col0->setFlags(CONST_FLAGS);
-  table->setItem(row, 0, col0);
-  table->setItem(row, 1, col1);
-}
-
-static int conf_get_str_count(Conf *conf, config_primary_key key) {
-  int rows = 0;
-  char *subkey = nullptr;
-  while (conf_get_str_strs(conf, key, subkey, &subkey)) rows++;
-  return rows;
-}
-
-void GuiSettingsWindow::initEnvVars() {
-  QTableWidget *table = ui->l_env_vars;
-  int rows = conf_get_str_count(cfg.get(), CONF_environmt);
-  table->setColumnCount(2);
-  table->setRowCount(rows);
-  table->verticalHeader()->hide();
-  table->horizontalHeader()->hide();
-  table->setSelectionBehavior(QAbstractItemView::SelectionBehavior::SelectRows);
-
-  char *value = nullptr;
-  char *subkey = nullptr;
-  int row = 0;
-  while ((value = conf_get_str_strs(cfg.get(), CONF_environmt, subkey, &subkey))) {
-    setEnvRow(table, row, subkey, value);
-    row++;
-  }
-}
-
 void GuiSettingsWindow::on_pb_env_add_clicked() {
-  QTableWidget *table = ui->l_env_vars;
+  QTableWidget *table = ui->tb_env_vars;
   auto name = ui->le_env_var->text();
   auto value = ui->le_env_value->text();
   if (name.isEmpty() || value.isEmpty()) return;
@@ -989,21 +1224,18 @@ void GuiSettingsWindow::on_pb_env_add_clicked() {
       }
     }
   }
-  if (newRow) table->setRowCount(table->rowCount() + 1);
-  setEnvRow(table, row, name, value);
+  if (newRow) table->insertRow(row);
+  setTableRow(table, row, name, value);
   ui->le_env_var->clear();
   ui->le_env_value->clear();
-  conf_set_str_str(cfg.get(), CONF_environmt, name.toUtf8(), value.toUtf8());
 }
 
 void GuiSettingsWindow::on_pb_env_remove_clicked() {
-  QTableWidget *table = ui->l_env_vars;
+  QTableWidget *table = ui->tb_env_vars;
   auto *item = table->currentItem();
   if (!item) return;
   int row = item->row();
-  auto name = item->text();
   table->removeRow(row);
-  conf_del_str_str(cfg.get(), CONF_environmt, name.toUtf8());
 }
 
 static bool listMoveUp(QListWidget *list) {
@@ -1024,148 +1256,17 @@ static bool listMoveDown(QListWidget *list) {
   return true;
 }
 
-struct DataItem {
-  const char *text;
-  int data;
-};
+void GuiSettingsWindow::on_pb_ssh_cipher_up_clicked() { listMoveUp(ui->l_ssh_cipherlist); }
 
-struct DataList {
-  config_primary_key key;
-  int count;
-  const DataItem *items;
+void GuiSettingsWindow::on_pb_ssh_cipher_down_clicked() { listMoveDown(ui->l_ssh_cipherlist); }
 
-  constexpr DataList(config_primary_key key, int count, const DataItem items[])
-      : key(key), count(count), items(items) {}
+void GuiSettingsWindow::on_pb_ssh_kex_up_clicked() { listMoveUp(ui->l_ssh_kexlist); }
 
-  void initList(QListWidget *list, Conf *conf) const {
-    list->clear();
-    std::vector<QListWidgetItem *> listItems;
-    listItems.resize(count);
-    for (int i = 0; i < count; i++) {
-      auto *item = new QListWidgetItem(items[i].text);
-      item->setData(Qt::UserRole, items[i].data);
-      listItems[items[i].data] = item;
-    }
-    for (int i = 0; i < count; i++) {
-      int const data = conf_get_int_int(conf, key, i);
-      for (int j = 0; j < count; j++) {
-        auto &item = items[j];
-        if (item.data == data) {
-          list->addItem(listItems[item.data]);
-          break;
-        }
-      }
-    }
-  }
+void GuiSettingsWindow::on_pb_ssh_kex_down_clicked() { listMoveDown(ui->l_ssh_kexlist); }
 
-  void updateConfig(QListWidget *list, Conf *conf) const {
-    for (int i = 0; i < count; i++) {
-      auto *item = list->item(i);
-      int value = item->data(Qt::UserRole).toInt();
-      conf_set_int_int(conf, key, i, value);
-    }
-  }
-};
+void GuiSettingsWindow::on_pb_ssh_hklist_up_clicked() { listMoveUp(ui->l_ssh_hklist); }
 
-// From putty-0.63/config.c
-static const DataItem ciphers[] = {{"ChaCha20 (SSH-2 only)", CIPHER_CHACHA20},
-                                   {"3DES", CIPHER_3DES},
-                                   {"Blowfish", CIPHER_BLOWFISH},
-                                   {"DES", CIPHER_DES},
-                                   {"AES (SSH-2 only)", CIPHER_AES},
-                                   {"Arcfour (SSH-2 only)", CIPHER_ARCFOUR},
-                                   {"-- warn below here --", CIPHER_WARN}};
-
-static const DataList cipherDataList(CONF_ssh_cipherlist, CIPHER_MAX, ciphers);
-
-void GuiSettingsWindow::initCipherList() {
-  cipherDataList.initList(ui->l_ssh_cipherlist, cfg.get());
-}
-
-void GuiSettingsWindow::on_pb_ssh_cipher_up_clicked() {
-  if (listMoveUp(ui->l_ssh_cipherlist))
-    cipherDataList.updateConfig(ui->l_ssh_cipherlist, cfg.get());
-}
-
-void GuiSettingsWindow::on_pb_ssh_cipher_down_clicked() {
-  if (listMoveDown(ui->l_ssh_cipherlist))
-    cipherDataList.updateConfig(ui->l_ssh_cipherlist, cfg.get());
-}
-
-// From putty-0.63/config.c
-static const DataItem kexes[] = {{"Diffie-Hellman group 1", KEX_DHGROUP1},
-                                 {"Diffie-Hellman group 14", KEX_DHGROUP14},
-                                 {"Diffie-Hellman group exchange", KEX_DHGEX},
-                                 {"RSA-based key exchange", KEX_RSA},
-                                 {"ECDH key exchange", KEX_ECDH},
-                                 {"-- warn below here --", KEX_WARN}};
-
-static const DataList kexDataList(CONF_ssh_kexlist, KEX_MAX, kexes);
-
-void GuiSettingsWindow::initKexList() { kexDataList.initList(ui->l_ssh_kexlist, cfg.get()); }
-
-void GuiSettingsWindow::on_pb_ssh_kex_up_clicked() {
-  if (listMoveUp(ui->l_ssh_kexlist)) kexDataList.updateConfig(ui->l_ssh_kexlist, cfg.get());
-}
-
-void GuiSettingsWindow::on_pb_ssh_kex_down_clicked() {
-  if (listMoveDown(ui->l_ssh_kexlist)) kexDataList.updateConfig(ui->l_ssh_kexlist, cfg.get());
-}
-
-// From putty-0.69/config.c
-static const DataItem hks[] = {{"Ed25519", HK_ED25519},
-                               {"ECDSA", HK_ECDSA},
-                               {"DSA", HK_DSA},
-                               {"RSA", HK_RSA},
-                               {"-- warn below here --", HK_WARN}};
-
-static const DataList hkDataList(CONF_ssh_hklist, HK_MAX, hks);
-
-void GuiSettingsWindow::initHKList() { hkDataList.initList(ui->l_ssh_hklist, cfg.get()); }
-
-void GuiSettingsWindow::on_pb_ssh_hklist_up_clicked() {
-  if (listMoveUp(ui->l_ssh_hklist)) hkDataList.updateConfig(ui->l_ssh_hklist, cfg.get());
-}
-
-void GuiSettingsWindow::on_pb_ssh_hklist_down_clicked() {
-  if (listMoveDown(ui->l_ssh_hklist)) hkDataList.updateConfig(ui->l_ssh_hklist, cfg.get());
-}
-
-enum ModeType { TTY_OP_CHAR, TTY_OP_BOOL };
-
-struct TTYModeDecl {
-  const char *const name;
-  int opcode;
-  ModeType type;
-};
-
-// from putty-0.63/ssh.c
-static const TTYModeDecl ssh_ttymodes[] = {
-    /* "V" prefix discarded for special characters relative to SSH specs */
-    {"INTR", 1, TTY_OP_CHAR},    {"QUIT", 2, TTY_OP_CHAR},    {"ERASE", 3, TTY_OP_CHAR},
-    {"KILL", 4, TTY_OP_CHAR},    {"EOF", 5, TTY_OP_CHAR},     {"EOL", 6, TTY_OP_CHAR},
-    {"EOL2", 7, TTY_OP_CHAR},    {"START", 8, TTY_OP_CHAR},   {"STOP", 9, TTY_OP_CHAR},
-    {"SUSP", 10, TTY_OP_CHAR},   {"DSUSP", 11, TTY_OP_CHAR},  {"REPRINT", 12, TTY_OP_CHAR},
-    {"WERASE", 13, TTY_OP_CHAR}, {"LNEXT", 14, TTY_OP_CHAR},  {"FLUSH", 15, TTY_OP_CHAR},
-    {"SWTCH", 16, TTY_OP_CHAR},  {"STATUS", 17, TTY_OP_CHAR}, {"DISCARD", 18, TTY_OP_CHAR},
-    {"IGNPAR", 30, TTY_OP_BOOL}, {"PARMRK", 31, TTY_OP_BOOL}, {"INPCK", 32, TTY_OP_BOOL},
-    {"ISTRIP", 33, TTY_OP_BOOL}, {"INLCR", 34, TTY_OP_BOOL},  {"IGNCR", 35, TTY_OP_BOOL},
-    {"ICRNL", 36, TTY_OP_BOOL},  {"IUCLC", 37, TTY_OP_BOOL},  {"IXON", 38, TTY_OP_BOOL},
-    {"IXANY", 39, TTY_OP_BOOL},  {"IXOFF", 40, TTY_OP_BOOL},  {"IMAXBEL", 41, TTY_OP_BOOL},
-    {"IUTF8", 42, TTY_OP_BOOL},  {"ISIG", 50, TTY_OP_BOOL},   {"ICANON", 51, TTY_OP_BOOL},
-    {"XCASE", 52, TTY_OP_BOOL},  {"ECHO", 53, TTY_OP_BOOL},   {"ECHOE", 54, TTY_OP_BOOL},
-    {"ECHOK", 55, TTY_OP_BOOL},  {"ECHONL", 56, TTY_OP_BOOL}, {"NOFLSH", 57, TTY_OP_BOOL},
-    {"TOSTOP", 58, TTY_OP_BOOL}, {"IEXTEN", 59, TTY_OP_BOOL}, {"ECHOCTL", 60, TTY_OP_BOOL},
-    {"ECHOKE", 61, TTY_OP_BOOL}, {"PENDIN", 62, TTY_OP_BOOL}, {"OPOST", 70, TTY_OP_BOOL},
-    {"OLCUC", 71, TTY_OP_BOOL},  {"ONLCR", 72, TTY_OP_BOOL},  {"OCRNL", 73, TTY_OP_BOOL},
-    {"ONOCR", 74, TTY_OP_BOOL},  {"ONLRET", 75, TTY_OP_BOOL}, {"CS7", 90, TTY_OP_BOOL},
-    {"CS8", 91, TTY_OP_BOOL},    {"PARENB", 92, TTY_OP_BOOL}, {"PARODD", 93, TTY_OP_BOOL}};
-
-static const TTYModeDecl *getModeDecl(const char *name) {
-  for (auto const &mode : ssh_ttymodes)
-    if (strcmp(mode.name, name) == 0) return &mode;
-  return nullptr;
-}
+void GuiSettingsWindow::on_pb_ssh_hklist_down_clicked() { listMoveDown(ui->l_ssh_hklist); }
 
 static QString formatTTYMode(const QString &value) {
   if (value == "A") return "(auto)";
@@ -1174,54 +1275,9 @@ static QString formatTTYMode(const QString &value) {
   return "(---)";  // should not happen
 }
 
-static void setTableRow(QTableWidget *table, int row, const char *left, const char *right) {
-  if (left) {
-    auto *col0 = new QTableWidgetItem(left);
-    col0->setFlags(CONST_FLAGS);
-    table->setItem(row, 0, col0);
-  }
-  if (right) {
-    auto *col1 = new QTableWidgetItem(right);
-    col1->setFlags(CONST_FLAGS);
-    table->setItem(row, 1, col1);
-  }
-}
-
-static QByteArray removeCurrentRow(QTableWidget *table) {
-  int row = table->currentRow();
-  if (row < 0) return {};
-  auto left = table->item(row, 0)->text().toLatin1();
-  table->removeRow(row);
-  return left;
-}
-
-void GuiSettingsWindow::initTTYModes() {
-  // ui->cb_ttymodes->clear();
-  // for (auto const &m : ssh_ttymodes) ui->cb_ttymodes->addItem(m.name);
-
-  int rows = conf_get_str_count(cfg.get(), CONF_ttymodes);
-  QTableWidget *table = ui->l_ttymodes;
-  table->clear();
-  table->setRowCount(rows);
-  table->setColumnCount(2);
-  table->setSelectionBehavior(QAbstractItemView::SelectRows);
-  table->verticalHeader()->hide();
-  table->horizontalHeader()->hide();
-
-  const char *value = nullptr;
-  char *subkey = nullptr;
-  int i = 0;
-  while ((value = conf_get_str_strs(cfg.get(), CONF_ttymodes, subkey, &subkey))) {
-    auto text = formatTTYMode(value);
-    setTableRow(table, i, subkey, text.toLatin1());
-    i++;
-  }
-  table->sortItems(0);
-}
-
-void GuiSettingsWindow::on_l_ttymodes_currentItemChanged(QTableWidgetItem *current) {
+void GuiSettingsWindow::on_tb_ttymodes_currentItemChanged(QTableWidgetItem *current) {
   if (!current) return;
-  QTableWidget *table = ui->l_ttymodes;
+  QTableWidget *table = ui->tb_ttymodes;
   int row = table->indexFromItem(current).row();
   if (row < 0) return;
   QString const name = table->item(row, 0)->text();
@@ -1239,7 +1295,7 @@ void GuiSettingsWindow::on_l_ttymodes_currentItemChanged(QTableWidgetItem *curre
 }
 
 void GuiSettingsWindow::on_pb_ttymodes_set_clicked() {
-  QTableWidget *table = ui->l_ttymodes;
+  QTableWidget *table = ui->tb_ttymodes;
   int row = table->currentRow();
   if (row < 0) return;
   QString const name = table->item(row, 0)->text();
@@ -1255,33 +1311,14 @@ void GuiSettingsWindow::on_pb_ttymodes_set_clicked() {
 
   value = formatTTYMode(value);
   bvalue = value.toLatin1();
-  setTableRow(table, row, nullptr, bvalue);
-  table->sortItems(0);
-}
-
-void GuiSettingsWindow::initPortFwds() {
-  int rows = conf_get_str_count(cfg.get(), CONF_portfwd);
-  QTableWidget *table = ui->l_portfwd;
-  table->clear();
-  table->setRowCount(rows);
-  table->setColumnCount(2);
-  table->setSelectionBehavior(QAbstractItemView::SelectRows);
-  table->verticalHeader()->hide();
-  table->horizontalHeader()->hide();
-
-  const char *value = nullptr;
-  char *subkey = nullptr;
-  int i = 0;
-  while ((value = conf_get_str_strs(cfg.get(), CONF_portfwd, subkey, &subkey))) {
-    setTableRow(table, i, subkey, value);
-    i++;
-  }
+  setTableRow(table, row, {}, bvalue);
   table->sortItems(0);
 }
 
 void GuiSettingsWindow::on_pb_portfwd_remove_clicked() {
-  QByteArray src = removeCurrentRow(ui->l_portfwd);
-  if (!src.isEmpty()) conf_del_str_str(cfg.get(), CONF_portfwd, src);
+  QTableWidget *table = ui->tb_portfwd;
+  int row = table->currentRow();
+  if (row >= 0) table->removeRow(row);
 }
 
 struct PortFwd {
@@ -1322,7 +1359,7 @@ void GuiSettingsWindow::on_pb_portfwd_add_clicked() {
     return;
   }
 
-  QTableWidget *table = ui->l_portfwd;
+  QTableWidget *table = ui->tb_portfwd;
   int const n = table->rowCount();
   for (int i = 0; i < n; i++) {
     PortFwd row;
@@ -1336,20 +1373,10 @@ void GuiSettingsWindow::on_pb_portfwd_add_clicked() {
 
   auto const src = fwd.src.toLatin1();
   auto const dest = fwd.dest.toLatin1();
-  conf_set_str_str(cfg.get(), CONF_portfwd, src, dest);
-
   int row = table->rowCount();
-  table->setRowCount(row + 1);
+  table->insertRow(row);
   setTableRow(table, row, src, dest);
   table->sortItems(0);
-}
-
-void GuiSettingsWindow::initHostKeys() {
-  auto *list = ui->l_ssh_manual_hostkeys;
-  char *subkey = nullptr;
-  while (conf_get_str_strs(cfg.get(), CONF_ssh_manual_hostkeys, subkey, &subkey)) {
-    list->addItem(subkey);
-  }
 }
 
 void GuiSettingsWindow::on_pb_ssh_manual_hostkeys_add_clicked() {
@@ -1358,43 +1385,22 @@ void GuiSettingsWindow::on_pb_ssh_manual_hostkeys_add_clicked() {
   if (!validate_manual_hostkey(bhostkey.data())) {
     QMessageBox::critical(this, "QuTTY Error", "Host key is not in a valid format");
     return;
-  } else if (conf_get_str_str_opt(cfg.get(), CONF_ssh_manual_hostkeys, bhostkey)) {
+  } else if (contains(ui->l_ssh_manual_hostkeys, hostkey)) {
     QMessageBox::critical(this, "QuTTY Error", "Specified host key is already listed");
     return;
   }
-
-  auto *list = ui->l_ssh_manual_hostkeys;
-  list->addItem(hostkey);
-  conf_set_str_str(cfg.get(), CONF_ssh_manual_hostkeys, bhostkey, "");
+  ui->l_ssh_manual_hostkeys->addItem(hostkey);
 }
 
 void GuiSettingsWindow::on_pb_ssh_manual_hostkeys_remove_clicked() {
-  QListWidget *list = ui->l_ssh_manual_hostkeys;
-  auto *item = list->currentItem();
-  if (!item) return;
-  auto text = item->text();
-  delete item;
-  conf_del_str_str(cfg.get(), CONF_ssh_manual_hostkeys, text.toLatin1());
+  delete ui->l_ssh_manual_hostkeys->currentItem();
 }
 
 #ifndef NO_GSSAPI
 
-// From putty-0.63/wingss.c
-static const DataItem _gsslibnames[3] = {{"MIT Kerberos GSSAPI32.DLL", 0},
-                                         {"Microsoft SSPI SECUR32.DLL", 1},
-                                         {"User-specified GSSAPI DLL", 2}};
+void GuiSettingsWindow::on_pb_ssh_gss_up_clicked() { listMoveUp(ui->l_ssh_gsslist); }
 
-static const DataList gssDataList(CONF_ssh_gsslist, 3, _gsslibnames);
-
-void GuiSettingsWindow::initGSSList() { gssDataList.initList(ui->l_ssh_gsslist, cfg.get()); }
-
-void GuiSettingsWindow::on_pb_ssh_gss_up_clicked() {
-  if (listMoveUp(ui->l_ssh_gsslist)) gssDataList.updateConfig(ui->l_ssh_gsslist, cfg.get());
-}
-
-void GuiSettingsWindow::on_pb_ssh_gss_down_clicked() {
-  if (listMoveDown(ui->l_ssh_gsslist)) gssDataList.updateConfig(ui->l_ssh_gsslist, cfg.get());
-}
+void GuiSettingsWindow::on_pb_ssh_gss_down_clicked() { listMoveDown(ui->l_ssh_gsslist); }
 
 #endif // NO_GSSAPI
 
@@ -1428,26 +1434,6 @@ void GuiSettingsWindow::on_btn_about_clicked() {
   QMessageBox::about(this, "About " APPNAME,
                      APPNAME "\nRelease " QUTTY_RELEASE_VERSION
                              "\n\nhttp://code.google.com/p/qutty/");
-}
-
-// From putty-0.63/config.c
-static const char *const colours[] = {"Default Foreground", "Default Bold Foreground",
-                                      "Default Background", "Default Bold Background",
-                                      "Cursor Text",        "Cursor Colour",
-                                      "ANSI Black",         "ANSI Black Bold",
-                                      "ANSI Red",           "ANSI Red Bold",
-                                      "ANSI Green",         "ANSI Green Bold",
-                                      "ANSI Yellow",        "ANSI Yellow Bold",
-                                      "ANSI Blue",          "ANSI Blue Bold",
-                                      "ANSI Magenta",       "ANSI Magenta Bold",
-                                      "ANSI Cyan",          "ANSI Cyan Bold",
-                                      "ANSI White",         "ANSI White Bold"};
-
-void GuiSettingsWindow::initColours() {
-  int row = 0;
-  for (const char *colour : colours) {
-    ui->l_colour->addItem(colour);
-  }
 }
 
 static void setColour(Conf *conf, int index, QRgb rgb) {
@@ -1502,14 +1488,6 @@ void GuiSettingsWindow::on_l_colour_currentItemChanged(QListWidgetItem *current,
     ui->le_colour_g->setText(QString::number(qGreen(rgb)));
     ui->le_colour_b->setText(QString::number(qBlue(rgb)));
   }
-}
-
-static bool conf_del_str_all(Conf *cfg, config_primary_key key) {
-  std::vector<std::string> subkeys;
-  char *subkey = nullptr;
-  while (conf_get_str_strs(cfg, key, subkey, &subkey)) subkeys.push_back(subkey);
-  for (const std::string &sk : subkeys) conf_del_str_str(cfg, key, sk.c_str());
-  return !subkeys.empty();
 }
 
 void chkUnsupportedConfigs(Conf *cfg) {

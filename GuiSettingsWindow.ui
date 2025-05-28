@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>543</width>
-    <height>500</height>
+    <width>571</width>
+    <height>508</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,7 +23,28 @@
    <bool>false</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout_23">
-   <item row="0" column="2">
+   <item row="1" column="3" colspan="2">
+    <layout class="QHBoxLayout" name="horizontalLayout_15">
+     <item>
+      <widget class="QPushButton" name="btn_about">
+       <property name="text">
+        <string>About</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="standardButtons">
+        <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Open</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="0" column="3">
     <widget class="QTreeWidget" name="treeWidget">
      <property name="sizePolicy">
       <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
@@ -134,6 +155,11 @@
        <property name="text">
         <string>Selection</string>
        </property>
+       <item>
+        <property name="text">
+         <string>Copy</string>
+        </property>
+       </item>
       </item>
       <item>
        <property name="text">
@@ -223,7 +249,7 @@
      </item>
     </widget>
    </item>
-   <item row="0" column="3">
+   <item row="0" column="4">
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="enabled">
       <bool>true</bool>
@@ -238,10 +264,22 @@
       <enum>QFrame::Shape::NoFrame</enum>
      </property>
      <property name="currentIndex">
-      <number>23</number>
+      <number>24</number>
      </property>
      <widget class="QWidget" name="page_1">
       <layout class="QVBoxLayout" name="verticalLayout_25" stretch="0,1,0,0">
+       <property name="leftMargin">
+        <number>6</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label">
          <property name="sizePolicy">
@@ -766,6 +804,15 @@
      </widget>
      <widget class="QWidget" name="page_2">
       <layout class="QVBoxLayout" name="verticalLayout_20">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_2">
          <property name="layoutDirection">
@@ -800,10 +847,26 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_35">
-          <item row="3" column="1">
-           <widget class="QRadioButton" name="rb_sessionlog_rawdata">
+          <item row="4" column="0" colspan="3">
+           <widget class="QLabel" name="label_3">
             <property name="text">
-             <string>SSH packets and &amp;raw data</string>
+             <string>Log &amp;file name:</string>
+            </property>
+            <property name="buddy">
+             <cstring>le_sessionlog_filename</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QRadioButton" name="rb_sessionlog_printout">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="text">
+             <string>&amp;Printable output</string>
             </property>
             <attribute name="buttonGroup">
              <string notr="true">gp_seslog</string>
@@ -820,14 +883,14 @@
             </attribute>
            </widget>
           </item>
-          <item row="2" column="1">
-           <widget class="QRadioButton" name="rb_sessionlog_alloutput">
+          <item row="11" column="1" colspan="2">
+           <widget class="QCheckBox" name="chb_sessionlog_flush">
             <property name="text">
-             <string>A&amp;ll session output</string>
+             <string>Fl&amp;ush log file frequently</string>
             </property>
-            <attribute name="buttonGroup">
-             <string notr="true">gp_seslog</string>
-            </attribute>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
            </widget>
           </item>
           <item row="1" column="1">
@@ -843,6 +906,51 @@
             </property>
             <property name="checked">
              <bool>true</bool>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">gp_seslog</string>
+            </attribute>
+           </widget>
+          </item>
+          <item row="7" column="0" colspan="3">
+           <widget class="QLabel" name="lb_sessionlog">
+            <property name="text">
+             <string>What to do if th&amp;e log file already exists:</string>
+            </property>
+            <property name="buddy">
+             <cstring>rb_sessionlog_overwrite</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1" colspan="2">
+           <widget class="QLabel" name="label_4">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="lineWidth">
+             <number>1</number>
+            </property>
+            <property name="text">
+             <string>(Log file name can contain &amp;Y, &amp;M, &amp;D for date, &amp;T for time, &amp;H for host name, and &amp;P for port number)</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::TextFormat::PlainText</enum>
+            </property>
+            <property name="scaledContents">
+             <bool>false</bool>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QRadioButton" name="rb_sessionlog_sshpacket">
+            <property name="text">
+             <string>&amp;SSH packets</string>
             </property>
             <attribute name="buttonGroup">
              <string notr="true">gp_seslog</string>
@@ -873,64 +981,52 @@
             </item>
            </layout>
           </item>
-          <item row="2" column="2">
-           <widget class="QRadioButton" name="rb_sessionlog_sshpacket">
+          <item row="3" column="1">
+           <widget class="QRadioButton" name="rb_sessionlog_rawdata">
             <property name="text">
-             <string>&amp;SSH packets</string>
+             <string>SSH packets and &amp;raw data</string>
             </property>
             <attribute name="buttonGroup">
              <string notr="true">gp_seslog</string>
             </attribute>
            </widget>
           </item>
-          <item row="6" column="1" colspan="2">
-           <widget class="QLabel" name="label_4">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="lineWidth">
-             <number>1</number>
-            </property>
+          <item row="2" column="1">
+           <widget class="QRadioButton" name="rb_sessionlog_alloutput">
             <property name="text">
-             <string>(Log file name can contain &amp;Y, &amp;M, &amp;D for date, &amp;T for time, and &amp;H for host name)</string>
-            </property>
-            <property name="textFormat">
-             <enum>Qt::TextFormat::PlainText</enum>
-            </property>
-            <property name="scaledContents">
-             <bool>false</bool>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="2">
-           <widget class="QRadioButton" name="rb_sessionlog_printout">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>&amp;Printable output</string>
+             <string>A&amp;ll session output</string>
             </property>
             <attribute name="buttonGroup">
              <string notr="true">gp_seslog</string>
             </attribute>
            </widget>
           </item>
-          <item row="7" column="0" colspan="3">
-           <widget class="QLabel" name="lb_sessionlog">
-            <property name="text">
-             <string>What to do if th&amp;e log file already exists:</string>
+          <item row="1" column="0">
+           <widget class="QWidget" name="widget_11" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-            <property name="buddy">
-             <cstring>rb_sessionlog_overwrite</cstring>
+            <property name="minimumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="3">
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>Session logging:</string>
             </property>
            </widget>
           </item>
@@ -957,52 +1053,13 @@
             </attribute>
            </widget>
           </item>
-          <item row="11" column="1" colspan="2">
-           <widget class="QCheckBox" name="chb_sessionlog_flush">
+          <item row="12" column="1" colspan="2">
+           <widget class="QCheckBox" name="chb_logheader">
             <property name="text">
-             <string>Fl&amp;ush log file frequently</string>
+             <string>&amp;Include header</string>
             </property>
             <property name="checked">
              <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0" colspan="3">
-           <widget class="QLabel" name="label_5">
-            <property name="text">
-             <string>Session logging:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0" colspan="3">
-           <widget class="QLabel" name="label_3">
-            <property name="text">
-             <string>Log &amp;file name:</string>
-            </property>
-            <property name="buddy">
-             <cstring>le_sessionlog_filename</cstring>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QWidget" name="widget_11" native="true">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>10</width>
-              <height>10</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>10</width>
-              <height>10</height>
-             </size>
             </property>
            </widget>
           </item>
@@ -1086,6 +1143,15 @@
      </widget>
      <widget class="QWidget" name="page_3">
       <layout class="QVBoxLayout" name="verticalLayout_28" stretch="0,1,1,0,0">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_7">
          <property name="sizePolicy">
@@ -1440,6 +1506,15 @@
      </widget>
      <widget class="QWidget" name="page_4">
       <layout class="QVBoxLayout" name="verticalLayout_6">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_12">
          <property name="sizePolicy">
@@ -1882,6 +1957,15 @@
      </widget>
      <widget class="QWidget" name="page_5">
       <layout class="QVBoxLayout" name="verticalLayout_18" stretch="0,0,0,0">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_18">
          <property name="sizePolicy">
@@ -1929,6 +2013,9 @@
               <property name="checked">
                <bool>true</bool>
               </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_11</string>
+              </attribute>
              </widget>
             </item>
             <item>
@@ -1936,6 +2023,9 @@
               <property name="text">
                <string>Flashing</string>
               </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_11</string>
+              </attribute>
              </widget>
             </item>
             <item>
@@ -1943,6 +2033,9 @@
               <property name="text">
                <string>Steady</string>
               </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_11</string>
+              </attribute>
              </widget>
             </item>
            </layout>
@@ -1954,6 +2047,9 @@
               <property name="text">
                <string>Play a custom sound file</string>
               </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_12</string>
+              </attribute>
              </widget>
             </item>
             <item row="1" column="0">
@@ -1961,6 +2057,9 @@
               <property name="text">
                <string>Visual bell (flash window)</string>
               </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_12</string>
+              </attribute>
              </widget>
             </item>
             <item row="0" column="0">
@@ -1968,6 +2067,9 @@
               <property name="text">
                <string>None (bell disabled)</string>
               </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_12</string>
+              </attribute>
              </widget>
             </item>
             <item row="0" column="1">
@@ -1978,6 +2080,9 @@
               <property name="checked">
                <bool>false</bool>
               </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_12</string>
+              </attribute>
              </widget>
             </item>
             <item row="1" column="1">
@@ -1985,6 +2090,9 @@
               <property name="text">
                <string>Beep using the PC speaker</string>
               </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_12</string>
+              </attribute>
              </widget>
             </item>
            </layout>
@@ -1995,7 +2103,7 @@
              <widget class="QLineEdit" name="le_bell_wavefile"/>
             </item>
             <item>
-             <widget class="QPushButton" name="pushButton_2">
+             <widget class="QPushButton" name="pb_bell_wavefile_browse">
               <property name="text">
                <string>Bro&amp;wse</string>
               </property>
@@ -2180,6 +2288,15 @@
      </widget>
      <widget class="QWidget" name="page_6">
       <layout class="QVBoxLayout" name="verticalLayout_4" stretch="0,0,0">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_31">
          <property name="sizePolicy">
@@ -2445,6 +2562,15 @@
      </widget>
      <widget class="QWidget" name="page_7">
       <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_33">
          <property name="sizePolicy">
@@ -2741,6 +2867,15 @@
      </widget>
      <widget class="QWidget" name="page_8">
       <layout class="QVBoxLayout" name="verticalLayout_21" stretch="0,1,0,1,1,0">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_38">
          <property name="sizePolicy">
@@ -3117,6 +3252,15 @@
      </widget>
      <widget class="QWidget" name="page_9">
       <layout class="QVBoxLayout" name="verticalLayout_42" stretch="0,1,1,0">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_44">
          <property name="sizePolicy">
@@ -3319,6 +3463,15 @@
        <string>Page 10</string>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_7" stretch="0,1,1,1,0">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_46">
          <property name="sizePolicy">
@@ -3671,10 +3824,10 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_52">
-          <item row="3" column="1">
-           <widget class="QRadioButton" name="rb_translation_xwindows">
+          <item row="2" column="1">
+           <widget class="QRadioButton" name="rb_translation_poorman">
             <property name="text">
-             <string>Font has &amp;XWindows encoding</string>
+             <string>&amp;Poor man's line drawing (+,- and |)</string>
             </property>
            </widget>
           </item>
@@ -3685,27 +3838,10 @@
             </property>
            </widget>
           </item>
-          <item row="5" column="1">
-           <widget class="QRadioButton" name="rb_translation_oem">
+          <item row="3" column="1">
+           <widget class="QRadioButton" name="rb_translation_xwindows">
             <property name="text">
-             <string>Us&amp;e font in OEM mode only</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QRadioButton" name="rb_translation_poorman">
-            <property name="text">
-             <string>&amp;Poor man's line drawing (+,- and |)</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QRadioButton" name="rb_translation_useunicode">
-            <property name="text">
-             <string>&amp;Use Unicode line drawing code points</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
+             <string>Font has &amp;XWindows encoding</string>
             </property>
            </widget>
           </item>
@@ -3716,10 +3852,20 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="0" colspan="2">
-           <widget class="QLabel" name="label_51">
+          <item row="5" column="1">
+           <widget class="QRadioButton" name="rb_translation_oem">
             <property name="text">
-             <string>Handling of line drawing characters:</string>
+             <string>Us&amp;e font in OEM mode only</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QRadioButton" name="rb_translation_useunicode">
+            <property name="text">
+             <string>&amp;Use Unicode line drawing code points</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -3745,6 +3891,20 @@
             </property>
            </widget>
           </item>
+          <item row="0" column="0" colspan="2">
+           <widget class="QLabel" name="label_51">
+            <property name="text">
+             <string>Handling of line drawing characters:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="1">
+           <widget class="QCheckBox" name="chb_utf8linedraw">
+            <property name="text">
+             <string>Enable VT100 line drawing even in UTF-8 mode</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -3761,7 +3921,16 @@
       </layout>
      </widget>
      <widget class="QWidget" name="page_11">
-      <layout class="QVBoxLayout" name="verticalLayout_10" stretch="0,1,0,0">
+      <layout class="QVBoxLayout" name="verticalLayout_10">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_52">
          <property name="sizePolicy">
@@ -3786,6 +3955,12 @@
        </item>
        <item>
         <widget class="QGroupBox" name="groupBox_26">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="title">
           <string>Control use of mouse</string>
          </property>
@@ -3799,11 +3974,14 @@
              <string>Compromise (Middle extends, Right pastes)</string>
             </property>
             <property name="checked">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="autoRepeat">
              <bool>false</bool>
             </property>
+            <attribute name="buttonGroup">
+             <string notr="true">buttonGroup_6</string>
+            </attribute>
            </widget>
           </item>
           <item row="1" column="1" colspan="2">
@@ -3811,6 +3989,9 @@
             <property name="text">
              <string>Windows (Middle extends, Right brings up menu)</string>
             </property>
+            <attribute name="buttonGroup">
+             <string notr="true">buttonGroup_6</string>
+            </attribute>
            </widget>
           </item>
           <item row="4" column="1" colspan="2">
@@ -3838,6 +4019,9 @@
             <property name="text">
              <string>xterm (Right extends, Middle pastes)</string>
             </property>
+            <attribute name="buttonGroup">
+             <string notr="true">buttonGroup_6</string>
+            </attribute>
            </widget>
           </item>
           <item row="5" column="0" colspan="3">
@@ -3896,6 +4080,223 @@
         </widget>
        </item>
        <item>
+        <widget class="QGroupBox" name="groupBox_11">
+         <property name="title">
+          <string>Assign copy/paste actions to clipboards</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_66">
+          <item row="0" column="0">
+           <widget class="QWidget" name="widget_66" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="label_140">
+            <property name="text">
+             <string>Mouse paste action:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <widget class="QLabel" name="label_142">
+            <property name="text">
+             <string>Ctrl + Shift + {C, V}:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLabel" name="label_141">
+            <property name="text">
+             <string>{Ctrl, Shift} + Ins:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QComboBox" name="cb_mousepaste">
+            <property name="currentIndex">
+             <number>2</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>No Action</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Last Selected Text</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>System Clipboard</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QComboBox" name="cb_ctrlshiftins">
+            <property name="currentIndex">
+             <number>2</number>
+            </property>
+            <item>
+             <property name="text">
+              <string>No Action</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Last Selected Text</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>System Clipboard</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="3" column="2">
+           <widget class="QComboBox" name="cb_ctrlshiftcv">
+            <item>
+             <property name="text">
+              <string>No Action</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Last Selected Text</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>System Clipboard</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="0" column="1" colspan="2">
+           <widget class="QCheckBox" name="chb_mouseautocopy">
+            <property name="text">
+             <string>Auto-copy selected text to system clipboard</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_59">
+         <property name="title">
+          <string>Control pasting of text from clipboard to terminal</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_38">
+          <item row="0" column="0">
+           <widget class="QWidget" name="widget_65" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QCheckBox" name="chb_paste_controls">
+            <property name="text">
+             <string>Permit control characters in pasted text</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_27">
+         <property name="orientation">
+          <enum>Qt::Orientation::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="page_12">
+      <layout class="QVBoxLayout" name="verticalLayout_9">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="label_139">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::Shape::StyledPanel</enum>
+         </property>
+         <property name="text">
+          <string>Options controlling copying from terminal to clipboard</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignCenter</set>
+         </property>
+         <property name="margin">
+          <number>2</number>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QGroupBox" name="groupBox_27">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -3904,7 +4305,7 @@
           </sizepolicy>
          </property>
          <property name="title">
-          <string>Control the select-one-word-at-a-time mode</string>
+          <string>Classes of characters that group together</string>
          </property>
          <property name="flat">
           <bool>true</bool>
@@ -3934,20 +4335,29 @@
            </spacer>
           </item>
           <item row="1" column="1" colspan="4">
-           <widget class="QTableWidget" name="l_char_classes">
+           <widget class="QTableWidget" name="tb_char_classes">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+            </property>
+            <property name="columnCount">
+             <number>3</number>
+            </property>
+            <column/>
+            <column/>
+            <column/>
            </widget>
           </item>
           <item row="2" column="2">
            <widget class="QLineEdit" name="le_char_class"/>
           </item>
           <item row="2" column="4">
-           <widget class="QPushButton" name="btn_char_class_set">
+           <widget class="QPushButton" name="pb_char_class_set">
             <property name="text">
              <string>&amp;Set</string>
             </property>
@@ -3959,7 +4369,7 @@
              <string>Charact&amp;er classes:</string>
             </property>
             <property name="buddy">
-             <cstring>l_char_classes</cstring>
+             <cstring>tb_char_classes</cstring>
             </property>
            </widget>
           </item>
@@ -3991,7 +4401,7 @@
        <item>
         <widget class="QGroupBox" name="groupBox_28">
          <property name="title">
-          <string>Formatting of pasted characters</string>
+          <string>Formatting of copied characters</string>
          </property>
          <property name="flat">
           <bool>true</bool>
@@ -4022,7 +4432,7 @@
           <item>
            <widget class="QCheckBox" name="chb_rtf_paste">
             <property name="text">
-             <string>Paste to clipboard in RT&amp;F as well as plain text</string>
+             <string>Copy to clipboard in RT&amp;F as well as plain text</string>
             </property>
            </widget>
           </item>
@@ -4031,8 +4441,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_12">
+     <widget class="QWidget" name="page_13">
       <layout class="QVBoxLayout" name="verticalLayout_47" stretch="0,0,1">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_57">
          <property name="sizePolicy">
@@ -4070,80 +4489,10 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_7">
-          <item row="0" column="1" colspan="3">
-           <widget class="QCheckBox" name="chb_coloursoption_ansi">
-            <property name="text">
-             <string>Allow term&amp;inal to specify ANSI colours</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1" colspan="3">
-           <widget class="QCheckBox" name="chb_coloursoption_xterm">
-            <property name="text">
-             <string>Allow terminal to use xterm &amp;256-colour mode</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="3">
-           <widget class="QRadioButton" name="rb_bold_both">
-            <property name="text">
-             <string>Both</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">gp_bold</string>
-            </attribute>
-           </widget>
-          </item>
-          <item row="3" column="2">
-           <widget class="QRadioButton" name="rb_bold_colour">
-            <property name="text">
-             <string>The Colour</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">gp_bold</string>
-            </attribute>
-           </widget>
-          </item>
-          <item row="4" column="1" colspan="3">
+          <item row="5" column="1" colspan="3">
            <widget class="QCheckBox" name="chb_colouroption_palette">
             <property name="text">
              <string>Attempt to use &amp;logical palettes</string>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="1" colspan="3">
-           <widget class="QCheckBox" name="chb_colouroption_usesystem">
-            <property name="text">
-             <string>U&amp;se system colours</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QRadioButton" name="rb_bold_font">
-            <property name="text">
-             <string>The Font</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">gp_bold</string>
-            </attribute>
-           </widget>
-          </item>
-          <item row="2" column="0" colspan="4">
-           <widget class="QLabel" name="label_26">
-            <property name="text">
-             <string>Indicate &amp;bolded text by changing:</string>
-            </property>
-            <property name="buddy">
-             <cstring>rb_bold_font</cstring>
             </property>
            </widget>
           </item>
@@ -4166,6 +4515,86 @@
               <width>10</width>
               <height>10</height>
              </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1" colspan="3">
+           <widget class="QCheckBox" name="chb_coloursoption_ansi">
+            <property name="text">
+             <string>Allow term&amp;inal to specify ANSI colours</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="3">
+           <widget class="QRadioButton" name="rb_bold_both">
+            <property name="text">
+             <string>Both</string>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">gp_bold</string>
+            </attribute>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="4">
+           <widget class="QLabel" name="label_26">
+            <property name="text">
+             <string>Indicate &amp;bolded text by changing:</string>
+            </property>
+            <property name="buddy">
+             <cstring>rb_bold_font</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="2">
+           <widget class="QRadioButton" name="rb_bold_colour">
+            <property name="text">
+             <string>The Colour</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">gp_bold</string>
+            </attribute>
+           </widget>
+          </item>
+          <item row="1" column="1" colspan="3">
+           <widget class="QCheckBox" name="chb_coloursoption_xterm">
+            <property name="text">
+             <string>Allow terminal to use xterm &amp;256-colour mode</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1" colspan="3">
+           <widget class="QCheckBox" name="chb_colouroption_usesystem">
+            <property name="text">
+             <string>U&amp;se system colours</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QRadioButton" name="rb_bold_font">
+            <property name="text">
+             <string>The Font</string>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">gp_bold</string>
+            </attribute>
+           </widget>
+          </item>
+          <item row="2" column="1" colspan="3">
+           <widget class="QCheckBox" name="chb_true_colour">
+            <property name="text">
+             <string>Allow terminal to use 24-bit colours</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
             </property>
            </widget>
           </item>
@@ -4321,8 +4750,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_13">
+     <widget class="QWidget" name="page_14">
       <layout class="QVBoxLayout" name="verticalLayout_49" stretch="0,1,1,1,1,0">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_65">
          <property name="sizePolicy">
@@ -4597,8 +5035,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_14">
+     <widget class="QWidget" name="page_15">
       <layout class="QVBoxLayout" name="verticalLayout_51" stretch="0,1,1,1">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_68">
          <property name="sizePolicy">
@@ -4663,7 +5110,7 @@
                </sizepolicy>
               </property>
               <property name="text">
-               <string>Use systems username </string>
+               <string>Use system username </string>
               </property>
              </widget>
             </item>
@@ -4854,7 +5301,16 @@
            </widget>
           </item>
           <item row="2" column="1" colspan="4">
-           <widget class="QTableWidget" name="l_env_vars"/>
+           <widget class="QTableWidget" name="tb_env_vars">
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+            </property>
+            <property name="columnCount">
+             <number>2</number>
+            </property>
+            <column/>
+            <column/>
+           </widget>
           </item>
           <item row="0" column="0" colspan="2">
            <widget class="QLabel" name="label_73">
@@ -4909,8 +5365,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_15">
+     <widget class="QWidget" name="page_16">
       <layout class="QVBoxLayout" name="verticalLayout_5">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_75">
          <property name="sizePolicy">
@@ -5241,22 +5706,40 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_16">
-      <layout class="QGridLayout" name="gridLayout_38">
-       <item row="2" column="0">
-        <spacer name="verticalSpacer">
-         <property name="orientation">
-          <enum>Qt::Orientation::Vertical</enum>
+     <widget class="QWidget" name="page_17">
+      <layout class="QVBoxLayout" name="verticalLayout_8">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QLabel" name="label_84">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
+         <property name="frameShape">
+          <enum>QFrame::Shape::StyledPanel</enum>
          </property>
-        </spacer>
+         <property name="text">
+          <string>Options controlling Telnet connections</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignCenter</set>
+         </property>
+         <property name="margin">
+          <number>2</number>
+         </property>
+        </widget>
        </item>
-       <item row="1" column="0">
+       <item>
         <widget class="QGroupBox" name="groupBox_39">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
@@ -5271,63 +5754,6 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_56">
-          <item row="1" column="1">
-           <widget class="QRadioButton" name="rb_telnetprotocol_bsd">
-            <property name="text">
-             <string>BSD (commonplace)</string>
-            </property>
-            <property name="checked">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QRadioButton" name="rb_telnetnegotiate_passsive">
-            <property name="text">
-             <string>Passive</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">buttonGroup_7</string>
-            </attribute>
-           </widget>
-          </item>
-          <item row="6" column="1">
-           <widget class="QCheckBox" name="chb_telnet_keyboard">
-            <property name="text">
-             <string>Keyboard sends Telnet special commands</string>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="1">
-           <widget class="QRadioButton" name="rb_telnetprotocol_rfc1408">
-            <property name="text">
-             <string>RFC 1408 (unusual)</string>
-            </property>
-           </widget>
-          </item>
-          <item row="7" column="1">
-           <widget class="QCheckBox" name="chb_telnet_returnkey">
-            <property name="text">
-             <string>Return key sends Telnet New line instead of ^M</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="5" column="1">
-           <widget class="QRadioButton" name="rb_telnetnegotiate_active">
-            <property name="text">
-             <string>Active</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">buttonGroup_7</string>
-            </attribute>
-           </widget>
-          </item>
           <item row="0" column="0" colspan="2">
            <widget class="QLabel" name="label_85">
             <property name="text">
@@ -5338,12 +5764,26 @@
             </property>
            </widget>
           </item>
-          <item row="3" column="0" colspan="2">
-           <widget class="QLabel" name="label_86">
-            <property name="text">
-             <string>Telnet negotiation mode:</string>
-            </property>
-           </widget>
+          <item row="1" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_17">
+            <item>
+             <widget class="QRadioButton" name="rb_telnetprotocol_bsd">
+              <property name="text">
+               <string>BSD (commonplace)</string>
+              </property>
+              <property name="checked">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rb_telnetprotocol_rfc1408">
+              <property name="text">
+               <string>RFC 1408 (unusual)</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item row="1" column="0">
            <widget class="QWidget" name="widget_43" native="true">
@@ -5367,35 +5807,102 @@
             </property>
            </widget>
           </item>
+          <item row="3" column="0" colspan="2">
+           <widget class="QLabel" name="label_86">
+            <property name="text">
+             <string>Telnet negotiation mode:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_18">
+            <item>
+             <widget class="QRadioButton" name="rb_telnetnegotiate_passsive">
+              <property name="text">
+               <string>Passive</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_7</string>
+              </attribute>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rb_telnetnegotiate_active">
+              <property name="text">
+               <string>Active</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_7</string>
+              </attribute>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="7" column="1">
+           <widget class="QCheckBox" name="chb_telnet_returnkey">
+            <property name="text">
+             <string>Return key sends Telnet New line instead of ^M</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QCheckBox" name="chb_telnet_keyboard">
+            <property name="text">
+             <string>Keyboard sends Telnet special commands</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <spacer name="verticalSpacer_31">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeType">
+             <enum>QSizePolicy::Policy::Fixed</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>5</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
          </layout>
         </widget>
        </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="label_84">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Orientation::Vertical</enum>
          </property>
-         <property name="frameShape">
-          <enum>QFrame::Shape::StyledPanel</enum>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
          </property>
-         <property name="text">
-          <string>Options controlling Telnet connections</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignmentFlag::AlignCenter</set>
-         </property>
-         <property name="margin">
-          <number>2</number>
-         </property>
-        </widget>
+        </spacer>
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_17">
+     <widget class="QWidget" name="page_18">
       <layout class="QVBoxLayout" name="verticalLayout_59">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_87">
          <property name="frameShape">
@@ -5449,8 +5956,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_18">
+     <widget class="QWidget" name="page_19">
       <layout class="QVBoxLayout" name="verticalLayout_60">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_89">
          <property name="frameShape">
@@ -5676,8 +6192,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_19">
+     <widget class="QWidget" name="page_20">
       <layout class="QVBoxLayout" name="verticalLayout_63">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_93">
          <property name="frameShape">
@@ -5703,7 +6228,17 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_16">
-          <item row="1" column="2">
+          <item row="0" column="0" colspan="2">
+           <widget class="QLabel" name="label_94">
+            <property name="text">
+             <string>Algorithm selection policy:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1" rowspan="4" colspan="2">
+           <widget class="QListWidget" name="l_ssh_kexlist"/>
+          </item>
+          <item row="1" column="3">
            <spacer name="verticalSpacer_4">
             <property name="orientation">
              <enum>Qt::Orientation::Vertical</enum>
@@ -5715,43 +6250,6 @@
              </size>
             </property>
            </spacer>
-          </item>
-          <item row="3" column="2">
-           <widget class="QPushButton" name="pb_ssh_kex_down">
-            <property name="text">
-             <string>Down</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="2">
-           <spacer name="verticalSpacer_26">
-            <property name="orientation">
-             <enum>Qt::Orientation::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>69</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="2" column="2">
-           <widget class="QPushButton" name="pb_ssh_kex_up">
-            <property name="text">
-             <string>Up</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1" rowspan="4">
-           <widget class="QListWidget" name="l_ssh_kexlist"/>
-          </item>
-          <item row="0" column="0" colspan="3">
-           <widget class="QLabel" name="label_94">
-            <property name="text">
-             <string>Algorithm selection policy:</string>
-            </property>
-           </widget>
           </item>
           <item row="2" column="0">
            <widget class="QWidget" name="widget_47" native="true">
@@ -5775,6 +6273,43 @@
             </property>
            </widget>
           </item>
+          <item row="2" column="3">
+           <widget class="QPushButton" name="pb_ssh_kex_up">
+            <property name="text">
+             <string>Up</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="3">
+           <widget class="QPushButton" name="pb_ssh_kex_down">
+            <property name="text">
+             <string>Down</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="3">
+           <spacer name="verticalSpacer_26">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>69</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="5" column="1" colspan="3">
+           <widget class="QCheckBox" name="chb_try_gssapi_kex_1">
+            <property name="text">
+             <string>Attempt GSSAPI key exchange</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -5787,24 +6322,51 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_18">
-          <item row="1" column="2">
+          <item row="2" column="1">
+           <widget class="QLabel" name="label_96">
+            <property name="text">
+             <string>Max data before rekey (0 for no limit)</string>
+            </property>
+            <property name="buddy">
+             <cstring>le_ssh_rekey_data</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="3">
            <widget class="QLineEdit" name="le_ssh_rekey_data">
             <property name="text">
              <string>1G</string>
             </property>
            </widget>
           </item>
-          <item row="0" column="2">
-           <widget class="QLineEdit" name="le_ssh_rekey_time">
+          <item row="1" column="1">
+           <widget class="QLabel" name="label_143">
             <property name="text">
-             <string>60</string>
+             <string>Max minutes GSS checks (0 for no never)</string>
+            </property>
+            <property name="buddy">
+             <cstring>le_gssapirekey</cstring>
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
+          <item row="1" column="3">
+           <widget class="QLineEdit" name="le_gssapirekey">
+            <property name="text">
+             <string>2</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1" colspan="3">
            <widget class="QLabel" name="label_97">
             <property name="text">
              <string>Use 1M for 1 megabyte, 1G for 1 gigabyte etc)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QLineEdit" name="le_ssh_rekey_time">
+            <property name="text">
+             <string>60</string>
             </property>
            </widget>
           </item>
@@ -5813,12 +6375,8 @@
             <property name="text">
              <string>Max minutes before rekey (0 for no limit)</string>
             </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLabel" name="label_96">
-            <property name="text">
-             <string>Max data before rekey (0 for no limit)</string>
+            <property name="buddy">
+             <cstring>le_ssh_rekey_time</cstring>
             </property>
            </widget>
           </item>
@@ -5844,13 +6402,44 @@
             </property>
            </widget>
           </item>
+          <item row="0" column="2">
+           <widget class="QWidget" name="widget_67" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_20">
+     <widget class="QWidget" name="page_21">
       <layout class="QVBoxLayout" name="verticalLayout_3">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_135">
          <property name="frameShape">
@@ -6041,8 +6630,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_21">
+     <widget class="QWidget" name="page_22">
       <layout class="QVBoxLayout" name="verticalLayout_16">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_134">
          <property name="frameShape">
@@ -6165,8 +6763,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_22">
+     <widget class="QWidget" name="page_23">
       <layout class="QVBoxLayout" name="verticalLayout_64">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_98">
          <property name="frameShape">
@@ -6375,8 +6982,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_23">
+     <widget class="QWidget" name="page_24">
       <layout class="QVBoxLayout" name="verticalLayout_66">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_100">
          <property name="frameShape">
@@ -6402,40 +7018,17 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_19">
-          <item row="6" column="2">
-           <spacer name="verticalSpacer_28">
-            <property name="orientation">
-             <enum>Qt::Orientation::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>69</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item row="8" column="2">
-           <widget class="QPushButton" name="pushButton_19">
+          <item row="10" column="2">
+           <widget class="QPushButton" name="pb_ssh_gss_custom_browse">
             <property name="text">
              <string>Browse...</string>
             </property>
            </widget>
           </item>
-          <item row="3" column="1" rowspan="4">
+          <item row="5" column="1" rowspan="4">
            <widget class="QListWidget" name="l_ssh_gsslist"/>
           </item>
-          <item row="8" column="1">
-           <widget class="QLineEdit" name="le_ssh_gss_custom"/>
-          </item>
           <item row="5" column="2">
-           <widget class="QPushButton" name="pb_ssh_gss_down">
-            <property name="text">
-             <string>Down</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="2">
            <spacer name="verticalSpacer_6">
             <property name="orientation">
              <enum>Qt::Orientation::Vertical</enum>
@@ -6448,10 +7041,64 @@
             </property>
            </spacer>
           </item>
-          <item row="4" column="2">
+          <item row="4" column="0" colspan="3">
+           <widget class="QLabel" name="label_101">
+            <property name="text">
+             <string>Preference order for GSSAPI libraries:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="10" column="1">
+           <widget class="QLineEdit" name="le_ssh_gss_custom"/>
+          </item>
+          <item row="0" column="1" colspan="2">
+           <widget class="QCheckBox" name="chb_gssapi_authen">
+            <property name="text">
+             <string>Attempt GSSAPI authentication (SSH-2 only)</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="2">
+           <widget class="QPushButton" name="pb_ssh_gss_down">
+            <property name="text">
+             <string>Down</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="2">
+           <spacer name="verticalSpacer_28">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>69</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+          <item row="6" column="2">
            <widget class="QPushButton" name="pb_ssh_gss_up">
             <property name="text">
              <string>Up</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="0" colspan="3">
+           <widget class="QLabel" name="label_102">
+            <property name="text">
+             <string>User-supplied GSSAPI library path:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1" colspan="2">
+           <widget class="QCheckBox" name="chb_gssapi_credential">
+            <property name="text">
+             <string>Allow GSSAPI credential delegation</string>
             </property>
            </widget>
           </item>
@@ -6477,34 +7124,13 @@
             </property>
            </widget>
           </item>
-          <item row="7" column="0" colspan="3">
-           <widget class="QLabel" name="label_102">
+          <item row="1" column="1">
+           <widget class="QCheckBox" name="chb_try_gssapi_kex">
             <property name="text">
-             <string>User-supplied GSSAPI library path:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1" colspan="2">
-           <widget class="QCheckBox" name="chb_gssapi_credential">
-            <property name="text">
-             <string>Allow GSSAPI credential delegation</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1" colspan="2">
-           <widget class="QCheckBox" name="chb_gssapi_authen">
-            <property name="text">
-             <string>Attempt GSSAPI authentication (SSH-2 only)</string>
+             <string>Attempt GSSAPI &amp;key exchange (SSH-2 only)</string>
             </property>
             <property name="checked">
              <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0" colspan="3">
-           <widget class="QLabel" name="label_101">
-            <property name="text">
-             <string>Preference order for GSSAPI libraries:</string>
             </property>
            </widget>
           </item>
@@ -6526,8 +7152,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_24">
+     <widget class="QWidget" name="page_25">
       <layout class="QVBoxLayout" name="verticalLayout_67">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_103">
          <property name="frameShape">
@@ -6594,10 +7229,7 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_20">
-          <item row="1" column="1" colspan="6">
-           <widget class="QTableWidget" name="l_ttymodes"/>
-          </item>
-          <item row="3" column="4">
+          <item row="5" column="4">
            <widget class="QRadioButton" name="rb_terminalvalue_this">
             <property name="text">
              <string>This:</string>
@@ -6607,54 +7239,17 @@
             </attribute>
            </widget>
           </item>
-          <item row="3" column="1">
-           <widget class="QLabel" name="label_106">
-            <property name="text">
-             <string>Value:</string>
+          <item row="1" column="1" colspan="7">
+           <widget class="QTableWidget" name="tb_ttymodes">
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
             </property>
+            <property name="columnCount">
+             <number>2</number>
+            </property>
+            <column/>
+            <column/>
            </widget>
-          </item>
-          <item row="3" column="2">
-           <widget class="QRadioButton" name="rb_terminalvalue_auto">
-            <property name="text">
-             <string>Auto</string>
-            </property>
-            <property name="checked">
-             <bool>true</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">buttonGroup_5</string>
-            </attribute>
-           </widget>
-          </item>
-          <item row="2" column="6">
-           <widget class="QPushButton" name="pb_ttymodes_set">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-              <horstretch>1</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="text">
-             <string>Set</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="3">
-           <widget class="QRadioButton" name="rb_terminalvalue_nothing">
-            <property name="text">
-             <string>Nothing</string>
-            </property>
-            <property name="checked">
-             <bool>false</bool>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">buttonGroup_5</string>
-            </attribute>
-           </widget>
-          </item>
-          <item row="3" column="5" colspan="2">
-           <widget class="QLineEdit" name="le_ttymode"/>
           </item>
           <item row="1" column="0">
            <widget class="QWidget" name="widget_57" native="true">
@@ -6678,7 +7273,7 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="0" colspan="7">
+          <item row="0" column="0" colspan="8">
            <widget class="QLabel" name="label_104">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -6691,7 +7286,74 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0" colspan="5">
+          <item row="5" column="1">
+           <widget class="QRadioButton" name="rb_terminalvalue_auto">
+            <property name="text">
+             <string>Auto</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">buttonGroup_5</string>
+            </attribute>
+           </widget>
+          </item>
+          <item row="5" column="2">
+           <widget class="QRadioButton" name="rb_terminalvalue_nothing">
+            <property name="text">
+             <string>Nothing</string>
+            </property>
+            <property name="checked">
+             <bool>false</bool>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">buttonGroup_5</string>
+            </attribute>
+           </widget>
+          </item>
+          <item row="5" column="3">
+           <widget class="QWidget" name="widget_55" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="5" colspan="3">
+           <widget class="QLineEdit" name="le_ttymode"/>
+          </item>
+          <item row="2" column="7">
+           <widget class="QPushButton" name="pb_ttymodes_set">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+              <horstretch>1</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="layoutDirection">
+             <enum>Qt::LayoutDirection::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string>Set</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1" colspan="6">
            <widget class="QLabel" name="label_105">
             <property name="text">
              <string>For selected mode, send:</string>
@@ -6703,8 +7365,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_25">
+     <widget class="QWidget" name="page_26">
       <layout class="QVBoxLayout" name="verticalLayout_68">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_107">
          <property name="frameShape">
@@ -6765,7 +7436,7 @@
            <widget class="QLineEdit" name="le_x11_display"/>
           </item>
           <item row="5" column="3">
-           <widget class="QPushButton" name="pushButton_22">
+           <widget class="QPushButton" name="pb_xauthfile_browse">
             <property name="text">
              <string>Browse...</string>
             </property>
@@ -6839,8 +7510,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_26">
+     <widget class="QWidget" name="page_27">
       <layout class="QVBoxLayout" name="verticalLayout_69">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_111">
          <property name="frameShape">
@@ -6900,7 +7580,69 @@
           <item row="5" column="2">
            <widget class="QLineEdit" name="le_tunnel_source"/>
           </item>
-          <item row="7" column="1" colspan="3">
+          <item row="3" column="1" colspan="3">
+           <widget class="QTableWidget" name="tb_portfwd">
+            <property name="selectionBehavior">
+             <enum>QAbstractItemView::SelectionBehavior::SelectRows</enum>
+            </property>
+            <property name="columnCount">
+             <number>2</number>
+            </property>
+            <column/>
+            <column/>
+           </widget>
+          </item>
+          <item row="3" column="0">
+           <widget class="QWidget" name="widget_59" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0" colspan="2">
+           <widget class="QLabel" name="label_112">
+            <property name="text">
+             <string>Forwarded ports:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1" colspan="3">
+           <widget class="QCheckBox" name="chb_rport_acceptall">
+            <property name="text">
+             <string>Remote ports do the same (SSH-2 only)</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1" colspan="3">
+           <widget class="QCheckBox" name="chb_lport_acceptall">
+            <property name="text">
+             <string>Local ports accept connections from other hosts</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="0" colspan="4">
+           <widget class="QLabel" name="label_113">
+            <property name="text">
+             <string>Add new forwarded port:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="7" column="2" colspan="2">
            <layout class="QGridLayout" name="gridLayout_22">
             <item row="0" column="2">
              <widget class="QRadioButton" name="rb_sshport_dynamic">
@@ -6991,59 +7733,6 @@
             </item>
            </layout>
           </item>
-          <item row="3" column="1" colspan="3">
-           <widget class="QTableWidget" name="l_portfwd"/>
-          </item>
-          <item row="3" column="0">
-           <widget class="QWidget" name="widget_59" native="true">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>10</width>
-              <height>10</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>10</width>
-              <height>10</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-          <item row="2" column="0" colspan="2">
-           <widget class="QLabel" name="label_112">
-            <property name="text">
-             <string>Forwarded ports:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1" colspan="3">
-           <widget class="QCheckBox" name="chb_rport_acceptall">
-            <property name="text">
-             <string>Remote ports do the same (SSH-2 only)</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1" colspan="3">
-           <widget class="QCheckBox" name="chb_lport_acceptall">
-            <property name="text">
-             <string>Local ports accept connections from other hosts</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0" colspan="4">
-           <widget class="QLabel" name="label_113">
-            <property name="text">
-             <string>Add new forwarded port:</string>
-            </property>
-           </widget>
-          </item>
          </layout>
         </widget>
        </item>
@@ -7062,8 +7751,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_27">
+     <widget class="QWidget" name="page_28">
       <layout class="QVBoxLayout" name="verticalLayout_70">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_116">
          <property name="frameShape">
@@ -7114,7 +7812,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>295</width>
+               <width>319</width>
                <height>353</height>
               </rect>
              </property>
@@ -7142,7 +7840,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7152,7 +7850,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7167,7 +7865,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7177,7 +7875,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7199,7 +7897,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7209,7 +7907,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7224,7 +7922,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7234,7 +7932,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7263,7 +7961,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7273,7 +7971,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7295,7 +7993,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7305,7 +8003,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7320,7 +8018,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7330,7 +8028,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7345,7 +8043,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7355,7 +8053,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7370,7 +8068,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7380,7 +8078,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7402,7 +8100,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7412,7 +8110,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7432,7 +8130,7 @@
                </widget>
               </item>
               <item row="16" column="2">
-               <widget class="QComboBox" name="ch_sshbug_oldgex2">
+               <widget class="QComboBox" name="cb_sshbug_oldgex2">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -7441,7 +8139,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7451,7 +8149,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7494,7 +8192,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7504,7 +8202,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7519,7 +8217,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>Auto</string>
+                  <string>On</string>
                  </property>
                 </item>
                 <item>
@@ -7529,7 +8227,7 @@
                 </item>
                 <item>
                  <property name="text">
-                  <string>On</string>
+                  <string>Auto</string>
                  </property>
                 </item>
                </widget>
@@ -7579,8 +8277,17 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_28">
+     <widget class="QWidget" name="page_29">
       <layout class="QVBoxLayout" name="verticalLayout_72">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_127">
          <property name="frameShape">
@@ -7808,48 +8515,21 @@
      </widget>
     </widget>
    </item>
-   <item row="1" column="2" colspan="2">
-    <layout class="QHBoxLayout" name="horizontalLayout_15">
-     <item>
-      <widget class="QPushButton" name="btn_about">
-       <property name="text">
-        <string>About</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QDialogButtonBox" name="buttonBox">
-       <property name="orientation">
-        <enum>Qt::Orientation::Horizontal</enum>
-       </property>
-       <property name="standardButtons">
-        <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Open</set>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
    <item row="0" column="0">
-    <widget class="QWidget" name="widget_55" native="true">
-     <property name="sizePolicy">
-      <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-       <horstretch>0</horstretch>
-       <verstretch>0</verstretch>
-      </sizepolicy>
+    <spacer name="verticalSpacer_30">
+     <property name="orientation">
+      <enum>Qt::Orientation::Vertical</enum>
      </property>
-     <property name="minimumSize">
+     <property name="sizeType">
+      <enum>QSizePolicy::Policy::Fixed</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
       <size>
-       <width>10</width>
-       <height>10</height>
+       <width>20</width>
+       <height>5</height>
       </size>
      </property>
-     <property name="maximumSize">
-      <size>
-       <width>10</width>
-       <height>10</height>
-      </size>
-     </property>
-    </widget>
+    </spacer>
    </item>
   </layout>
  </widget>
@@ -7927,8 +8607,6 @@
   <tabstop>rb_cpmouseaction_compromise</tabstop>
   <tabstop>rb_cpmouseaction_xterm</tabstop>
   <tabstop>chb_cpmouseaction_shift</tabstop>
-  <tabstop>l_char_classes</tabstop>
-  <tabstop>chb_rtf_paste</tabstop>
   <tabstop>chb_coloursoption_ansi</tabstop>
   <tabstop>chb_coloursoption_xterm</tabstop>
   <tabstop>chb_colouroption_palette</tabstop>
@@ -7940,7 +8618,7 @@
   <tabstop>rb_connectprotocol_ipv4</tabstop>
   <tabstop>rb_connectprotocol_ipv6</tabstop>
   <tabstop>le_loghost</tabstop>
-  <tabstop>l_env_vars</tabstop>
+  <tabstop>tb_env_vars</tabstop>
   <tabstop>rb_proxytype_none</tabstop>
   <tabstop>rb_proxy_socks4</tabstop>
   <tabstop>rb_proxytype_socks5</tabstop>
@@ -7981,19 +8659,17 @@
   <tabstop>l_ssh_gsslist</tabstop>
   <tabstop>pb_ssh_gss_up</tabstop>
   <tabstop>pb_ssh_gss_down</tabstop>
-  <tabstop>l_ttymodes</tabstop>
-  <tabstop>rb_terminalvalue_this</tabstop>
-  <tabstop>le_ttymode</tabstop>
+  <tabstop>tb_ttymodes</tabstop>
   <tabstop>chb_x11_forward</tabstop>
   <tabstop>le_x11_display</tabstop>
   <tabstop>rb_x11remote_mit</tabstop>
   <tabstop>rb_x11remote_xdm</tabstop>
   <tabstop>le_xauthfile</tabstop>
-  <tabstop>pushButton_22</tabstop>
+  <tabstop>pb_xauthfile_browse</tabstop>
   <tabstop>chb_lport_acceptall</tabstop>
   <tabstop>chb_rport_acceptall</tabstop>
   <tabstop>pb_portfwd_remove</tabstop>
-  <tabstop>l_portfwd</tabstop>
+  <tabstop>tb_portfwd</tabstop>
   <tabstop>le_tunnel_source</tabstop>
   <tabstop>pb_portfwd_add</tabstop>
   <tabstop>le_tunnel_dest</tabstop>
@@ -8013,28 +8689,31 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="gp_remote_qtitle_action"/>
-  <buttongroup name="gp_fnkeys"/>
-  <buttongroup name="buttonGroup_9"/>
-  <buttongroup name="gp_termopt_echo"/>
-  <buttongroup name="buttonGroup_8"/>
-  <buttongroup name="gp_bold"/>
-  <buttongroup name="buttonGroup"/>
-  <buttongroup name="gp_curappear"/>
-  <buttongroup name="buttonGroup_3"/>
-  <buttongroup name="gp_contype"/>
-  <buttongroup name="buttonGroup_7"/>
-  <buttongroup name="gp_resize_action"/>
-  <buttongroup name="gp_fontquality"/>
-  <buttongroup name="gp_sshprotocol"/>
   <buttongroup name="gp_exit_close"/>
-  <buttongroup name="gp_addressfamily"/>
-  <buttongroup name="gp_seslog"/>
+  <buttongroup name="gp_fontquality"/>
+  <buttongroup name="gp_fnkeys"/>
   <buttongroup name="gp_logfile"/>
   <buttongroup name="buttonGroup_4"/>
-  <buttongroup name="buttonGroup_10"/>
-  <buttongroup name="gp_termopt_edit"/>
-  <buttongroup name="buttonGroup_2"/>
   <buttongroup name="buttonGroup_5"/>
+  <buttongroup name="buttonGroup_8"/>
+  <buttongroup name="gp_remote_qtitle_action"/>
+  <buttongroup name="gp_resize_action"/>
+  <buttongroup name="buttonGroup_10"/>
+  <buttongroup name="buttonGroup"/>
+  <buttongroup name="gp_curappear"/>
+  <buttongroup name="gp_sshprotocol"/>
+  <buttongroup name="gp_addressfamily"/>
+  <buttongroup name="gp_seslog"/>
+  <buttongroup name="gp_bold"/>
+  <buttongroup name="gp_termopt_edit"/>
+  <buttongroup name="buttonGroup_3"/>
+  <buttongroup name="gp_termopt_echo"/>
+  <buttongroup name="buttonGroup_9"/>
+  <buttongroup name="buttonGroup_7"/>
+  <buttongroup name="gp_contype"/>
+  <buttongroup name="buttonGroup_2"/>
+  <buttongroup name="buttonGroup_6"/>
+  <buttongroup name="buttonGroup_11"/>
+  <buttongroup name="buttonGroup_12"/>
  </buttongroups>
 </ui>

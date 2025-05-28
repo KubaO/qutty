@@ -39,6 +39,7 @@ class GuiSettingsWindow : public QDialog {
     GUI_PAGE_BEHAVIOUR,
     GUI_PAGE_TRANSLATION,
     GUI_PAGE_SELECTION,
+    GUI_PAGE_COPY,
     GUI_PAGE_COLOURS,
     GUI_PAGE_CONNECTION,
     GUI_PAGE_DATA,
@@ -121,8 +122,8 @@ class GuiSettingsWindow : public QDialog {
   void on_l_colour_currentItemChanged(QListWidgetItem *current, QListWidgetItem *previous);
   void on_btn_colour_modify_clicked();
 
-  void on_l_char_classes_currentItemChanged(QTableWidgetItem *item);
-  void on_btn_char_class_set_clicked();
+  void on_tb_char_classes_currentItemChanged(QTableWidgetItem *item);
+  void on_pb_char_class_set_clicked();
 
   void on_pb_env_add_clicked();
   void on_pb_env_remove_clicked();
@@ -136,7 +137,7 @@ class GuiSettingsWindow : public QDialog {
   void on_pb_ssh_hklist_up_clicked();
   void on_pb_ssh_hklist_down_clicked();
 
-  void on_l_ttymodes_currentItemChanged(QTableWidgetItem *current);
+  void on_tb_ttymodes_currentItemChanged(QTableWidgetItem *current);
   void on_pb_ttymodes_set_clicked();
 
   void on_pb_portfwd_add_clicked();
@@ -153,18 +154,10 @@ class GuiSettingsWindow : public QDialog {
  private:
   Ui::GuiSettingsWindow *ui;
 
+  void initCodepages();
   void initWordness();
-  void initColours();
-  void initEnvVars();
-  void initCipherList();
-  void initKexList();
-  void initHKList();
-  void initTTYModes();
-  void initPortFwds();
-  void initHostKeys();
-#ifndef NO_GSSAPI
-  void initGSSList();
-#endif
+
+  void setWordness();
 
   void saveConfigChanges();
 };

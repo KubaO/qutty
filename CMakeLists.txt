@@ -140,7 +140,7 @@ set(PROJECT_SOURCES
     puttysrc/be_qutty.c
     puttysrc/settings.c
     puttysrc/version.c
-    #puttysrc/windows/winucs.c
+    puttysrc/windows/winucs.c
     tmux/TmuxBackend.cpp
     tmux/TmuxGateway.cpp
     tmux/TmuxWindowPane.cpp
