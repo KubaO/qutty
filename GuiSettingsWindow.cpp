@@ -510,6 +510,7 @@ QString formatTTYMode(const QString &value);
   X("le_ssh_rekey_data", ssh_rekey_data)                                       \
   /* SSH Host Keys */                                                          \
   X("l_ssh_hklist", ssh_hklist, &hkDataList, UI::UserRole0)                    \
+  X("chb_ssh_prefer_known_hostkeys", ssh_prefer_known_hostkeys)                \
   X("l_ssh_manual_hostkeys", ssh_manual_hostkeys)                              \
   /* SSH Cipher */                                                             \
   X("l_ssh_cipherlist", ssh_cipherlist, &cipherDataList, UI::UserRole0)        \
