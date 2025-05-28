@@ -1,7 +1,6 @@
 #ifndef PUTTY_PUTTY_H
 #define PUTTY_PUTTY_H
 
-#include <stdbool.h>
 #include <stddef.h>		       /* for wchar_t */
 #include <limits.h>                    /* for INT_MAX */
 

@@ -13,10 +13,6 @@
 #include "putty.h"
 #include "terminal.h"
 
-#ifdef IS_QUTTY
-#include "tmux/tmux.h"
-#endif
-
 #define poslt(p1,p2) ( (p1).y < (p2).y || ( (p1).y == (p2).y && (p1).x < (p2).x ) )
 #define posle(p1,p2) ( (p1).y < (p2).y || ( (p1).y == (p2).y && (p1).x <= (p2).x ) )
 #define poseq(p1,p2) ( (p1).y == (p2).y && (p1).x == (p2).x )
