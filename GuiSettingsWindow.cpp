@@ -519,6 +519,7 @@ QString formatTTYMode(const QString &value);
   /* SSH Authentication */                                                     \
   X("chb_ssh_no_userauth", ssh_no_userauth)                                    \
   X("chb_ssh_show_banner", ssh_show_banner)                                    \
+  X("chb_ssh_no_trivial_userauth", ssh_no_trivial_userauth)                    \
   X("chb_ssh_tryagent", tryagent)                                              \
   X("chb_ssh_try_tis_auth", try_tis_auth)                                      \
   X("chb_ssh_try_ki_auth", try_ki_auth)                                        \

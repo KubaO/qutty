@@ -269,7 +269,7 @@
       <enum>QFrame::Shape::NoFrame</enum>
      </property>
      <property name="currentIndex">
-      <number>29</number>
+      <number>20</number>
      </property>
      <widget class="QWidget" name="page_1">
       <layout class="QVBoxLayout" name="verticalLayout_25" stretch="0,1,0,0">
@@ -6612,6 +6612,13 @@
             </property>
            </widget>
           </item>
+          <item row="2" column="1">
+           <widget class="QCheckBox" name="chb_ssh_no_trivial_userauth">
+            <property name="text">
+             <string>Disconnect if authentication succeeds trivially</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
@@ -7586,7 +7593,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>248</width>
+               <width>347</width>
                <height>353</height>
               </rect>
              </property>
@@ -8875,12 +8882,12 @@
   <buttongroup name="gp_seslog"/>
   <buttongroup name="gp_termopt_echo"/>
   <buttongroup name="gp_contype"/>
+  <buttongroup name="buttonGroup_14"/>
   <buttongroup name="buttonGroup_3"/>
   <buttongroup name="buttonGroup_2"/>
   <buttongroup name="gp_resize_action"/>
   <buttongroup name="buttonGroup_5"/>
   <buttongroup name="buttonGroup_6"/>
   <buttongroup name="gp_fnkeys"/>
-  <buttongroup name="buttonGroup_14"/>
  </buttongroups>
 </ui>
