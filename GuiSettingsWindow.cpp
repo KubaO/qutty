@@ -75,20 +75,21 @@ GuiSettingsWindow::GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmod
   ui->treeWidget->topLevelItem(3)->setData(0, Qt::UserRole, GUI_PAGE_CONNECTION);
   ui->treeWidget->topLevelItem(3)->child(0)->setData(0, Qt::UserRole, GUI_PAGE_DATA);
   ui->treeWidget->topLevelItem(3)->child(1)->setData(0, Qt::UserRole, GUI_PAGE_PROXY);
-  ui->treeWidget->topLevelItem(3)->child(2)->setData(0, Qt::UserRole, GUI_PAGE_TELNET);
-  ui->treeWidget->topLevelItem(3)->child(3)->setData(0, Qt::UserRole, GUI_PAGE_RLOGIN);
-  ui->treeWidget->topLevelItem(3)->child(4)->setData(0, Qt::UserRole, GUI_PAGE_SSH);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(0)->setData(0, Qt::UserRole, GUI_PAGE_KEX);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(1)->setData(0, Qt::UserRole, GUI_PAGE_HOST_KEYS);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(2)->setData(0, Qt::UserRole, GUI_PAGE_CIPHER);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(3)->setData(0, Qt::UserRole, GUI_PAGE_AUTH);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(3)->child(0)->setData(0, Qt::UserRole,
+  ui->treeWidget->topLevelItem(3)->child(2)->setData(0, Qt::UserRole, GUI_PAGE_SSH);
+  ui->treeWidget->topLevelItem(3)->child(2)->child(0)->setData(0, Qt::UserRole, GUI_PAGE_KEX);
+  ui->treeWidget->topLevelItem(3)->child(2)->child(1)->setData(0, Qt::UserRole, GUI_PAGE_HOST_KEYS);
+  ui->treeWidget->topLevelItem(3)->child(2)->child(2)->setData(0, Qt::UserRole, GUI_PAGE_CIPHER);
+  ui->treeWidget->topLevelItem(3)->child(2)->child(3)->setData(0, Qt::UserRole, GUI_PAGE_AUTH);
+  ui->treeWidget->topLevelItem(3)->child(2)->child(3)->child(0)->setData(0, Qt::UserRole,
                                                                          GUI_PAGE_GSSAPI);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(4)->setData(0, Qt::UserRole, GUI_PAGE_TTY);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(5)->setData(0, Qt::UserRole, GUI_PAGE_X11);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(6)->setData(0, Qt::UserRole, GUI_PAGE_TUNNELS);
-  ui->treeWidget->topLevelItem(3)->child(4)->child(7)->setData(0, Qt::UserRole, GUI_PAGE_BUGS);
-  ui->treeWidget->topLevelItem(3)->child(5)->setData(0, Qt::UserRole, GUI_PAGE_SERIAL);
+  ui->treeWidget->topLevelItem(3)->child(2)->child(4)->setData(0, Qt::UserRole, GUI_PAGE_TTY);
+  ui->treeWidget->topLevelItem(3)->child(2)->child(5)->setData(0, Qt::UserRole, GUI_PAGE_X11);
+  ui->treeWidget->topLevelItem(3)->child(2)->child(6)->setData(0, Qt::UserRole, GUI_PAGE_TUNNELS);
+  ui->treeWidget->topLevelItem(3)->child(2)->child(7)->setData(0, Qt::UserRole, GUI_PAGE_BUGS);
+  ui->treeWidget->topLevelItem(3)->child(3)->setData(0, Qt::UserRole, GUI_PAGE_SERIAL);
+  ui->treeWidget->topLevelItem(3)->child(4)->setData(0, Qt::UserRole, GUI_PAGE_TELNET);
+  ui->treeWidget->topLevelItem(3)->child(5)->setData(0, Qt::UserRole, GUI_PAGE_RLOGIN);
+  ui->treeWidget->topLevelItem(3)->child(6)->setData(0, Qt::UserRole, GUI_PAGE_SUPDUP);
 
   // expand all 1st level items
   ui->treeWidget->expandToDepth(0);
@@ -248,30 +249,30 @@ static const DataItem kexes[] = {{"Diffie-Hellman group 1", KEX_DHGROUP1},
                                  {"ECDH key exchange", KEX_ECDH},
                                  {"-- warn below here --", KEX_WARN}};
 
-// From putty-0.69/config.c
-static const DataItem hks[] = {{"Ed25519", HK_ED25519},
+// From putty-0.75/config.c
+static const DataItem hks[] = {{"Ed25519", HK_ED25519},  //
+                               {"Ed448", HK_ED448},
                                {"ECDSA", HK_ECDSA},
                                {"DSA", HK_DSA},
                                {"RSA", HK_RSA},
                                {"-- warn below here --", HK_WARN}};
 
-// From putty-0.63/windows/wingss.c
-static const DataItem _gsslibnames[3] = {{"MIT Kerberos GSSAPI32.DLL", 0},
+#ifdef _WIN64
+#define MIT_KERB_SUFFIX "64"
+#else
+#define MIT_KERB_SUFFIX "32"
+#endif
+
+// From putty-0.75/windows/wingss.c
+static const DataItem _gsslibnames[3] = {{"MIT Kerberos GSSAPI" MIT_KERB_SUFFIX ".DLL", 0},
                                          {"Microsoft SSPI SECUR32.DLL", 1},
                                          {"User-specified GSSAPI DLL", 2}};
 
-// From putty-0.63/config.c
-static const DataItem colours[] = {"Default Foreground", "Default Bold Foreground",
-                                   "Default Background", "Default Bold Background",
-                                   "Cursor Text",        "Cursor Colour",
-                                   "ANSI Black",         "ANSI Black Bold",
-                                   "ANSI Red",           "ANSI Red Bold",
-                                   "ANSI Green",         "ANSI Green Bold",
-                                   "ANSI Yellow",        "ANSI Yellow Bold",
-                                   "ANSI Blue",          "ANSI Blue Bold",
-                                   "ANSI Magenta",       "ANSI Magenta Bold",
-                                   "ANSI Cyan",          "ANSI Cyan Bold",
-                                   "ANSI White",         "ANSI White Bold"};
+static const DataItem colours[] = {
+#define QUTTY_COLOUR(id, description) description,
+    CONF_COLOUR_LIST(QUTTY_COLOUR)
+#undef QUTTY_COLOUR
+};
 
 static const DataList cipherDataList(CONF_ssh_cipherlist, CIPHER_MAX, ciphers);
 static const DataList kexDataList(CONF_ssh_kexlist, KEX_MAX, kexes);
@@ -564,7 +565,14 @@ QString formatTTYMode(const QString &value);
   X("le_config_data", serdatabits)                                             \
   X("le_config_stop", serstopbits)                                             \
   X("cb_config_parity", serparity)                                             \
-  X("cb_config_flow", serflow)
+  X("cb_config_flow", serflow)                                                 \
+  /* SUPDUP */                                                                 \
+  X("le_supdup_location", supdup_location)                                     \
+  X("rb_supdup_ascii_set_none", supdup_ascii_set, SUPDUP_CHARSET_ASCII)        \
+  X("rb_supdup_ascii_set_its", supdup_ascii_set, SUPDUP_CHARSET_ITS)           \
+  X("rb_supdup_ascii_set_waits", supdup_ascii_set, SUPDUP_CHARSET_WAITS)       \
+  X("chb_supdup_more", supdup_more)                                            \
+  X("chb_supdup_scroll", supdup_scroll)
 
 /*
  * These options are yet to be incorporated into the UI.
@@ -779,6 +787,7 @@ static bool setW(QListWidget *lw, Conf *conf, const KeyValue &kv) {
         if (it != items.end()) lw->addItem(it->second);
       }
     } else {
+      lw->clear();
       for (int i = 0; i < dataList.count; i++) lw->addItem(dataList.items[i].text);
     }
     return true;
