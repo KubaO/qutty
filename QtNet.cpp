@@ -52,8 +52,6 @@ static void on_disconnected(QtSocket *s) {
   plug_closing(s->plug, errStr, s->qtsock->error(), 0);
 }
 
-static void sk_tcp_flush(Socket * /*s*/) {}
-
 static const char *sk_tcp_socket_error(Socket *sock) {
   QtSocket *s = container_of(sock, QtSocket, sock);
   return s->error;
@@ -125,7 +123,6 @@ static const struct SocketVtable QtSocket_sockvt = {sk_tcp_plug,
                                                     sk_tcp_write,
                                                     sk_tcp_write_oob,
                                                     nullptr /* TODO write_eof */,
-                                                    sk_tcp_flush,
                                                     sk_tcp_set_frozen,
                                                     sk_tcp_socket_error,
                                                     nullptr /* TODO peer_info */};
