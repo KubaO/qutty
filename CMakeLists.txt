@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-# Using putty 0.69 source code in puttysrc
+# Using putty 0.75 source code in puttysrc
 #
 # settings.c:
 # In QuTTY this file is only used for loading saved sessions in
@@ -86,6 +86,7 @@ set(PROJECT_SOURCES
     puttysrc/noshare.c
     puttysrc/noprint.c
     puttysrc/nullplug.c
+    puttysrc/sshargon2.c
     puttysrc/ssh1bpp.c
     puttysrc/ssh1censor.c
     puttysrc/ssh1connection.c
@@ -101,6 +102,7 @@ set(PROJECT_SOURCES
     puttysrc/ssh2transport.c
     puttysrc/ssh2userauth.c
     puttysrc/sshauxcrypt.c
+    puttysrc/sshblake2.c
     puttysrc/sshcommon.c
     puttysrc/sshhmac.c
     puttysrc/sshmac.c
@@ -111,6 +113,7 @@ set(PROJECT_SOURCES
     puttysrc/sshsh256.c
     puttysrc/sshsh512.c
     puttysrc/sshsha.c
+    puttysrc/sshsha3.c
     puttysrc/sshshare.c
     puttysrc/sshverstring.c
     puttysrc/stripctrl.c
@@ -123,6 +126,7 @@ set(PROJECT_SOURCES
     puttysrc/sshccp.c
     puttysrc/sshdes.c
     puttysrc/sshecc.c
+    puttysrc/sshutils.c
     puttysrc/sshzlib.c
     puttysrc/sshdh.c
     puttysrc/sshblowf.c
@@ -138,6 +142,7 @@ set(PROJECT_SOURCES
     puttysrc/wildcard.c
     puttysrc/be_qutty.c
     puttysrc/settings.c
+    puttysrc/errsock.c
     puttysrc/version.c
     puttysrc/windows/winucs.c
     tmux/TmuxBackend.cpp
