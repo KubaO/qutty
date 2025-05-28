@@ -132,7 +132,7 @@ void qtwin_palette_set(TermWin *win, unsigned start, unsigned ncolours, const rg
   gw->setPalette(start, ncolours, colours);
 }
 
-void qtwin_palette_get_overrides(TermWin *) { qDebug() << __FUNCTION__; }
+void qtwin_palette_get_overrides(TermWin *, Terminal *) { qDebug() << __FUNCTION__; }
 
 const TermWinVtable qttermwin_vt = {
     qtwin_setup_draw_ctx,
