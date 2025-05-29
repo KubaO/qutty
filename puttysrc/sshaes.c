@@ -6,7 +6,7 @@
 #include <stdlib.h>
 
 #include "ssh.h"
-#include "mpint_i.h"               /* we reuse the BignumInt system */
+#include "crypto/mpint_i.h"               /* we reuse the BignumInt system */
 
 /*
  * Start by deciding whether we can support hardware AES at all.

@@ -8,8 +8,8 @@
 
 #include "putty.h"
 #include "ssh.h"
-#include "sshppl.h"
-#include "sshchan.h"
+#include "ppl.h"
+#include "channel.h"
 
 static void mainchan_free(Channel *chan);
 static void mainchan_open_confirmation(Channel *chan);
@@ -433,7 +433,7 @@ static bool mainchan_rcvd_exit_signal(
             exitcode = 128 + SIG ## s;
     #define SIGNAL_MAIN(s, text) SIGNAL_SUB(s)
     #define SIGNALS_LOCAL_ONLY
-    #include "sshsignals.h"
+    #include "ssh/signal-list.h"
     #undef SIGNAL_SUB
     #undef SIGNAL_MAIN
     #undef SIGNALS_LOCAL_ONLY
@@ -473,7 +473,7 @@ void mainchan_get_specials(
     #define SIGNAL_MAIN(name, desc) \
     add_special(ctx, "SIG" #name " (" desc ")", SS_SIG ## name, 0);
     #define SIGNAL_SUB(name)
-    #include "sshsignals.h"
+    #include "ssh/signal-list.h"
     #undef SIGNAL_MAIN
     #undef SIGNAL_SUB
 
@@ -482,7 +482,7 @@ void mainchan_get_specials(
     #define SIGNAL_MAIN(name, desc)
     #define SIGNAL_SUB(name) \
     add_special(ctx, "SIG" #name, SS_SIG ## name, 0);
-    #include "sshsignals.h"
+    #include "ssh/signal-list.h"
     #undef SIGNAL_MAIN
     #undef SIGNAL_SUB
 
@@ -494,12 +494,12 @@ static const char *ssh_signal_lookup(SessionSpecialCode code)
     #define SIGNAL_SUB(name) \
     if (code == SS_SIG ## name) return #name;
     #define SIGNAL_MAIN(name, desc) SIGNAL_SUB(name)
-    #include "sshsignals.h"
+    #include "ssh/signal-list.h"
     #undef SIGNAL_MAIN
     #undef SIGNAL_SUB
 
-    /* If none of those clauses matched, fail lookup. */
-    return NULL;
+  /* If none of those clauses matched, fail lookup. */
+  return NULL;
 }
 
 void mainchan_special_cmd(mainchan *mc, SessionSpecialCode code, int arg)

@@ -12,7 +12,7 @@
 #include <wctype.h>
 
 #include "putty.h"
-#include "terminal.h"
+#include "terminal/terminal.h"
 #include "misc.h"
 #include "marshal.h"
 

@@ -8,8 +8,8 @@
 #include "putty.h"
 #include "ssh.h"
 #include "mpint.h"
-#include "sshbpp.h"
-#include "sshppl.h"
+#include "bpp.h"
+#include "ppl.h"
 #include "sshcr.h"
 
 typedef struct agent_key {

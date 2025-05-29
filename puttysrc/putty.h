@@ -5,7 +5,7 @@
 #include <limits.h>                    /* for INT_MAX */
 
 #include "defs.h"
-#include "puttyps.h"
+#include "platform.h"
 #include "network.h"
 #include "misc.h"
 #include "marshal.h"
@@ -326,13 +326,13 @@ typedef enum {
     /*
      * Send a POSIX-style signal. (Useful in SSH and also pterm.)
      *
-     * We use the master list in sshsignals.h to define these enum
+     * We use the master list in ssh/signal-list.h to define these enum
      * values, which will come out looking like names of the form
      * SS_SIGABRT, SS_SIGINT etc.
      */
     #define SIGNAL_MAIN(name, text) SS_SIG ## name,
     #define SIGNAL_SUB(name) SS_SIG ## name,
-    #include "sshsignals.h"
+    #include "ssh/signal-list.h"
     #undef SIGNAL_MAIN
     #undef SIGNAL_SUB
 

@@ -7,13 +7,13 @@
 
 #include "putty.h"
 #include "ssh.h"
-#include "sshbpp.h"
-#include "sshppl.h"
+#include "bpp.h"
+#include "ppl.h"
 #include "sshcr.h"
 
 #ifndef NO_GSSAPI
-#include "sshgssc.h"
-#include "sshgss.h"
+#include "gssc.h"
+#include "gss.h"
 #endif
 
 #define BANNER_LIMIT 131072

@@ -16,12 +16,12 @@
 #include "marshal.h"
 #include "ssh.h"
 #include "sshcr.h"
-#include "sshbpp.h"
-#include "sshppl.h"
-#include "sshchan.h"
+#include "bpp.h"
+#include "ppl.h"
+#include "channel.h"
 #ifndef NO_GSSAPI
-#include "sshgssc.h"
-#include "sshgss.h"
+#include "gssc.h"
+#include "gss.h"
 #define MIN_CTXT_LIFETIME 5     /* Avoid rekey with short lifetime (seconds) */
 #define GSS_KEX_CAPABLE (1<<0)  /* Can do GSS KEX */
 #define GSS_CRED_UPDATED (1<<1) /* Cred updated since previous delegation */

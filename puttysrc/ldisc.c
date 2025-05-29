@@ -10,7 +10,7 @@
 #include <assert.h>
 
 #include "putty.h"
-#include "terminal.h"
+#include "terminal/terminal.h"
 #include "ldisc.h"
 
 #define ECHOING (ldisc->localecho == FORCE_ON || \

@@ -6,12 +6,12 @@
 
 #include "putty.h"
 #include "ssh.h"
-#include "sshbpp.h"
-#include "sshppl.h"
+#include "bpp.h"
+#include "ppl.h"
 #include "sshcr.h"
-#include "sshserver.h"
+#include "server.h"
 #include "storage.h"
-#include "ssh2transport.h"
+#include "transport2.h"
 #include "mpint.h"
 
 const struct ssh_signkey_with_user_pref_id ssh2_hostkey_algs[] = {

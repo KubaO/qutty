@@ -6,11 +6,11 @@
 
 #include "putty.h"
 #include "ssh.h"
-#include "sshbpp.h"
-#include "sshppl.h"
-#include "sshchan.h"
+#include "bpp.h"
+#include "ppl.h"
+#include "channel.h"
 #include "sshcr.h"
-#include "ssh2connection.h"
+#include "connection2.h"
 
 static void ssh2_connection_free(PacketProtocolLayer *);
 static void ssh2_connection_process_queue(PacketProtocolLayer *);

@@ -9,7 +9,7 @@
 #include "putty.h"
 #include "ssh.h"
 #include "pageant.h"
-#include "sshchan.h"
+#include "channel.h"
 
 typedef struct agentf {
     SshChannel *c;

@@ -6,11 +6,11 @@
 
 #include "putty.h"
 #include "ssh.h"
-#include "sshbpp.h"
-#include "sshppl.h"
+#include "bpp.h"
+#include "ppl.h"
 #include "sshcr.h"
 #include "storage.h"
-#include "ssh2transport.h"
+#include "transport2.h"
 #include "mpint.h"
 
 /*

@@ -9,7 +9,7 @@
 #include <ctype.h>
 
 #include "putty.h"
-#include "terminal.h"
+#include "terminal/terminal.h"
 #include "ldisc.h"
 
 void lpage_send(Ldisc *ldisc,
