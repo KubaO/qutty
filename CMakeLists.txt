@@ -145,19 +145,56 @@ set(PROJECT_SOURCES
 
     puttysrc/terminal/terminal.h
 
-    puttysrc/utils/conf.c
+    puttysrc/utils/backend_socket_log.c
+    puttysrc/utils/base64_decode_atom.c
+    puttysrc/utils/base64_encode_atom.c
+    puttysrc/utils/bufchain.c
+    #puttysrc/utils/buildinfo.c
+    #puttysrc/utils/burnstr.c
+    #puttysrc/utils/chomp.c
+    puttysrc/utils/conf.c #
+    puttysrc/utils/conf_dest.c
+    puttysrc/utils/conf_launchable.c
+    puttysrc/utils/ctrlparse.c
+    #puttysrc/utils/debug.c
     puttysrc/utils/dup_mb_to_wc.c
+    puttysrc/utils/dupcat.c
     puttysrc/utils/dupprintf.c
-    puttysrc/utils/log_proxy_stderr.c
+    puttysrc/utils/dupstr.c
+    puttysrc/utils/encode_utf8.c
+    #puttysrc/utils/fgetline.c
+    puttysrc/utils/host_strchr.c
+    puttysrc/utils/host_strchr_internal.c
+    puttysrc/utils/host_strcspn.c
+    puttysrc/utils/host_strduptrim.c
+    puttysrc/utils/host_strrchr.c
+    #puttysrc/utils/log_proxy_stderr.c
     puttysrc/utils/marshal.c
     puttysrc/utils/memory.c
+    puttysrc/utils/memxor.c
+    #puttysrc/utils/null_lp.c
+    puttysrc/utils/nullseat.c
+    puttysrc/utils/nullstrcmp.c
+    puttysrc/utils/out_of_memory.c
+    puttysrc/utils/parse_blocksize.c
     puttysrc/utils/prompts.c
+    puttysrc/utils/ptrlen.c
+    #puttysrc/utils/read_file_into.c
+    puttysrc/utils/seat_connection_fatal.c
+    puttysrc/utils/sk_free_peer_info.c
+    #puttysrc/utils/smemclr.c
+    puttysrc/utils/smemeq.c
+    puttysrc/utils/ssh2_pick_fingerprint.c
     puttysrc/utils/sshutils.c
+    puttysrc/utils/strbuf.c
+    puttysrc/utils/string_length_for_printf.c
     puttysrc/utils/stripctrl.c
     puttysrc/utils/tree234.c
+    puttysrc/utils/validate_manual_hostkey.c
     puttysrc/utils/version.c
     puttysrc/utils/wcwidth.c
     puttysrc/utils/wildcard.c
+    #puttysrc/utils/write_c_string_literal.c
 
     puttysrc/be_qutty.c
     puttysrc/callback.c
