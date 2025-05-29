@@ -65,6 +65,12 @@ set(PROJECT_SOURCES
     QtSessionTreeModel.cpp
     QtCompleterWithAdvancedCompletion.cpp
 
+    puttysrc/crypto/aes-common.c
+    puttysrc/crypto/aes-neon.c
+    puttysrc/crypto/aes-ni.c
+    puttysrc/crypto/aes-none.c
+    puttysrc/crypto/aes-select.c
+    puttysrc/crypto/aes-sw.c
     puttysrc/crypto/arcfour.c
     puttysrc/crypto/argon2.c
     puttysrc/crypto/blake2.c
@@ -87,13 +93,21 @@ set(PROJECT_SOURCES
     puttysrc/crypto/pubkey-ppk.c
     puttysrc/crypto/pubkey-ssh1.c
     puttysrc/crypto/rsa.c
+    puttysrc/crypto/sha1-common.c
+    puttysrc/crypto/sha1-neon.c
+    puttysrc/crypto/sha1-ni.c
+    puttysrc/crypto/sha1-none.c
+    puttysrc/crypto/sha1-select.c
+    puttysrc/crypto/sha1-sw.c
     puttysrc/crypto/sha3.c
     puttysrc/crypto/xdmauth.c
 
+    puttysrc/crypto/aes.h
     puttysrc/crypto/blowfish.h
     puttysrc/crypto/ecc.h
     puttysrc/crypto/mpint_i.h
     puttysrc/crypto/pubkey-ssh1.c
+    puttysrc/crypto/sha1.h
 
     puttysrc/otherbackends/telnet.c
 
@@ -209,12 +223,10 @@ set(PROJECT_SOURCES
     puttysrc/logging.c
     puttysrc/pinger.c
     puttysrc/settings.c
-    puttysrc/sshaes.c
     puttysrc/sshpubk.c
     puttysrc/sshrand.c
     puttysrc/sshsh256.c
     puttysrc/sshsh512.c
-    puttysrc/sshsha.c
     puttysrc/timing.c
 
     puttysrc/defs.h
