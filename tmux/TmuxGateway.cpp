@@ -10,7 +10,7 @@
 #include "tmux/TmuxWindowPane.hpp"
 #include "tmux/tmux.h"
 extern "C" {
-#include "puttysrc/terminal.h"
+#include "terminal/terminal.h"
 }
 
 using std::istringstream;

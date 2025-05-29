@@ -6,7 +6,7 @@
 
 #include "GuiTerminalWindow.hpp"
 extern "C" {
-#include "puttysrc/terminal.h"
+#include "terminal/terminal.h"
 }
 
 using std::istringstream;

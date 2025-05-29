@@ -20,7 +20,7 @@
 #include "GuiTabWidget.hpp"
 #include "serialize/QtWebPluginMap.hpp"
 extern "C" {
-#include "puttysrc/terminal.h"
+#include "terminal/terminal.h"
 }
 
 GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, Conf *cfg)

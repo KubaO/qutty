@@ -8,7 +8,7 @@
 
 #include "GuiTerminalWindow.hpp"
 #include "QtCommon.hpp"
-#include "terminal.h"
+#include "terminal/terminal.h"
 
 #if 0
 void get_clip(void *frontend, wchar_t **p, int *len) {

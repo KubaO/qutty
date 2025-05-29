@@ -65,87 +65,130 @@ set(PROJECT_SOURCES
     QtSessionTreeModel.cpp
     QtCompleterWithAdvancedCompletion.cpp
 
-    puttysrc/agentf.c
-    puttysrc/be_misc.c
-    puttysrc/ecc.c
+    puttysrc/crypto/arcfour.c
+    puttysrc/crypto/argon2.c
+    puttysrc/crypto/blake2.c
+    puttysrc/crypto/blowfish.c
+    puttysrc/crypto/chacha20-poly1305.c
+    puttysrc/crypto/crc32.c
+    puttysrc/crypto/des.c
+    puttysrc/crypto/diffie-hellman.c
+    puttysrc/crypto/dsa.c
+    puttysrc/crypto/ecc-arithmetic.c
+    puttysrc/crypto/ecc-ssh.c
+    puttysrc/crypto/hmac.c
+    puttysrc/crypto/mac.c
+    puttysrc/crypto/md5.c
+    puttysrc/crypto/mpint.c
+    puttysrc/crypto/prng.c
+    puttysrc/crypto/pubkey-ppk.c
+    puttysrc/crypto/rsa.c
+    puttysrc/crypto/sha3.c
+
+    puttysrc/crypto/blowfish.h
+    puttysrc/crypto/ecc.h
+    puttysrc/crypto/mpint_i.h
+
+    puttysrc/otherbackends/telnet.c
+
+    puttysrc/proxy/cproxy.c
+    puttysrc/proxy/proxy.c
+
+    puttysrc/proxy/proxy.h
+
+    puttysrc/ssh/agentf.c
+    puttysrc/ssh/bpp1.c
+    puttysrc/ssh/bpp2.c
+    puttysrc/ssh/bpp-bare.c
+    puttysrc/ssh/censor1.c
+    puttysrc/ssh/censor2.c
+    puttysrc/ssh/common.c
+    puttysrc/ssh/connection1.c
+    puttysrc/ssh/connection1-client.c
+    puttysrc/ssh/connection2.c
+    puttysrc/ssh/connection2-client.c
+    puttysrc/ssh/crc-attack-detector.c
+    puttysrc/ssh/gssc.c
+    puttysrc/ssh/kex2-client.c
+    puttysrc/ssh/login1.c
+    puttysrc/ssh/mainchan.c
+    puttysrc/ssh/nosharing.c
+    puttysrc/ssh/pgssapi.c
+    puttysrc/ssh/portfwd.c
+    puttysrc/ssh/sharing.c
+    puttysrc/ssh/ssh.c
+    puttysrc/ssh/transient-hostkey-cache.c
+    puttysrc/ssh/transport2.c
+    puttysrc/ssh/userauth2-client.c
+    puttysrc/ssh/verstring.c
+    puttysrc/ssh/x11fwd.c
+    puttysrc/ssh/zlib.c
+
+    puttysrc/ssh/bpp.h
+    puttysrc/ssh/channel.h
+    puttysrc/ssh/connection1.h
+    puttysrc/ssh/connection2.h
+    puttysrc/ssh/gss.h
+    puttysrc/ssh/gssc.h
+    puttysrc/ssh/pgssapi.h
+    puttysrc/ssh/ppl.h
+    puttysrc/ssh/server.h
+    puttysrc/ssh/signal-list.h
+    puttysrc/ssh/transport2.h
+    puttysrc/ssh/ttymode-list.h
+
+    puttysrc/stubs/noprint.c
+    puttysrc/stubs/nullplug.c
+
+    puttysrc/terminal/bidi.c
+    puttysrc/terminal/terminal.c
+
+    puttysrc/terminal/terminal.h
+
+    puttysrc/utils/conf.c
+    puttysrc/utils/dup_mb_to_wc.c
+    puttysrc/utils/dupprintf.c
+    puttysrc/utils/log_proxy_stderr.c
+    puttysrc/utils/marshal.c
+    puttysrc/utils/memory.c
+    puttysrc/utils/prompts.c
+    puttysrc/utils/sshutils.c
+    puttysrc/utils/stripctrl.c
+    puttysrc/utils/tree234.c
+    puttysrc/utils/version.c
+    puttysrc/utils/wcwidth.c
+    puttysrc/utils/wildcard.c
+
+    puttysrc/be_qutty.c
     puttysrc/callback.c
-    puttysrc/conf.c
-    puttysrc/pgssapi.c
-    puttysrc/ssh.c
-    puttysrc/proxy.c
-    puttysrc/portfwd.c
-    puttysrc/misc.c
-    puttysrc/mainchan.c
-    puttysrc/marshal.c
-    puttysrc/terminal.c
+    puttysrc/errsock.c
     puttysrc/ldisc.c
-    puttysrc/memory.c
-    puttysrc/miscucs.c
-    puttysrc/mpint.c
-    puttysrc/timing.c
-    puttysrc/utils.c
-    puttysrc/noshare.c
-    puttysrc/noprint.c
-    puttysrc/nullplug.c
-    puttysrc/sshargon2.c
-    puttysrc/ssh1bpp.c
-    puttysrc/ssh1censor.c
-    puttysrc/ssh1connection.c
-    puttysrc/ssh1connection-client.c
-    puttysrc/ssh1login.c
-    puttysrc/ssh2bpp.c
-    puttysrc/ssh2bpp-bare.c
-    puttysrc/ssh2censor.c
-    puttysrc/ssh2connection.c
-    puttysrc/ssh2connection-client.c
-    puttysrc/ssh2kex-client.c
-    puttysrc/ssh2transhk.c
-    puttysrc/ssh2transport.c
-    puttysrc/ssh2userauth.c
-    puttysrc/sshauxcrypt.c
-    puttysrc/sshblake2.c
-    puttysrc/sshcommon.c
-    puttysrc/sshhmac.c
-    puttysrc/sshmac.c
-    puttysrc/sshprng.c
+    puttysrc/logging.c
+    puttysrc/pinger.c
+    puttysrc/settings.c
+    puttysrc/sshaes.c
     puttysrc/sshpubk.c
     puttysrc/sshrand.c
-    puttysrc/sshrsa.c
     puttysrc/sshsh256.c
     puttysrc/sshsh512.c
     puttysrc/sshsha.c
-    puttysrc/sshsha3.c
-    puttysrc/sshshare.c
-    puttysrc/sshverstring.c
-    puttysrc/stripctrl.c
-    puttysrc/x11fwd.c
-    puttysrc/tree234.c
-    puttysrc/telnet.c
-    puttysrc/pinger.c
-    puttysrc/sshmd5.c
-    puttysrc/sshaes.c
-    puttysrc/sshccp.c
-    puttysrc/sshdes.c
-    puttysrc/sshecc.c
-    puttysrc/sshutils.c
-    puttysrc/sshzlib.c
-    puttysrc/sshdh.c
-    puttysrc/sshblowf.c
-    puttysrc/ssharcf.c
-    puttysrc/sshcrcda.c
-    puttysrc/sshdss.c
-    puttysrc/cproxy.c
-    puttysrc/logging.c
-    puttysrc/minibidi.c
-    puttysrc/sshgssc.c
-    puttysrc/wcwidth.c
-    puttysrc/sshcrc.c
-    puttysrc/wildcard.c
-    puttysrc/be_qutty.c
-    puttysrc/settings.c
-    puttysrc/errsock.c
-    puttysrc/version.c
-    puttysrc/windows/winucs.c
+    puttysrc/timing.c
+
+    puttysrc/defs.h
+    puttysrc/ldisc.h
+    puttysrc/marshal.h
+    puttysrc/misc.h
+    puttysrc/mpint.h
+    puttysrc/network.h
+    puttysrc/pageant.h
+    puttysrc/putty.h
+    puttysrc/puttymem.h
+    puttysrc/ssh.h
+    puttysrc/sshcr.h
+    puttysrc/storage.h
+    puttysrc/tree234.h
+    puttysrc/version.h
+
     tmux/TmuxBackend.cpp
     tmux/TmuxGateway.cpp
     tmux/TmuxWindowPane.cpp
@@ -178,35 +221,6 @@ set(PROJECT_SOURCES
     QtComboBoxWithTreeView.hpp
     QtCompleterWithAdvancedCompletion.hpp
 
-    puttysrc/defs.h
-    puttysrc/ssh.h
-    puttysrc/defs.h
-    puttysrc/putty.h
-    puttysrc/QtStuff.h
-    puttysrc/puttyps.h
-    puttysrc/marshal.h
-    puttysrc/network.h
-    puttysrc/misc.h
-    puttysrc/pageant.h
-    puttysrc/puttymem.h
-    puttysrc/mpint.h
-    puttysrc/mpint_i.h
-    puttysrc/terminal.h
-    puttysrc/tree234.h
-    puttysrc/sshgss.h
-    puttysrc/pgssapi.h
-    puttysrc/ssh1connection.h
-    puttysrc/ssh2connection.h
-    puttysrc/ssh2transport.h
-    puttysrc/sshblowf.h
-    puttysrc/sshchan.h
-    puttysrc/sshgssc.h
-    puttysrc/sshsignals.h
-    puttysrc/sshttymodes.h
-    puttysrc/proxy.h
-    puttysrc/ldisc.h
-    puttysrc/storage.h
-    puttysrc/version.h
     tmux/tmux.h
     tmux/TmuxGateway.hpp
     tmux/TmuxWindowPane.hpp
@@ -247,7 +261,7 @@ set(BREAKPAD_SOURCES
     third-party/google-breakpad/google_breakpad/common/minidump_format.h
 )
 
-# winucs.c must disable functions we implement via Qt
+# windows/unicode.c must disable functions we implement via Qt
 set(UCS_OVERRIDES
     init_ucs=_init_ucs
     is_dbcs_leadbyte=_is_dbcs_leadbyte
@@ -255,7 +269,7 @@ set(UCS_OVERRIDES
     wc_to_mb=_wc_to_mb
 )
 set_property(SOURCE
-    puttysrc/windows/winucs.c
+    puttysrc/windows/unicode.c
     PROPERTY COMPILE_DEFINITIONS "${UCS_OVERRIDES}"
 )
 
@@ -263,23 +277,26 @@ if (WIN32)
     # winnoise.c and winstore.c must be built without UNICODE nor _UNICODE
     set_property(SOURCE
         ${PROJECT_SOURCES}
-        puttysrc/windows/windefs.c
+        puttysrc/windows/platform.h
         APPEND PROPERTY COMPILE_DEFINITIONS UNICODE _UNICODE
     )
     list(APPEND PROJECT_SOURCES
         qutty.rc
 
-        puttysrc/windows/winnoise.c
-        puttysrc/windows/winstore.c
-        puttysrc/windows/windefs.c
+        puttysrc/windows/noise.c
+        puttysrc/windows/storage.c
+        puttysrc/windows/unicode.c
+        puttysrc/windows/utils/defaults.c
+
+        puttysrc/windows/platform.h
     )
     if(HAS_GSSAPI)
         list(APPEND PROJECT_SOURCES
-            puttysrc/windows/wingss.c
+            puttysrc/windows/gss.c
         )
     endif()
     set_property(SOURCE
-        puttysrc/windows/winstore.c PROPERTY COMPILE_DEFINITIONS
+        puttysrc/windows/storage.c PROPERTY COMPILE_DEFINITIONS
         verify_host_key=verify_host_key_disabled
         store_host_key=store_host_key_disabled
     )
@@ -289,18 +306,18 @@ endif()
 if (LINUX)
     list(APPEND PROJECT_SOURCES
         puttysrc/unix/gtkwin.c
-        puttysrc/unix/uxnoise.c
-        puttysrc/unix/uxstore.c
+        puttysrc/unix/noise.c
+        puttysrc/unix/storagee.c
         puttysrc/unix/unix.h
     )
     if(HAS_GSSAPI)
         list(APPEND PROJECT_SOURCES
-            puttysrc/unix/uxgss.c
+            puttysrc/unix/gss.c
         )
     endif()
 endif()
 
-include_directories(./ puttysrc/)
+include_directories(./ puttysrc/ puttysrc/windows/)
 
 if (MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)

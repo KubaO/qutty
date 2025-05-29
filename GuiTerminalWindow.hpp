@@ -24,7 +24,7 @@
 #include "tmux/tmux.h"
 extern "C" {
 #include "putty.h"
-#include "terminal.h"
+#include "terminal/terminal.h"
 }
 
 class GuiMainWindow;
