@@ -76,18 +76,24 @@ set(PROJECT_SOURCES
     puttysrc/crypto/dsa.c
     puttysrc/crypto/ecc-arithmetic.c
     puttysrc/crypto/ecc-ssh.c
+    puttysrc/crypto/hash_simple.c
     puttysrc/crypto/hmac.c
     puttysrc/crypto/mac.c
+    puttysrc/crypto/mac_simple.c
     puttysrc/crypto/md5.c
     puttysrc/crypto/mpint.c
     puttysrc/crypto/prng.c
+    puttysrc/crypto/pubkey-pem.c
     puttysrc/crypto/pubkey-ppk.c
+    puttysrc/crypto/pubkey-ssh1.c
     puttysrc/crypto/rsa.c
     puttysrc/crypto/sha3.c
+    puttysrc/crypto/xdmauth.c
 
     puttysrc/crypto/blowfish.h
     puttysrc/crypto/ecc.h
     puttysrc/crypto/mpint_i.h
+    puttysrc/crypto/pubkey-ssh1.c
 
     puttysrc/otherbackends/telnet.c
 
