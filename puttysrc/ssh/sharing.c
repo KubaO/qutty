@@ -1180,7 +1180,7 @@ void share_got_pkt_from_server(ssh_sharing_connstate *cs, int type,
       case SSH2_MSG_REQUEST_SUCCESS:
       case SSH2_MSG_REQUEST_FAILURE:
         globreq = cs->globreq_head;
-        assert(globreq);         /* should match the queue in ssh.c */
+        assert(globreq);         /* should match the queue in connection2.c */
         if (globreq->type == GLOBREQ_TCPIP_FORWARD) {
             if (type == SSH2_MSG_REQUEST_FAILURE) {
                 share_remove_forwarding(cs, globreq->fwd);
@@ -1292,7 +1292,8 @@ void share_got_pkt_from_server(ssh_sharing_connstate *cs, int type,
         break;
 
       default:
-        unreachable("This packet type should never have come from ssh.c");
+        unreachable("This packet type should never have come from "
+                    "connection2.c");
     }
 }
 
@@ -1359,12 +1360,12 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
             host = mkstr(hostpl);
 
             /*
-             * See if we can allocate space in ssh.c's tree of remote
-             * port forwardings. If we can't, it's because another
-             * client sharing this connection has already allocated
-             * the identical port forwarding, so we take it on
-             * ourselves to manufacture a failure packet and send it
-             * back to downstream.
+             * See if we can allocate space in the connection layer's
+             * tree of remote port forwardings. If we can't, it's
+             * because another client sharing this connection has
+             * already allocated the identical port forwarding, so we
+             * take it on ourselves to manufacture a failure packet
+             * and send it back to downstream.
              */
             rpf = ssh_rportfwd_alloc(
                 cs->parent->cl, host, port, NULL, 0, 0, NULL, NULL, cs);
@@ -1433,8 +1434,8 @@ static void share_got_pkt_from_downstream(struct ssh_sharing_connstate *cs,
                 }
             } else {
                 /*
-                 * Tell ssh.c to stop sending us channel-opens for
-                 * this forwarding.
+                 * Tell the connection layer to stop sending us
+                 * channel-opens for this forwarding.
                  */
                 ssh_rportfwd_remove(cs->parent->cl, fwd->rpf);
 
@@ -1875,8 +1876,8 @@ void share_activate(ssh_sharing_state *sharestate,
                     const char *server_verstring)
 {
     /*
-     * Indication from ssh.c that we are now ready to begin serving
-     * any downstreams that have already connected to us.
+     * Indication from connection layer that we are now ready to begin
+     * serving any downstreams that have already connected to us.
      */
     struct ssh_sharing_connstate *cs;
     int i;

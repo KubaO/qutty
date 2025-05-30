@@ -299,8 +299,9 @@ struct ConnectionLayerVtable {
      * subsequent channel-opens). */
     void (*enable_x_fwd)(ConnectionLayer *cl);
 
-    /* Communicate to the connection layer whether the main session
-     * channel currently wants user input. */
+    /* Communicate / query whether the main session channel currently
+     * wants user input. The set function is called by mainchan; the
+     * query function is called by the top-level ssh.c. */
     void (*set_wants_user_input)(ConnectionLayer *cl, bool wanted);
 };
 
@@ -1062,13 +1063,13 @@ extern const char sshver[];
 
 /*
  * Gross hack: pscp will try to start SFTP but fall back to scp1 if
- * that fails. This variable is the means by which scp.c can reach
+ * that fails. This variable is the means by which pscp.c can reach
  * into the SSH code and find out which one it got.
  */
 extern bool ssh_fallback_cmd(Backend *backend);
 
 /*
- * The PRNG type, defined in sshprng.c. Visible data fields are
+ * The PRNG type, defined in prng.c. Visible data fields are
  * 'savesize', which suggests how many random bytes you should request
  * from a particular PRNG instance to write to putty.rnd, and a
  * BinarySink implementation which you can use to write seed data in
@@ -1077,7 +1078,7 @@ extern bool ssh_fallback_cmd(Backend *backend);
 struct prng {
     size_t savesize;
     BinarySink_IMPLEMENTATION;
-    /* (also there's a surrounding implementation struct in sshprng.c) */
+    /* (also there's a surrounding implementation struct in prng.c) */
 };
 prng *prng_new(const ssh_hashalg *hashalg);
 void prng_free(prng *p);
@@ -1181,7 +1182,7 @@ SockAddr *platform_get_x11_unix_address(const char *path, int displaynum);
     /* make up a SockAddr naming the address for displaynum */
 char *platform_get_x_display(void);
     /* allocated local X display string, if any */
-/* Callbacks in x11.c usable _by_ platform X11 functions */
+/* X11-related helper functions in utils */
 /*
  * This function does the job of platform_get_x11_auth, provided
  * it is told where to find a normally formatted .Xauthority file:

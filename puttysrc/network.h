@@ -67,14 +67,55 @@ struct PlugVtable {
      *    addresses to fall back to. When it _is_ fatal, the closing()
      *    function will be called.
      *
-     *  - PLUGLOG_CONNECT_SUCCESS means we have succeeded in
-     *    connecting to address `addr'.
+     *  - PLUGLOG_CONNECT_SUCCESS means we have succeeded in making a
+     *    connection. `addr' gives the address we connected to, if
+     *    available. (But sometimes, in cases of complicated proxy
+     *    setups, it might not be available, so receivers of this log
+     *    event should be prepared to deal with addr==NULL.)
      *
      *  - PLUGLOG_PROXY_MSG means that error_msg contains a line of
      *    logging information from whatever the connection is being
      *    proxied through. This will typically be a wodge of
      *    standard-error output from a local proxy command, so the
      *    receiver should probably prefix it to indicate this.
+     *
+     * Note that sometimes log messages may be sent even to Socket
+     * types that don't involve making an outgoing connection, e.g.
+     * because the same core implementation (such as Windows handle
+     * sockets) is shared between listening and connecting sockets. So
+     * all Plugs must implement this method, even if only to ignore
+     * the logged events.
+     */
+
+    /*
+     * Notifies the Plug that the socket is closing, and something
+     * about why.
+     *
+     *  - PLUGCLOSE_NORMAL means an ordinary non-error closure. In
+     *    this case, error_msg should be ignored (and hopefully
+     *    callers will have passed NULL).
+     *
+     *  - PLUGCLOSE_ERROR indicates that an OS error occurred, and
+     *    'error_msg' contains a string describing it, for use in
+     *    diagnostics. (Ownership of the string is not transferred.)
+     *    This error class covers anything other than the special
+     *    case below:
+     *
+     *  - PLUGCLOSE_BROKEN_PIPE behaves like PLUGCLOSE_ERROR (in
+     *    particular, there's still an error message provided), but
+     *    distinguishes the particular error condition signalled by
+     *    EPIPE / ERROR_BROKEN_PIPE, which ssh/sharing.c needs to
+     *    recognise and handle specially in one situation.
+     *
+     *  - PLUGCLOSE_USER_ABORT means that the close has happened as a
+     *    result of some kind of deliberate user action (e.g. hitting
+     *    ^C at a password prompt presented by a proxy socket setup
+     *    phase). This can be used to suppress interactive error
+     *    messages sent to the user (such as dialog boxes), on the
+     *    grounds that the user already knows. However, 'error_msg'
+     *    will still contain some appropriate text, so that
+     *    non-interactive error reporting (e.g. event logs) can still
+     *    record why the connection terminated.
      */
     void (*closing)
      (Plug *p, const char *error_msg, int error_code, bool calling_back);
@@ -83,6 +124,8 @@ struct PlugVtable {
     /* currently running (would cure the fixme in try_send()) */
     void (*receive) (Plug *p, int urgent, const char *data, size_t len);
     /*
+     * Provides incoming socket data to the Plug. Three cases:
+     *
      *  - urgent==0. `data' points to `len' bytes of perfectly
      *    ordinary data.
      *
@@ -94,22 +137,43 @@ struct PlugVtable {
      */
     void (*sent) (Plug *p, size_t bufsize);
     /*
-     * The `sent' function is called when the pending send backlog
-     * on a socket is cleared or partially cleared. The new backlog
-     * size is passed in the `bufsize' parameter.
+     * Called when the pending send backlog on a socket is cleared or
+     * partially cleared. The new backlog size is passed in the
+     * `bufsize' parameter.
      */
     int (*accepting)(Plug *p, accept_fn_t constructor, accept_ctx_t ctx);
     /*
-     * `accepting' is called only on listener-type sockets, and is
-     * passed a constructor function+context that will create a fresh
-     * Socket describing the connection. It returns nonzero if it
-     * doesn't want the connection for some reason, or 0 on success.
+     * Only called on listener-type sockets, and is passed a
+     * constructor function+context that will create a fresh Socket
+     * describing the connection. It returns nonzero if it doesn't
+     * want the connection for some reason, or 0 on success.
      */
 };
 
-/* proxy indirection layer */
-/* NB, control of 'addr' is passed via new_connection, which takes
- * responsibility for freeing it */
+/* Proxy indirection layer.
+ *
+ * Calling new_connection transfers ownership of 'addr': the proxy
+ * layer is now responsible for freeing it, and the caller shouldn't
+ * assume it exists any more.
+ *
+ * If calling this from a backend with a Seat, you can also give it a
+ * pointer to the backend's Interactor trait. In that situation, it
+ * might replace the backend's seat with a temporary seat of its own,
+ * and give the real Seat to an Interactor somewhere in the proxy
+ * system so that it can ask for passwords (and, in the case of SSH
+ * proxying, other prompts like host key checks). If that happens,
+ * then the resulting 'temp seat' is the backend's property, and it
+ * will have to remember to free it when cleaning up, or after
+ * flushing it back into the real seat when the network connection
+ * attempt completes.
+ *
+ * You can free your TempSeat and resume using the real Seat when one
+ * of two things happens: either your Plug's closing() method is
+ * called (indicating failure to connect), or its log() method is
+ * called with PLUGLOG_CONNECT_SUCCESS. In the latter case, you'll
+ * probably want to flush the TempSeat's contents into the real Seat,
+ * of course.
+ */
 Socket *new_connection(SockAddr *addr, const char *hostname,
                        int port, bool privport,
                        bool oobinline, bool nodelay, bool keepalive,
@@ -226,7 +290,7 @@ static inline SocketPeerInfo *sk_peer_info(Socket *s)
 
 /*
  * The structure returned from sk_peer_info, and a function to free
- * one (in misc.c).
+ * one (in utils).
  */
 struct SocketPeerInfo {
     int addressfamily;
@@ -264,7 +328,7 @@ struct SocketPeerInfo {
 void sk_free_peer_info(SocketPeerInfo *pi);
 
 /*
- * Simple wrapper on getservbyname(), needed by ssh.c. Returns the
+ * Simple wrapper on getservbyname(), needed by portfwd.c. Returns the
  * port number, in host byte order (suitable for printf and so on).
  * Returns 0 on failure. Any platform not supporting getservbyname
  * can just return 0 - this function is not required to handle
@@ -300,9 +364,6 @@ extern Plug *const nullplug;
  * they use types defined here.
  */
 
-/*
- * Exports from be_misc.c.
- */
 void backend_socket_log(Seat *seat, LogContext *logctx,
                         PlugLogType type, SockAddr *addr, int port,
                         const char *error_msg, int error_code, Conf *conf,
