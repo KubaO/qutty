@@ -60,10 +60,21 @@ static void strbuf_BinarySink_write(
     memcpy(strbuf_append(buf_o, len), data, len);
 }
 
+static void strbuf_BinarySink_writefmtv(
+    BinarySink *bs, const char *fmt, va_list ap)
+{
+    strbuf *buf_o = BinarySink_DOWNCAST(bs, strbuf);
+    struct strbuf_impl *buf = container_of(buf_o, struct strbuf_impl, visible);
+    STRBUF_SET_PTR(buf, dupvprintf_inner(buf->visible.s, buf->visible.len,
+                                         &buf->size, fmt, ap));
+    buf->visible.len += strlen(buf->visible.s + buf->visible.len);
+}
+
 static strbuf *strbuf_new_general(bool nm)
 {
     struct strbuf_impl *buf = snew(struct strbuf_impl);
     BinarySink_INIT(&buf->visible, strbuf_BinarySink_write);
+    buf->visible.binarysink_->writefmtv = strbuf_BinarySink_writefmtv;
     buf->visible.len = 0;
     buf->size = 512;
     buf->nm = nm;

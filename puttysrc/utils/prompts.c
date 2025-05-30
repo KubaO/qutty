@@ -1,14 +1,6 @@
 /*
- * Platform-independent routines shared between all PuTTY programs.
- *
- * This file contains functions that use the kind of infrastructure
- * like conf.c that tends to only live in the main applications, or
- * that do things that only something like a main PuTTY application
- * would need. So standalone test programs should generally be able to
- * avoid linking against it.
- *
- * More standalone functions that depend on nothing but the C library
- * live in utils.c.
+ * Functions for making, destroying, and manipulating prompts_t
+ * structures.
  */
 
 #include "putty.h"
