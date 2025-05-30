@@ -280,11 +280,6 @@ void debug_memdump(const void *buf, int len, bool L);
 #define dmemdumpl(buf,len) ((void)0)
 #endif
 
-#ifdef IS_QUTTY
-/* clashes with debug in qlogging.h in Qt */
-#undef debug
-#endif
-
 #ifndef lenof
 #define lenof(x) ( (sizeof((x))) / (sizeof(*(x))))
 #endif

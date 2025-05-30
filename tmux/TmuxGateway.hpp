@@ -15,6 +15,7 @@ extern "C" {
 // min/max interferes with std::min/max
 #undef min
 #undef max
+#undef debug  // clashes with debug in qlogging.h
 }
 #include <map>
 #include <queue>

@@ -1,6 +1,3 @@
-extern "C" {
-#include "putty.h"
-}
 #include <QDebug>
 
 #include "GuiTerminalWindow.hpp"

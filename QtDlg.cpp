@@ -9,6 +9,8 @@ extern "C" {
 #include "ssh.h"
 #include "storage.h"
 }
+#undef debug  // clashes with debug in qlogging.h
+
 #include <QMessageBox>
 
 #include "GuiMainWindow.hpp"

@@ -4,6 +4,8 @@
 extern "C" {
 #include "putty.h"
 }
+#undef debug  // clashes with debug in qlogging.h
+
 #include <QIODevice>
 #include <QKeySequence>
 #include <QString>
