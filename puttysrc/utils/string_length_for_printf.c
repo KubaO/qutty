@@ -15,9 +15,6 @@
 
 int string_length_for_printf(size_t s)
 {
-    /* Truncate absurdly long strings (should one show up) to fit
-     * within a positive 'int', which is what the "%.*s" format will
-     * expect. */
     if (s > INT_MAX)
         return INT_MAX;
     return s;

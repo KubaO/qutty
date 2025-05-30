@@ -6,7 +6,7 @@
 #include "defs.h"
 #include "misc.h"
 
-void burnstr(char *string)             /* sfree(str), only clear it first */
+void burnstr(char *string)
 {
     if (string) {
         smemclr(string, strlen(string));

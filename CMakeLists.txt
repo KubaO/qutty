@@ -183,9 +183,9 @@ set(PROJECT_SOURCES
     puttysrc/utils/base64_encode_atom.c
     puttysrc/utils/bufchain.c
     #puttysrc/utils/buildinfo.c
-    #puttysrc/utils/burnstr.c
+    puttysrc/utils/burnstr.c
     #puttysrc/utils/chomp.c
-    puttysrc/utils/conf.c #
+    puttysrc/utils/conf.c
     puttysrc/utils/conf_dest.c
     puttysrc/utils/conf_launchable.c
     puttysrc/utils/ctrlparse.c
@@ -352,6 +352,7 @@ if (WIN32)
         puttysrc/windows/storage.c
         puttysrc/windows/unicode.c
         puttysrc/windows/utils/defaults.c
+        puttysrc/windows/utils/dputs.c
 
         puttysrc/windows/platform.h
     )

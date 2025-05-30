@@ -19,6 +19,7 @@ size_t encode_utf8(void *output, unsigned long ch)
         *p++ = 0x80 | ((ch >> 6) & 0x3F);
         *p++ = 0x80 | (ch & 0x3F);
     } else {
+        assert(ch <= 0x10FFFF);
         *p++ = 0xF0 | (ch >> 18);
         *p++ = 0x80 | ((ch >> 12) & 0x3F);
         *p++ = 0x80 | ((ch >> 6) & 0x3F);

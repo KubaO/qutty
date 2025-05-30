@@ -11,10 +11,6 @@
 #include "putty.h"
 #include "ssh.h"
 
-#ifdef SOURCE_COMMIT
-#include "empty.h"
-#endif
-
 #include "version.h"
 
 const char ver[] = TEXTVER;

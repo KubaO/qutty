@@ -19,8 +19,7 @@
 #include "misc.h"
 #include "utils/utils.h"
 
-const char *host_strchr_internal(const char *s, const char *set,
-                                 bool first)
+const char *host_strchr_internal(const char *s, const char *set, bool first)
 {
     int brackets = 0;
     const char *ret = NULL;
@@ -45,7 +44,8 @@ const char *host_strchr_internal(const char *s, const char *set,
     }
 }
 
-#ifdef TEST_HOST_STRFOO
+#ifdef TEST
+
 int main(void)
 {
     int passes = 0, fails = 0;
@@ -53,7 +53,7 @@ int main(void)
 #define TEST1(func, string, arg2, suffix, result) do                    \
     {                                                                   \
         const char *str = string;                                       \
-        unsigned ret = func(string, arg2) suffix;                       \
+        unsigned ret = func(str, arg2) suffix;                          \
         if (ret == result) {                                            \
             passes++;                                                   \
         } else {                                                        \
@@ -77,4 +77,4 @@ int main(void)
     return fails != 0 ? 1 : 0;
 }
 
-#endif /* TEST_HOST_STRFOO */
+#endif /* TEST */

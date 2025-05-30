@@ -12,3 +12,4 @@ char const *conf_dest(Conf *conf)
     else
         return conf_get_str(conf, CONF_host);
 }
+

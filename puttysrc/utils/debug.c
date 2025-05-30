@@ -8,9 +8,6 @@
 #include "misc.h"
 #include "utils/utils.h"
 
-#ifdef DEBUG
-extern void dputs(const char *); /* defined in per-platform *misc.c */
-
 void debug_printf(const char *fmt, ...)
 {
     char *buf;
@@ -57,5 +54,3 @@ void debug_memdump(const void *buf, int len, bool L)
         debug_printf("%*s%s\n", (16 - i) * 3 + 2, "", foo);
     }
 }
-
-#endif                          /* def DEBUG */
