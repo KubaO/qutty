@@ -241,7 +241,6 @@ set(PROJECT_SOURCES
     puttysrc/timing.c
 
     puttysrc/defs.h
-    puttysrc/ldisc.h
     puttysrc/marshal.h
     puttysrc/misc.h
     puttysrc/mpint.h
