@@ -122,7 +122,13 @@ set(PROJECT_SOURCES
     puttysrc/otherbackends/telnet.c
 
     puttysrc/proxy/cproxy.c
+    puttysrc/proxy/http.c
+    puttysrc/proxy/interactor.c
     puttysrc/proxy/proxy.c
+    puttysrc/proxy/socks4.c
+    puttysrc/proxy/socks5.c
+    puttysrc/proxy/sshproxy.c
+    puttysrc/proxy/telnet.c
 
     puttysrc/proxy/proxy.h
 
@@ -175,6 +181,7 @@ set(PROJECT_SOURCES
 
     puttysrc/terminal/terminal.h
 
+    puttysrc/utils/antispoof.c
     puttysrc/utils/backend_socket_log.c
     puttysrc/utils/base64_decode_atom.c
     puttysrc/utils/base64_encode_atom.c
@@ -187,6 +194,7 @@ set(PROJECT_SOURCES
     puttysrc/utils/conf_launchable.c
     puttysrc/utils/ctrlparse.c
     #puttysrc/utils/debug.c
+    puttysrc/utils/default_description.c
     puttysrc/utils/dup_mb_to_wc.c
     puttysrc/utils/dupcat.c
     puttysrc/utils/dupprintf.c
@@ -198,11 +206,12 @@ set(PROJECT_SOURCES
     puttysrc/utils/host_strcspn.c
     puttysrc/utils/host_strduptrim.c
     puttysrc/utils/host_strrchr.c
-    #puttysrc/utils/log_proxy_stderr.c
+    puttysrc/utils/log_proxy_stderr.c
+    puttysrc/utils/make_spr_sw_abort_static.c
     puttysrc/utils/marshal.c
     puttysrc/utils/memory.c
     puttysrc/utils/memxor.c
-    #puttysrc/utils/null_lp.c
+    puttysrc/utils/null_lp.c
     puttysrc/utils/nullseat.c
     puttysrc/utils/nullstrcmp.c
     puttysrc/utils/out_of_memory.c
@@ -211,20 +220,29 @@ set(PROJECT_SOURCES
     puttysrc/utils/ptrlen.c
     #puttysrc/utils/read_file_into.c
     puttysrc/utils/seat_connection_fatal.c
+    puttysrc/utils/sessprep.c
     puttysrc/utils/sk_free_peer_info.c
     #puttysrc/utils/smemclr.c
     puttysrc/utils/smemeq.c
+    puttysrc/utils/spr_get_error_message.c
     puttysrc/utils/ssh2_pick_fingerprint.c
     puttysrc/utils/sshutils.c
     puttysrc/utils/strbuf.c
     puttysrc/utils/string_length_for_printf.c
     puttysrc/utils/stripctrl.c
+    puttysrc/utils/tempseat.c
     puttysrc/utils/tree234.c
     puttysrc/utils/validate_manual_hostkey.c
     puttysrc/utils/version.c
     puttysrc/utils/wcwidth.c
     puttysrc/utils/wildcard.c
-    #puttysrc/utils/write_c_string_literal.c
+    puttysrc/utils/write_c_string_literal.c
+    puttysrc/utils/x11_dehexify.c
+    puttysrc/utils/x11_identify_auth_proto.c
+    puttysrc/utils/x11_make_greeting.c
+    puttysrc/utils/x11_parse_ip.c
+    puttysrc/utils/x11authfile.c
+    puttysrc/utils/x11authnames.c
 
     puttysrc/be_qutty.c
     puttysrc/callback.c
@@ -250,6 +268,7 @@ set(PROJECT_SOURCES
     puttysrc/storage.h
     puttysrc/tree234.h
     puttysrc/version.h
+    puttysrc/x11disp.c
 
     tmux/TmuxBackend.cpp
     tmux/TmuxGateway.cpp
