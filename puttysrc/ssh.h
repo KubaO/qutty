@@ -446,7 +446,7 @@ struct RSAKey {
     ssh_key sshk;
 };
 
-struct dss_key {
+struct dsa_key {
     mp_int *p, *q, *g, *y, *x;
     ssh_key sshk;
 };
@@ -1022,7 +1022,7 @@ extern const ssh_kex ssh_ec_kex_nistp256;
 extern const ssh_kex ssh_ec_kex_nistp384;
 extern const ssh_kex ssh_ec_kex_nistp521;
 extern const ssh_kexes ssh_ecdh_kex;
-extern const ssh_keyalg ssh_dss;
+extern const ssh_keyalg ssh_dsa;
 extern const ssh_keyalg ssh_rsa;
 extern const ssh_keyalg ssh_rsa_sha256;
 extern const ssh_keyalg ssh_rsa_sha512;
