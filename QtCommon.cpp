@@ -451,7 +451,7 @@ void qstring_to_char(char *dst, const QString &src, int dstlen) {
   strncpy(dst, name.constData(), dstlen);
 }
 
-FontSpec *fontspec_new(const char *name, int bold, int height, int charset) {
+FontSpec *fontspec_new(const char *name, bool bold, int height, int charset) {
   FontSpec *f = snew(FontSpec);
   strncpy(f->name, name, sizeof(f->name));
   f->name[sizeof(f->name) - 1] = '\0';

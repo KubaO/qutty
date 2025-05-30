@@ -46,11 +46,12 @@ struct Filename {
 
 struct FontSpec {
     char name[64];
-    int isbold;
+    bool isbold;
     int height;
     int charset;
 };
-struct FontSpec *fontspec_new(const char *name, int bold, int height, int charset);
+struct FontSpec *fontspec_new(
+    const char *name, bool bold, int height, int charset);
 
 typedef uint32_t uint32;
 
