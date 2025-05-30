@@ -1,9 +1,15 @@
-/* ----------------------------------------------------------------------
+/*
  * Software implementation of SHA-512.
  */
 
 #include "ssh.h"
 #include "sha512.h"
+
+static bool sha512_sw_available(void)
+{
+    /* Software SHA-512 is always available */
+    return true;
+}
 
 static inline uint64_t ror(uint64_t x, unsigned y)
 {
@@ -109,10 +115,10 @@ static ssh_hash *sha512_sw_new(const ssh_hashalg *alg)
 static void sha512_sw_reset(ssh_hash *hash)
 {
     sha512_sw *s = container_of(hash, sha512_sw, hash);
+    const struct sha512_extra *extra =
+        (const struct sha512_extra *)hash->vt->extra;
 
-    /* The 'extra' field in the ssh_hashalg indicates which
-     * initialisation vector we're using */
-    memcpy(s->core, hash->vt->extra, sizeof(s->core));
+    memcpy(s->core, extra->initial_state, sizeof(s->core));
     sha512_block_setup(&s->blk);
 }
 
@@ -152,27 +158,11 @@ static void sha512_sw_digest(ssh_hash *hash, uint8_t *digest)
         PUT_64BIT_MSB_FIRST(digest + 8*i, s->core[i]);
 }
 
-const ssh_hashalg ssh_sha512_sw = {
-    ._new = sha512_sw_new,
-    .reset = sha512_sw_reset,
-    .copyfrom = sha512_sw_copyfrom,
-    .digest = sha512_sw_digest,
-    .free = sha512_sw_free,
-    .hlen = 64,
-    .blocklen = 128,
-    HASHALG_NAMES_ANNOTATED("SHA-512", "unaccelerated"),
-    .extra = sha512_initial_state,
-};
+/*
+ * This implementation doesn't need separate digest methods for
+ * SHA-384 and SHA-512, because the above implementation reads the
+ * hash length out of the vtable.
+ */
+#define sha384_sw_digest sha512_sw_digest
 
-const ssh_hashalg ssh_sha384_sw = {
-    ._new = sha512_sw_new,
-    .reset = sha512_sw_reset,
-    .copyfrom = sha512_sw_copyfrom,
-    .digest = sha512_sw_digest,
-    .free = sha512_sw_free,
-    .hlen = 48,
-    .blocklen = 128,
-    HASHALG_NAMES_ANNOTATED("SHA-384", "unaccelerated"),
-    .extra = sha384_initial_state,
-};
-
+SHA512_VTABLES(sw, "unaccelerated");

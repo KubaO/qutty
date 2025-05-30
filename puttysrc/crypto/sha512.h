@@ -1,47 +1,76 @@
 /*
- * SHA-512 algorithm as described at
- *
- *   http://csrc.nist.gov/cryptval/shs.html
- *
- * Modifications made for SHA-384 also
+ * Definitions likely to be helpful to multiple SHA-512 implementations.
  */
 
 /*
- * Start by deciding whether we can support hardware SHA at all.
+ * The 'extra' structure used by SHA-512 implementations is used to
+ * include information about how to check if a given implementation is
+ * available at run time, and whether we've already checked.
  */
-#define HW_SHA512_NONE 0
-#define HW_SHA512_NEON 1
+struct sha512_extra_mutable;
+struct sha512_extra {
+    /* Pointer to the initial state (distinguishes SHA-384 from -512) */
+    const uint64_t *initial_state;
 
-#ifdef _FORCE_SHA512_NEON
-#   define HW_SHA512 HW_SHA512_NEON
-#elif defined __BYTE_ORDER__ && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    /* Arm can potentially support both endiannesses, but this code
-     * hasn't been tested on anything but little. If anyone wants to
-     * run big-endian, they'll need to fix it first. */
-#elif defined __ARM_FEATURE_SHA512
-    /* If the Arm SHA-512 extension is available already, we can
-     * support NEON SHA without having to enable anything by hand */
-#   define HW_SHA512 HW_SHA512_NEON
-#elif defined(__clang__)
-#   if __has_attribute(target) && __has_include(<arm_neon.h>) &&       \
-    (defined(__aarch64__))
-        /* clang can enable the crypto extension in AArch64 using
-         * __attribute__((target)) */
-#       define HW_SHA512 HW_SHA512_NEON
-#       define USE_CLANG_ATTR_TARGET_AARCH64
-#   endif
-#endif
+    /* Function to check availability. Might be expensive, so we don't
+     * want to call it more than once. */
+    bool (*check_available)(void);
 
-#if defined _FORCE_SOFTWARE_SHA || !defined HW_SHA512
-#   undef HW_SHA512
-#   define HW_SHA512 HW_SHA512_NONE
-#endif
+    /* Point to a writable substructure. */
+    struct sha512_extra_mutable *mut;
+};
+struct sha512_extra_mutable {
+    bool checked_availability;
+    bool is_available;
+};
+static inline bool check_availability(const struct sha512_extra *extra)
+{
+    if (!extra->mut->checked_availability) {
+        extra->mut->is_available = extra->check_available();
+        extra->mut->checked_availability = true;
+    }
+
+    return extra->mut->is_available;
+}
 
 /*
- * The actual query function that asks if hardware acceleration is
- * available.
+ * Macro to define a pair of SHA-{384,512} vtables together with their
+ * 'extra' structure.
  */
-bool sha512_hw_available(void);
+#define SHA512_VTABLES(impl_c, impl_display)                            \
+    static struct sha512_extra_mutable sha512_ ## impl_c ## _extra_mut; \
+    static const struct sha512_extra sha384_ ## impl_c ## _extra = {    \
+        .initial_state = sha384_initial_state,                          \
+        .check_available = sha512_ ## impl_c ## _available,             \
+        .mut = &sha512_ ## impl_c ## _extra_mut,                        \
+    };                                                                  \
+    static const struct sha512_extra sha512_ ## impl_c ## _extra = {    \
+        .initial_state = sha512_initial_state,                          \
+        .check_available = sha512_ ## impl_c ## _available,             \
+        .mut = &sha512_ ## impl_c ## _extra_mut,                        \
+    };                                                                  \
+    const ssh_hashalg ssh_sha384_ ## impl_c = {                         \
+        ._new = sha512_ ## impl_c ## _new,                              \
+        .reset = sha512_ ## impl_c ## _reset,                           \
+        .copyfrom = sha512_ ## impl_c ## _copyfrom,                     \
+        .digest = sha384_ ## impl_c ## _digest,                         \
+        .free = sha512_ ## impl_c ## _free,                             \
+        .hlen = 48,                                                     \
+        .blocklen = 128,                                                \
+        HASHALG_NAMES_ANNOTATED("SHA-384", impl_display),               \
+        .extra = &sha384_ ## impl_c ## _extra,                          \
+    };                                                                  \
+    const ssh_hashalg ssh_sha512_ ## impl_c = {                         \
+        ._new = sha512_ ## impl_c ## _new,                              \
+        .reset = sha512_ ## impl_c ## _reset,                           \
+        .copyfrom = sha512_ ## impl_c ## _copyfrom,                     \
+        .digest = sha512_ ## impl_c ## _digest,                         \
+        .free = sha512_ ## impl_c ## _free,                             \
+        .hlen = 64,                                                     \
+        .blocklen = 128,                                                \
+        HASHALG_NAMES_ANNOTATED("SHA-512", impl_display),               \
+        .extra = &sha512_ ## impl_c ## _extra,                          \
+    }
 
 extern const uint64_t sha512_initial_state[8];
 extern const uint64_t sha384_initial_state[8];

@@ -1,11 +1,11 @@
-/* ----------------------------------------------------------------------
- * Definitions likely to be helpful to multiple implementations.
+/*
+ * Common variable definitions across all the SHA-512 implementations.
  */
 
 #include "ssh.h"
 #include "sha512.h"
 
-const uint64_t sha512_initial_state[] = {
+const uint64_t sha512_initial_state[8] = {
     0x6a09e667f3bcc908ULL,
     0xbb67ae8584caa73bULL,
     0x3c6ef372fe94f82bULL,
@@ -16,7 +16,7 @@ const uint64_t sha512_initial_state[] = {
     0x5be0cd19137e2179ULL,
 };
 
-const uint64_t sha384_initial_state[] = {
+const uint64_t sha384_initial_state[8] = {
     0xcbbb9d5dc1059ed8ULL,
     0x629a292a367cd507ULL,
     0x9159015a3070dd17ULL,
@@ -27,7 +27,7 @@ const uint64_t sha384_initial_state[] = {
     0x47b5481dbefa4fa4ULL,
 };
 
-const uint64_t sha512_round_constants[] = {
+const uint64_t sha512_round_constants[80] = {
     0x428a2f98d728ae22ULL, 0x7137449123ef65cdULL,
     0xb5c0fbcfec4d3b2fULL, 0xe9b5dba58189dbbcULL,
     0x3956c25bf348b538ULL, 0x59f111f1b605d019ULL,

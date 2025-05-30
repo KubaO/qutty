@@ -105,8 +105,7 @@ set(PROJECT_SOURCES
     puttysrc/crypto/sha256-select.c
     puttysrc/crypto/sha256-sw.c
     puttysrc/crypto/sha512-common.c
-    puttysrc/crypto/sha512-neon.c
-    puttysrc/crypto/sha512-none.c
+    #puttysrc/crypto/sha512-neon.c
     puttysrc/crypto/sha512-select.c
     puttysrc/crypto/sha512-sw.c
     puttysrc/crypto/sha3.c

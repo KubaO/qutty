@@ -1,104 +1,66 @@
-/* ----------------------------------------------------------------------
+/*
  * Hardware-accelerated implementation of SHA-512 using Arm NEON.
  */
 
 #include "ssh.h"
 #include "sha512.h"
 
-#if HW_SHA512 == HW_SHA512_NEON
-
-/*
- * Manually set the target architecture, if we decided above that we
- * need to.
- */
-#ifdef USE_CLANG_ATTR_TARGET_AARCH64
-/*
- * A spot of cheating: redefine some ACLE feature macros before
- * including arm_neon.h. Otherwise we won't get the SHA intrinsics
- * defined by that header, because it will be looking at the settings
- * for the whole translation unit rather than the ones we're going to
- * put on some particular functions using __attribute__((target)).
- */
-#define __ARM_NEON 1
-#define __ARM_FEATURE_CRYPTO 1
-#define FUNC_ISA __attribute__ ((target("neon,sha3")))
-#endif /* USE_CLANG_ATTR_TARGET_AARCH64 */
-
-#ifndef FUNC_ISA
-#define FUNC_ISA
-#endif
-
-#ifdef USE_ARM64_NEON_H
+#if USE_ARM64_NEON_H
 #include <arm64_neon.h>
 #else
 #include <arm_neon.h>
 #endif
 
-bool sha512_hw_available(void)
+static bool sha512_neon_available(void)
 {
     /*
      * For Arm, we delegate to a per-platform detection function (see
-     * explanation in sshaes.c).
+     * explanation in aes-neon.c).
      */
-    return platform_sha512_hw_available();
+    return platform_sha512_neon_available();
 }
 
-#if defined __clang__
+#if !HAVE_NEON_SHA512_INTRINSICS
 /*
- * As of 2020-12-24, I've found that clang doesn't provide the SHA-512
- * NEON intrinsics. So I define my own set using inline assembler, and
- * use #define to effectively rename them over the top of the standard
- * names.
- *
- * The aim of that #define technique is that it should avoid a build
- * failure if these intrinsics _are_ defined in <arm_neon.h>.
- * Obviously it would be better in that situation to switch back to
- * using the real intrinsics, but until I see a version of clang that
- * supports them, I won't know what version number to test in the
- * ifdef.
+ * clang 12 and before do not provide the SHA-512 NEON intrinsics, but
+ * do provide assembler support for the underlying instructions. So I
+ * define the intrinsic functions myself, using inline assembler.
  */
-static inline FUNC_ISA
-uint64x2_t vsha512su0q_u64_asm(uint64x2_t x, uint64x2_t y) {
+static inline uint64x2_t vsha512su0q_u64(uint64x2_t x, uint64x2_t y)
+{
     __asm__("sha512su0 %0.2D,%1.2D" : "+w" (x) : "w" (y));
     return x;
 }
-static inline FUNC_ISA
-uint64x2_t vsha512su1q_u64_asm(uint64x2_t x, uint64x2_t y, uint64x2_t z) {
+static inline uint64x2_t vsha512su1q_u64(uint64x2_t x, uint64x2_t y,
+                                         uint64x2_t z)
+{
     __asm__("sha512su1 %0.2D,%1.2D,%2.2D" : "+w" (x) : "w" (y), "w" (z));
     return x;
 }
-static inline FUNC_ISA
-uint64x2_t vsha512hq_u64_asm(uint64x2_t x, uint64x2_t y, uint64x2_t z) {
+static inline uint64x2_t vsha512hq_u64(uint64x2_t x, uint64x2_t y,
+                                       uint64x2_t z)
+{
     __asm__("sha512h %0,%1,%2.2D" : "+w" (x) : "w" (y), "w" (z));
     return x;
 }
-static inline FUNC_ISA
-uint64x2_t vsha512h2q_u64_asm(uint64x2_t x, uint64x2_t y, uint64x2_t z) {
+static inline uint64x2_t vsha512h2q_u64(uint64x2_t x, uint64x2_t y,
+                                        uint64x2_t z)
+{
     __asm__("sha512h2 %0,%1,%2.2D" : "+w" (x) : "w" (y), "w" (z));
     return x;
 }
-#undef vsha512su0q_u64
-#define vsha512su0q_u64 vsha512su0q_u64_asm
-#undef vsha512su1q_u64
-#define vsha512su1q_u64 vsha512su1q_u64_asm
-#undef vsha512hq_u64
-#define vsha512hq_u64 vsha512hq_u64_asm
-#undef vsha512h2q_u64
-#define vsha512h2q_u64 vsha512h2q_u64_asm
-#endif /* defined __clang__ */
+#endif /* HAVE_NEON_SHA512_INTRINSICS */
 
 typedef struct sha512_neon_core sha512_neon_core;
 struct sha512_neon_core {
     uint64x2_t ab, cd, ef, gh;
 };
 
-FUNC_ISA
 static inline uint64x2_t sha512_neon_load_input(const uint8_t *p)
 {
     return vreinterpretq_u64_u8(vrev64q_u8(vld1q_u8(p)));
 }
 
-FUNC_ISA
 static inline uint64x2_t sha512_neon_schedule_update(
     uint64x2_t m8, uint64x2_t m7, uint64x2_t m4, uint64x2_t m3, uint64x2_t m1)
 {
@@ -119,7 +81,6 @@ static inline uint64x2_t sha512_neon_schedule_update(
     return vsha512su1q_u64(vsha512su0q_u64(m8, m7), m1, vextq_u64(m4, m3, 1));
 }
 
-FUNC_ISA
 static inline void sha512_neon_round2(
     unsigned round_index, uint64x2_t schedule_words,
     uint64x2_t *ab, uint64x2_t *cd, uint64x2_t *ef, uint64x2_t *gh)
@@ -185,7 +146,6 @@ static inline void sha512_neon_round2(
     *cd = vaddq_u64(*cd, intermed);
 }
 
-FUNC_ISA
 static inline void sha512_neon_block(sha512_neon_core *core, const uint8_t *p)
 {
     uint64x2_t s0, s1, s2, s3, s4, s5, s6, s7;
@@ -290,7 +250,8 @@ static void sha512_neon_write(BinarySink *bs, const void *vp, size_t len);
 
 static ssh_hash *sha512_neon_new(const ssh_hashalg *alg)
 {
-    if (!sha512_hw_available_cached())
+    const struct sha512_extra *extra = (const struct sha512_extra *)alg->extra;
+    if (!check_availability(extra))
         return NULL;
 
     sha512_neon *s = snew(sha512_neon);
@@ -304,12 +265,13 @@ static ssh_hash *sha512_neon_new(const ssh_hashalg *alg)
 static void sha512_neon_reset(ssh_hash *hash)
 {
     sha512_neon *s = container_of(hash, sha512_neon, hash);
-    const uint64_t *iv = (const uint64_t *)hash->vt->extra;
+    const struct sha512_extra *extra =
+        (const struct sha512_extra *)hash->vt->extra;
 
-    s->core.ab = vld1q_u64(iv);
-    s->core.cd = vld1q_u64(iv+2);
-    s->core.ef = vld1q_u64(iv+4);
-    s->core.gh = vld1q_u64(iv+6);
+    s->core.ab = vld1q_u64(extra->initial_state);
+    s->core.cd = vld1q_u64(extra->initial_state+2);
+    s->core.ef = vld1q_u64(extra->initial_state+4);
+    s->core.gh = vld1q_u64(extra->initial_state+6);
 
     sha512_block_setup(&s->blk);
 }
@@ -364,28 +326,4 @@ static void sha384_neon_digest(ssh_hash *hash, uint8_t *digest)
     vst1q_u8(digest+32, vrev64q_u8(vreinterpretq_u8_u64(s->core.ef)));
 }
 
-const ssh_hashalg ssh_sha512_hw = {
-    ._new = sha512_neon_new,
-    .reset = sha512_neon_reset,
-    .copyfrom = sha512_neon_copyfrom,
-    .digest = sha512_neon_digest,
-    .free = sha512_neon_free,
-    .hlen = 64,
-    .blocklen = 128,
-    HASHALG_NAMES_ANNOTATED("SHA-512", "NEON accelerated"),
-    .extra = sha512_initial_state,
-};
-
-const ssh_hashalg ssh_sha384_hw = {
-    ._new = sha512_neon_new,
-    .reset = sha512_neon_reset,
-    .copyfrom = sha512_neon_copyfrom,
-    .digest = sha384_neon_digest,
-    .free = sha512_neon_free,
-    .hlen = 48,
-    .blocklen = 128,
-    HASHALG_NAMES_ANNOTATED("SHA-384", "NEON accelerated"),
-    .extra = sha384_initial_state,
-};
-
-#endif
+SHA512_VTABLES(neon, "NEON accelerated");
