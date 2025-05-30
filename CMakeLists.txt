@@ -396,7 +396,7 @@ if (LINUX)
     endif()
 endif()
 
-include_directories(./ puttysrc/ puttysrc/windows/)
+include_directories(./ puttysrc/ puttysrc/terminal/ puttysrc/windows/)
 
 if (MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
