@@ -1,15 +1,15 @@
 /*
- * SHA-256 algorithm as described at
- *
- *   http://csrc.nist.gov/cryptval/shs.html
+ * Software implementation of SHA-256.
  */
 
 #include "ssh.h"
 #include "sha256.h"
 
-/* ----------------------------------------------------------------------
- * Software implementation of SHA-256.
- */
+static bool sha256_sw_available(void)
+{
+    /* Software SHA-256 is always available */
+    return true;
+}
 
 static inline uint32_t ror(uint32_t x, unsigned y)
 {
@@ -154,13 +154,4 @@ static void sha256_sw_digest(ssh_hash *hash, uint8_t *digest)
         PUT_32BIT_MSB_FIRST(digest + 4*i, s->core[i]);
 }
 
-const ssh_hashalg ssh_sha256_sw = {
-    ._new = sha256_sw_new,
-    .reset = sha256_sw_reset,
-    .copyfrom = sha256_sw_copyfrom,
-    .digest = sha256_sw_digest,
-    .free = sha256_sw_free,
-    .hlen = 32,
-    .blocklen = 64,
-    HASHALG_NAMES_ANNOTATED("SHA-256", "unaccelerated"),
-};
+SHA256_VTABLE(sw, "unaccelerated");

@@ -1,47 +1,23 @@
-/* ----------------------------------------------------------------------
+/*
  * Hardware-accelerated implementation of SHA-256 using Arm NEON.
  */
 
 #include "ssh.h"
 #include "sha256.h"
 
-#if HW_SHA256 == HW_SHA256_NEON
-
-/*
- * Manually set the target architecture, if we decided above that we
- * need to.
- */
-#ifdef USE_CLANG_ATTR_TARGET_AARCH64
-/*
- * A spot of cheating: redefine some ACLE feature macros before
- * including arm_neon.h. Otherwise we won't get the SHA intrinsics
- * defined by that header, because it will be looking at the settings
- * for the whole translation unit rather than the ones we're going to
- * put on some particular functions using __attribute__((target)).
- */
-#define __ARM_NEON 1
-#define __ARM_FEATURE_CRYPTO 1
-#define __ARM_FEATURE_SHA2 1
-#define FUNC_ISA __attribute__ ((target("neon,crypto")))
-#endif /* USE_CLANG_ATTR_TARGET_AARCH64 */
-
-#ifndef FUNC_ISA
-#define FUNC_ISA
-#endif
-
-#ifdef USE_ARM64_NEON_H
+#if USE_ARM64_NEON_H
 #include <arm64_neon.h>
 #else
 #include <arm_neon.h>
 #endif
 
-bool sha256_hw_available(void)
+static bool sha256_neon_available(void)
 {
     /*
      * For Arm, we delegate to a per-platform detection function (see
-     * explanation in sshaes.c).
+     * explanation in aes-neon.c).
      */
-    return platform_sha256_hw_available();
+    return platform_sha256_neon_available();
 }
 
 typedef struct sha256_neon_core sha256_neon_core;
@@ -49,20 +25,17 @@ struct sha256_neon_core {
     uint32x4_t abcd, efgh;
 };
 
-FUNC_ISA
 static inline uint32x4_t sha256_neon_load_input(const uint8_t *p)
 {
     return vreinterpretq_u32_u8(vrev32q_u8(vld1q_u8(p)));
 }
 
-FUNC_ISA
 static inline uint32x4_t sha256_neon_schedule_update(
     uint32x4_t m4, uint32x4_t m3, uint32x4_t m2, uint32x4_t m1)
 {
     return vsha256su1q_u32(vsha256su0q_u32(m4, m3), m2, m1);
 }
 
-FUNC_ISA
 static inline sha256_neon_core sha256_neon_round4(
     sha256_neon_core old, uint32x4_t sched, unsigned round)
 {
@@ -75,7 +48,6 @@ static inline sha256_neon_core sha256_neon_round4(
     return new;
 }
 
-FUNC_ISA
 static inline void sha256_neon_block(sha256_neon_core *core, const uint8_t *p)
 {
     uint32x4_t s0, s1, s2, s3;
@@ -129,7 +101,8 @@ static void sha256_neon_write(BinarySink *bs, const void *vp, size_t len);
 
 static ssh_hash *sha256_neon_new(const ssh_hashalg *alg)
 {
-    if (!sha256_hw_available_cached())
+    const struct sha256_extra *extra = (const struct sha256_extra *)alg->extra;
+    if (!check_availability(extra))
         return NULL;
 
     sha256_neon *s = snew(sha256_neon);
@@ -186,15 +159,4 @@ static void sha256_neon_digest(ssh_hash *hash, uint8_t *digest)
     vst1q_u8(digest + 16, vrev32q_u8(vreinterpretq_u8_u32(s->core.efgh)));
 }
 
-const ssh_hashalg ssh_sha256_hw = {
-    ._new = sha256_neon_new,
-    .reset = sha256_neon_reset,
-    .copyfrom = sha256_neon_copyfrom,
-    .digest = sha256_neon_digest,
-    .free = sha256_neon_free,
-    .hlen = 32,
-    .blocklen = 64,
-    HASHALG_NAMES_ANNOTATED("SHA-256", "NEON accelerated"),
-};
-
-#endif
+SHA256_VTABLE(neon, "NEON accelerated");

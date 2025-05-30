@@ -1,29 +1,14 @@
-/* ----------------------------------------------------------------------
+/*
  * Hardware-accelerated implementation of SHA-256 using x86 SHA-NI.
  */
 
 #include "ssh.h"
 #include "sha256.h"
 
-#if HW_SHA256 == HW_SHA256_NI
-
-/*
- * Set target architecture for Clang and GCC
- */
-#if defined(__clang__) || defined(__GNUC__)
-#    define FUNC_ISA __attribute__ ((target("sse4.1,sha")))
-#if !defined(__clang__)
-#    pragma GCC target("sha")
-#    pragma GCC target("sse4.1")
-#endif
-#else
-#    define FUNC_ISA
-#endif
-
 #include <wmmintrin.h>
 #include <smmintrin.h>
 #include <immintrin.h>
-#if defined(__clang__) || defined(__GNUC__)
+#if HAVE_SHAINTRIN_H
 #include <shaintrin.h>
 #endif
 
@@ -38,7 +23,7 @@
 #define GET_CPU_ID_7(out) __cpuidex(out, 7, 0)
 #endif
 
-bool sha256_hw_available(void)
+static bool sha256_ni_available(void)
 {
     unsigned int CPUInfo[4];
     GET_CPU_ID_0(CPUInfo);
@@ -53,7 +38,6 @@ bool sha256_hw_available(void)
    The code is based on Jeffrey Walton's SHA256 implementation:
    https://github.com/noloader/SHA-Intrinsics
 */
-FUNC_ISA
 static inline void sha256_ni_block(__m128i *core, const uint8_t *p)
 {
     __m128i STATE0, STATE1;
@@ -275,7 +259,8 @@ static sha256_ni *sha256_ni_alloc(void)
 
 static ssh_hash *sha256_ni_new(const ssh_hashalg *alg)
 {
-    if (!sha256_hw_available_cached())
+    const struct sha256_extra *extra = (const struct sha256_extra *)alg->extra;
+    if (!check_availability(extra))
         return NULL;
 
     sha256_ni *s = sha256_ni_alloc();
@@ -287,7 +272,7 @@ static ssh_hash *sha256_ni_new(const ssh_hashalg *alg)
     return &s->hash;
 }
 
-FUNC_ISA static void sha256_ni_reset(ssh_hash *hash)
+static void sha256_ni_reset(ssh_hash *hash)
 {
     sha256_ni *s = container_of(hash, sha256_ni, hash);
 
@@ -331,7 +316,7 @@ static void sha256_ni_write(BinarySink *bs, const void *vp, size_t len)
             sha256_ni_block(s->core, s->blk.block);
 }
 
-FUNC_ISA static void sha256_ni_digest(ssh_hash *hash, uint8_t *digest)
+static void sha256_ni_digest(ssh_hash *hash, uint8_t *digest)
 {
     sha256_ni *s = container_of(hash, sha256_ni, hash);
 
@@ -354,15 +339,4 @@ FUNC_ISA static void sha256_ni_digest(ssh_hash *hash, uint8_t *digest)
     _mm_storeu_si128(output+1, hgfe);
 }
 
-const ssh_hashalg ssh_sha256_hw = {
-    ._new = sha256_ni_new,
-    .reset = sha256_ni_reset,
-    .copyfrom = sha256_ni_copyfrom,
-    .digest = sha256_ni_digest,
-    .free = sha256_ni_free,
-    .hlen = 32,
-    .blocklen = 64,
-    HASHALG_NAMES_ANNOTATED("SHA-256", "SHA-NI accelerated"),
-};
-
-#endif
+SHA256_VTABLE(ni, "SHA-NI accelerated");

@@ -9,27 +9,31 @@
 #include "ssh.h"
 #include "sha256.h"
 
-/*
- * The top-level selection function, caching the results of
- * sha256_hw_available() so it only has to run once.
- */
-bool sha256_hw_available_cached(void)
-{
-    static bool initialised = false;
-    static bool hw_available;
-    if (!initialised) {
-        hw_available = sha256_hw_available();
-        initialised = true;
-    }
-    return hw_available;
-}
-
 static ssh_hash *sha256_select(const ssh_hashalg *alg)
 {
-    const ssh_hashalg *real_alg =
-        sha256_hw_available_cached() ? &ssh_sha256_hw : &ssh_sha256_sw;
+    static const ssh_hashalg *const real_algs[] = {
+#if HAVE_SHA_NI
+        &ssh_sha256_ni,
+#endif
+#if HAVE_NEON_CRYPTO
+        &ssh_sha256_neon,
+#endif
+        &ssh_sha256_sw,
+        NULL,
+    };
 
-    return ssh_hash_new(real_alg);
+    for (size_t i = 0; real_algs[i]; i++) {
+        const ssh_hashalg *alg = real_algs[i];
+        const struct sha256_extra *alg_extra =
+            (const struct sha256_extra *)alg->extra;
+        if (check_availability(alg_extra))
+            return ssh_hash_new(alg);
+    }
+
+    /* We should never reach the NULL at the end of the list, because
+     * the last non-NULL entry should be software-only SHA-256, which
+     * is always available. */
+    unreachable("sha256_select ran off the end of its list");
 }
 
 const ssh_hashalg ssh_sha256 = {
