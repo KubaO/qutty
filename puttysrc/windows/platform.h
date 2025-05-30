@@ -1,19 +1,37 @@
-#ifndef QTSTUFF_H
-#define QTSTUFF_H
+/*
+ * windows/platform.h: Windows-specific inter-module stuff.
+ */
 
-#include <stdio.h>
-#ifdef __linux
-#include "unix/unix.h"
-#else
+#ifndef PUTTY_WINDOWS_PLATFORM_H
+#define PUTTY_WINDOWS_PLATFORM_H
+
 #include <windows.h>
-#endif
+#include <stdio.h>                     /* for FILENAME_MAX */
+
+/* We use uintptr_t for Win32/Win64 portability, so we should in
+ * principle include stdint.h, which defines it according to the C
+ * standard. But older versions of Visual Studio don't provide
+ * stdint.h at all, but do (non-standardly) define uintptr_t in
+ * stddef.h. So here we try to make sure _some_ standard header is
+ * included which defines uintptr_t. */
+#include <stddef.h>
+#if !HAVE_NO_STDINT_H
 #include <stdint.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include "defs.h"
+
+#if defined _M_IX86 || defined _M_AMD64
+#define BUILDINFO_PLATFORM "x86 Windows"
+#elif defined _M_ARM || defined _M_ARM64
+#define BUILDINFO_PLATFORM "Arm Windows"
+#else
+#define BUILDINFO_PLATFORM "Windows"
+#endif
 
 #ifdef _MSC_VER
 #define stricmp _stricmp
@@ -22,13 +40,15 @@ extern "C" {
 
 #define APPNAME "QuTTY"
 
-#ifdef _WIN32
-#define BUILDINFO_PLATFORM "Windows"
-#endif
-
 struct Filename {
     char path[FILENAME_MAX];
 };
+
+static inline FILE *f_open(const Filename *filename, const char *mode,
+                           bool isprivate)
+{
+    return fopen(filename->path, mode);
+}
 
 struct FontSpec {
     char name[64];
@@ -39,56 +59,20 @@ struct FontSpec {
 struct FontSpec *fontspec_new(
     const char *name, bool bold, int height, int charset);
 
-typedef uint32_t uint32;
-
-typedef void* Context;
-
 typedef struct unicode_data unicode_data_t;
-
 void init_ucs(Conf *, unicode_data_t *);
+    
+#define PLATFORM_IS_UTF16 /* enable UTF-16 processing when exchanging
+                           * wchar_t strings with environment */
 
-#ifdef __linux
-#include <time.h>
-#include "unix/unix.h"
-#else
-#define DEFAULT_CODEPAGE CP_ACP
-#endif
-
-#define TICKSPERSEC 1000	       /* GetTickCount returns milliseconds */
-
-#if defined _MSC_VER || defined __MINGW32__
-#define GETTICKCOUNT GetTickCount
-
-/*
- * On Windows, copying to the clipboard terminates lines with CRLF.
- */
-#define SEL_NL { 13, 10 }
-#endif
-
-void socket_reselect_all(void);
-
-#define f_open(filename, mode, isprivate) (fopen((filename)->path, (mode)))
-
-/*
- * sk_getxdmdata() does not exist under Windows (not that I
- * couldn't write it if I wanted to, but I haven't bothered), so
- * it's a macro which always returns NULL. With any luck this will
- * cause the compiler to notice it can optimise away the
- * implementation of XDM-AUTHORIZATION-1 in x11fwd.c :-)
- */
-#define sk_getxdmdata(socket, lenp) (NULL)
+#define PLATFORM_CLIPBOARDS(X)                      \
+    X(CLIP_SYSTEM, "system clipboard")              \
+    /* end of list */
 
 void qtc_assert(const char *assertion, const char *file, int line);
 
 #undef assert
 #define assert(cond) ((cond) ? (void)0 : qtc_assert(#cond, __FILE__, __LINE__))
-
-#ifdef __linux
-#define _snprintf snprintf
-#define _vsnprintf snprintf
-#endif
-
-static void clear_jumplist(void) {}
 
 /*
  * Dynamically linked functions. These come in two flavours:
@@ -139,14 +123,43 @@ static void clear_jumplist(void) {}
 #define JUMPLISTREG_ERROR_VALUEWRITE_FAILURE 4
 #define JUMPLISTREG_ERROR_INVALID_VALUE 5
 
+#define GETTICKCOUNT GetTickCount
+#define CURSORBLINK GetCaretBlinkTime()
+#define TICKSPERSEC 1000               /* GetTickCount returns milliseconds */
+
+#define DEFAULT_CODEPAGE CP_ACP
+
+/*
+ * On Windows, copying to the clipboard terminates lines with CRLF.
+ */
+#define SEL_NL { 13, 10 }
+
+/*
+ * sk_getxdmdata() does not exist under Windows (not that I
+ * couldn't write it if I wanted to, but I haven't bothered), so
+ * it's a macro which always returns NULL. With any luck this will
+ * cause the compiler to notice it can optimise away the
+ * implementation of XDM-AUTHORIZATION-1 in ssh/x11fwd.c :-)
+ */
+#define sk_getxdmdata(socket, lenp) (NULL)
+
+/*
+ * Exports from network.c.
+ */
+/* Force a refresh of the SOCKET list by re-calling do_select for each one */
+void socket_reselect_all(void);
+
+/*
+ * Exports from utils.
+ */
 HMODULE load_system32_dll(const char *libname);
+void escape_registry_key(const char *in, strbuf *out);
+void unescape_registry_key(const char *in, strbuf *out);
 
-#define PLATFORM_IS_UTF16 /* enable UTF-16 processing when exchanging \
-                           * wchar_t strings with environment */
-
-#define PLATFORM_CLIPBOARDS(X)       \
-  X(CLIP_SYSTEM, "system clipboard") \
-  /* end of list */
+/*
+ * Exports from jump-list.c.
+ */
+static void clear_jumplist(void) {}
 
 /*
  * Windows clipboard-UI wording.
@@ -159,12 +172,10 @@ HMODULE load_system32_dll(const char *libname);
 #define CLIPUI_DEFAULT_MOUSE CLIPUI_EXPLICIT
 #define CLIPUI_DEFAULT_INS CLIPUI_EXPLICIT
 
-void escape_registry_key(const char *in, strbuf *out);
-void unescape_registry_key(const char *in, strbuf *out);
-
 static int has_embedded_chm(void) { return -1; } /* 1 = yes, 0 = no, -1 = N/A */
 
 #ifdef __cplusplus
 }
 #endif
-#endif // QTSTUFF_H
+
+#endif /* PUTTY_WINDOWS_PLATFORM_H */
