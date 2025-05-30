@@ -752,6 +752,87 @@ extern const int be_default_protocol;
 extern const char *const appname;
 
 /*
+ * Used by callback.c; declared up here so that prompts_t can use it
+ */
+typedef void (*toplevel_callback_fn_t)(void *ctx);
+
+/* Enum of result types in SeatPromptResult below */
+typedef enum SeatPromptResultKind {
+    /* Answer not yet available at all; either try again later or wait
+     * for a callback (depending on the request's API) */
+    SPRK_INCOMPLETE,
+
+    /* We're abandoning the connection because the user interactively
+     * told us to. (Hence, no need to present an error message
+     * telling the user we're doing that: they already know.) */
+    SPRK_USER_ABORT,
+
+    /* We're abandoning the connection for some other reason (e.g. we
+     * were unable to present the prompt at all, or a batch-mode
+     * configuration told us to give the answer no). This may
+     * ultimately have stemmed from some user configuration, but they
+     * didn't _tell us right now_ to abandon this connection, so we
+     * still need to inform them that we've done so. */
+    SPRK_SW_ABORT,
+
+    /* We're proceeding with the connection and have all requested
+     * information (if any) */
+    SPRK_OK
+} SeatPromptResultKind;
+
+/* Small struct to present the results of interactive requests from
+ * backend to Seat (see below) */
+struct SeatPromptResult {
+    SeatPromptResultKind kind;
+
+    /*
+     * In the case of SPRK_SW_ABORT, the frontend provides an error
+     * message to present to the user. But dynamically allocating it
+     * up front would mean having to make sure it got freed at any
+     * call site where one of these structs is received (and freed
+     * _once_ no matter how many times the struct is copied). So
+     * instead we provide a function that will generate the error
+     * message into a BinarySink.
+     */
+    void (*errfn)(SeatPromptResult, BinarySink *);
+
+    /*
+     * And some fields the error function can use to construct the
+     * message (holding, e.g. an OS error code).
+     */
+    const char *errdata_lit; /* statically allocated, e.g. a string literal */
+    unsigned errdata_u;
+};
+
+/* Helper function to construct the simple versions of these
+ * structures inline */
+static inline SeatPromptResult make_spr_simple(SeatPromptResultKind kind)
+{
+    SeatPromptResult spr;
+    spr.kind = kind;
+    spr.errdata_lit = NULL;
+    return spr;
+}
+
+/* Most common constructor function for SPRK_SW_ABORT errors */
+SeatPromptResult make_spr_sw_abort_static(const char *);
+
+/* Convenience macros wrapping those constructors in turn */
+#define SPR_INCOMPLETE make_spr_simple(SPRK_INCOMPLETE)
+#define SPR_USER_ABORT make_spr_simple(SPRK_USER_ABORT)
+#define SPR_SW_ABORT(lit) make_spr_sw_abort_static(lit)
+#define SPR_OK make_spr_simple(SPRK_OK)
+
+/* Query function that folds both kinds of abort together */
+static inline bool spr_is_abort(SeatPromptResult spr)
+{
+    return spr.kind == SPRK_USER_ABORT || spr.kind == SPRK_SW_ABORT;
+}
+
+/* Function to return a dynamically allocated copy of the error message */
+char *spr_get_error_message(SeatPromptResult spr);
+
+/*
  * Mechanism for getting text strings such as usernames and passwords
  * from the front-end.
  * The fields are mostly modelled after SSH's keyboard-interactive auth.
@@ -772,7 +853,8 @@ typedef struct {
     bool echo;
     strbuf *result;
 } prompt_t;
-typedef struct {
+typedef struct prompts_t prompts_t;
+struct prompts_t {
     /*
      * Indicates whether the information entered is to be used locally
      * (for instance a key passphrase prompt), or is destined for the wire.
@@ -800,7 +882,25 @@ typedef struct {
     prompt_t **prompts;
     void *data;         /* slot for housekeeping data, managed by
                          * seat_get_userpass_input(); initially NULL */
-} prompts_t;
+    SeatPromptResult spr; /* some implementations need to cache one of these */
+
+    /*
+     * Callback you can fill in to be notified when all the prompts'
+     * responses are available. After you receive this notification, a
+     * further call to the get_userpass_input function will return the
+     * final state of the prompts system, which is guaranteed not to
+     * be negative for 'still ongoing'.
+     */
+    toplevel_callback_fn_t callback;
+    void *callback_ctx;
+
+    /*
+     * When this prompts_t is known to an Ldisc, we might need to
+     * break the connection if things get freed in an emergency. So
+     * this is a pointer to the Ldisc's pointer to us.
+     */
+    prompts_t **ldisc_ptr_to_us;
+};
 prompts_t *new_prompts(void);
 void add_prompt(prompts_t *p, char *promptstr, bool echo);
 void prompt_set_result(prompt_t *pr, const char *newstr);
@@ -2400,7 +2500,6 @@ unsigned long timing_last_clock(void);
  * loop, as in PSFTP, for example - if a callback has run then perhaps
  * it might have done whatever the loop's caller was waiting for.
  */
-typedef void (*toplevel_callback_fn_t)(void *ctx);
 void queue_toplevel_callback(toplevel_callback_fn_t fn, void *ctx);
 bool run_toplevel_callbacks(void);
 bool toplevel_callback_pending(void);
