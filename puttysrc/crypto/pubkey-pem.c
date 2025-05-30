@@ -9,11 +9,6 @@
 
 static ssh_cipher *des3_pubkey_ossh_cipher(const void *vkey, const void *viv)
 {
-    /*
-     * OpenSSH PEM private key files are encrypted with triple-DES in
-     * SSH-2 style (one CBC layer), with three distinct keys, and an
-     * IV also generated from the passphrase.
-     */
     ssh_cipher *c = ssh_cipher_new(&ssh_3des_ssh2);
     ssh_cipher_setkey(c, vkey);
     ssh_cipher_setiv(c, viv);

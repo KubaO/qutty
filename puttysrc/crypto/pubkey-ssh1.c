@@ -9,11 +9,6 @@
 
 static ssh_cipher *des3_pubkey_cipher(const void *vkey)
 {
-    /*
-     * SSH-1 private key files are encrypted with triple-DES in SSH-1
-     * style (three separate CBC layers), but the same key is used for
-     * the first and third layers.
-     */
     ssh_cipher *c = ssh_cipher_new(&ssh_3des_ssh1);
     uint8_t keys3[24], iv[8];
 

@@ -1,13 +1,5 @@
 /*
- * Elliptic-curve crypto module for PuTTY
- * Implements the three required curves, no optional curves
- *
- * NOTE: Only curves on prime field are handled by the maths functions
- *       in Weierstrass form using Jacobian co-ordinates.
- *
- *       Montgomery form curves are supported for DH. (Curve25519)
- *
- *       Edwards form curves are supported for DSA. (Ed25519, Ed448)
+ * Elliptic-curve signing and key exchange for PuTTY's SSH layer.
  */
 
 /*
@@ -556,8 +548,8 @@ static EdwardsPoint *eddsa_decode(ptrlen encoded, const struct ec_curve *curve)
     mp_free(y);
 
     /* A point constructed in this way will always satisfy the curve
-     * equation, unless ecc.c wasn't able to construct one at all, in
-     * which case P is now NULL. Either way, return it. */
+     * equation, unless ecc-arithmetic.c wasn't able to construct one
+     * at all, in which case P is now NULL. Either way, return it. */
     return P;
 }
 
@@ -692,11 +684,11 @@ static char *ecc_cache_str_shared(
     strbuf *sb = strbuf_new();
 
     if (curve_name)
-        strbuf_catf(sb, "%s,", curve_name);
+        put_fmt(sb, "%s,", curve_name);
 
     char *hx = mp_get_hex(x);
     char *hy = mp_get_hex(y);
-    strbuf_catf(sb, "0x%s,0x%s", hx, hy);
+    put_fmt(sb, "0x%s,0x%s", hx, hy);
     sfree(hx);
     sfree(hy);
 
