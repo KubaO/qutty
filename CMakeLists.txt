@@ -105,6 +105,11 @@ set(PROJECT_SOURCES
     puttysrc/crypto/sha256-none.c
     puttysrc/crypto/sha256-select.c
     puttysrc/crypto/sha256-sw.c
+    puttysrc/crypto/sha512-common.c
+    puttysrc/crypto/sha512-neon.c
+    puttysrc/crypto/sha512-none.c
+    puttysrc/crypto/sha512-select.c
+    puttysrc/crypto/sha512-sw.c
     puttysrc/crypto/sha3.c
     puttysrc/crypto/xdmauth.c
 
@@ -115,6 +120,7 @@ set(PROJECT_SOURCES
     puttysrc/crypto/pubkey-ssh1.c
     puttysrc/crypto/sha1.h
     puttysrc/crypto/sha256.h
+    puttysrc/crypto/sha512.h
 
     puttysrc/otherbackends/telnet.c
 
@@ -232,7 +238,6 @@ set(PROJECT_SOURCES
     puttysrc/settings.c
     puttysrc/sshpubk.c
     puttysrc/sshrand.c
-    puttysrc/sshsh512.c
     puttysrc/timing.c
 
     puttysrc/defs.h
