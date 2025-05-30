@@ -1,25 +1,9 @@
-/* ----------------------------------------------------------------------
+/*
  * Hardware-accelerated implementation of AES using x86 AES-NI.
  */
 
 #include "ssh.h"
 #include "aes.h"
-
-#if HW_AES == HW_AES_NI
-
-/*
- * Set target architecture for Clang and GCC
- */
-#if !defined(__clang__) && defined(__GNUC__)
-#    pragma GCC target("aes")
-#    pragma GCC target("sse4.1")
-#endif
-
-#if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)))
-#    define FUNC_ISA __attribute__ ((target("sse4.1,aes")))
-#else
-#    define FUNC_ISA
-#endif
 
 #include <wmmintrin.h>
 #include <smmintrin.h>
@@ -31,7 +15,7 @@
 #define GET_CPU_ID(out) __cpuid(out, 1)
 #endif
 
-bool aes_hw_available(void)
+static bool aes_ni_available(void)
 {
     /*
      * Determine if AES is available on this CPU, by checking that
@@ -47,7 +31,7 @@ bool aes_hw_available(void)
  */
 
 #define NI_CIPHER(len, dir, dirlong, repmacro)                          \
-    static FUNC_ISA inline __m128i aes_ni_##len##_##dir(                \
+    static inline __m128i aes_ni_##len##_##dir(                         \
         __m128i v, const __m128i *keysched)                             \
     {                                                                   \
         v = _mm_xor_si128(v, *keysched++);                              \
@@ -65,7 +49,7 @@ NI_CIPHER(256, d, dec, REP13)
 /*
  * The main key expansion.
  */
-static FUNC_ISA void aes_ni_key_expand(
+static void aes_ni_key_expand(
     const unsigned char *key, size_t key_words,
     __m128i *keysched_e, __m128i *keysched_d)
 {
@@ -95,8 +79,8 @@ static FUNC_ISA void aes_ni_key_expand(
                 v = _mm_aeskeygenassist_si128(v, 0);
                 temp = _mm_extract_epi32(v, 1);
 
-                assert(rconpos < lenof(key_setup_round_constants));
-                temp ^= key_setup_round_constants[rconpos++];
+                assert(rconpos < lenof(aes_key_setup_round_constants));
+                temp ^= aes_key_setup_round_constants[rconpos++];
             } else if (only_sub) {
                 __m128i v = _mm_setr_epi32(0,temp,0,0);
                 v = _mm_aeskeygenassist_si128(v, 0);
@@ -134,7 +118,7 @@ static FUNC_ISA void aes_ni_key_expand(
  * Auxiliary routine to increment the 128-bit counter used in SDCTR
  * mode.
  */
-static FUNC_ISA inline __m128i aes_ni_sdctr_increment(__m128i v)
+static inline __m128i aes_ni_sdctr_increment(__m128i v)
 {
     const __m128i ONE  = _mm_setr_epi32(1,0,0,0);
     const __m128i ZERO = _mm_setzero_si128();
@@ -157,7 +141,7 @@ static FUNC_ISA inline __m128i aes_ni_sdctr_increment(__m128i v)
  * Auxiliary routine to reverse the byte order of a vector, so that
  * the SDCTR IV can be made big-endian for feeding to the cipher.
  */
-static FUNC_ISA inline __m128i aes_ni_sdctr_reverse(__m128i v)
+static inline __m128i aes_ni_sdctr_reverse(__m128i v)
 {
     v = _mm_shuffle_epi8(
         v, _mm_setr_epi8(15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0));
@@ -176,9 +160,10 @@ struct aes_ni_context {
     ssh_cipher ciph;
 };
 
-ssh_cipher *aes_hw_new(const ssh_cipheralg *alg)
+static ssh_cipher *aes_ni_new(const ssh_cipheralg *alg)
 {
-    if (!aes_hw_available_cached())
+    const struct aes_extra *extra = (const struct aes_extra *)alg->extra;
+    if (!check_availability(extra))
         return NULL;
 
     /*
@@ -199,7 +184,7 @@ ssh_cipher *aes_hw_new(const ssh_cipheralg *alg)
     return &ctx->ciph;
 }
 
-void aes_hw_free(ssh_cipher *ciph)
+static void aes_ni_free(ssh_cipher *ciph)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     void *allocation = ctx->pointer_to_free;
@@ -207,7 +192,7 @@ void aes_hw_free(ssh_cipher *ciph)
     sfree(allocation);
 }
 
-void aes_hw_setkey(ssh_cipher *ciph, const void *vkey)
+static void aes_ni_setkey(ssh_cipher *ciph, const void *vkey)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     const unsigned char *key = (const unsigned char *)vkey;
@@ -216,13 +201,13 @@ void aes_hw_setkey(ssh_cipher *ciph, const void *vkey)
                       ctx->keysched_e, ctx->keysched_d);
 }
 
-FUNC_ISA void aes_hw_setiv_cbc(ssh_cipher *ciph, const void *iv)
+static void aes_ni_setiv_cbc(ssh_cipher *ciph, const void *iv)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     ctx->iv = _mm_loadu_si128(iv);
 }
 
-FUNC_ISA void aes_hw_setiv_sdctr(ssh_cipher *ciph, const void *iv)
+static void aes_ni_setiv_sdctr(ssh_cipher *ciph, const void *iv)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
     __m128i counter = _mm_loadu_si128(iv);
@@ -231,7 +216,7 @@ FUNC_ISA void aes_hw_setiv_sdctr(ssh_cipher *ciph, const void *iv)
 
 typedef __m128i (*aes_ni_fn)(__m128i v, const __m128i *keysched);
 
-static FUNC_ISA inline void aes_cbc_ni_encrypt(
+static inline void aes_cbc_ni_encrypt(
     ssh_cipher *ciph, void *vblk, int blklen, aes_ni_fn encrypt)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
@@ -246,7 +231,7 @@ static FUNC_ISA inline void aes_cbc_ni_encrypt(
     }
 }
 
-static FUNC_ISA inline void aes_cbc_ni_decrypt(
+static inline void aes_cbc_ni_decrypt(
     ssh_cipher *ciph, void *vblk, int blklen, aes_ni_fn decrypt)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
@@ -261,7 +246,7 @@ static FUNC_ISA inline void aes_cbc_ni_decrypt(
     }
 }
 
-static FUNC_ISA inline void aes_sdctr_ni(
+static inline void aes_sdctr_ni(
     ssh_cipher *ciph, void *vblk, int blklen, aes_ni_fn encrypt)
 {
     aes_ni_context *ctx = container_of(ciph, aes_ni_context, ciph);
@@ -278,13 +263,13 @@ static FUNC_ISA inline void aes_sdctr_ni(
 }
 
 #define NI_ENC_DEC(len)                                                 \
-    FUNC_ISA void aes##len##_cbc_hw_encrypt(                            \
+    static void aes##len##_ni_cbc_encrypt(                              \
         ssh_cipher *ciph, void *vblk, int blklen)                       \
     { aes_cbc_ni_encrypt(ciph, vblk, blklen, aes_ni_##len##_e); }       \
-    FUNC_ISA void aes##len##_cbc_hw_decrypt(                            \
+    static void aes##len##_ni_cbc_decrypt(                              \
         ssh_cipher *ciph, void *vblk, int blklen)                       \
     { aes_cbc_ni_decrypt(ciph, vblk, blklen, aes_ni_##len##_d); }       \
-    FUNC_ISA void aes##len##_sdctr_hw(                                  \
+    static void aes##len##_ni_sdctr(                                    \
         ssh_cipher *ciph, void *vblk, int blklen)                       \
     { aes_sdctr_ni(ciph, vblk, blklen, aes_ni_##len##_e); }             \
 
@@ -292,4 +277,5 @@ NI_ENC_DEC(128)
 NI_ENC_DEC(192)
 NI_ENC_DEC(256)
 
-#endif
+AES_EXTRA(_ni);
+AES_ALL_VTABLES(_ni, "AES-NI accelerated");

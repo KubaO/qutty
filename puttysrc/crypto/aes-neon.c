@@ -5,37 +5,13 @@
 #include "ssh.h"
 #include "aes.h"
 
-#if HW_AES == HW_AES_NEON
-
-/*
- * Manually set the target architecture, if we decided above that we
- * need to.
- */
-#ifdef USE_CLANG_ATTR_TARGET_AARCH64
-/*
- * A spot of cheating: redefine some ACLE feature macros before
- * including arm_neon.h. Otherwise we won't get the AES intrinsics
- * defined by that header, because it will be looking at the settings
- * for the whole translation unit rather than the ones we're going to
- * put on some particular functions using __attribute__((target)).
- */
-#define __ARM_NEON 1
-#define __ARM_FEATURE_CRYPTO 1
-#define __ARM_FEATURE_AES 1
-#define FUNC_ISA __attribute__ ((target("neon,crypto")))
-#endif /* USE_CLANG_ATTR_TARGET_AARCH64 */
-
-#ifndef FUNC_ISA
-#define FUNC_ISA
-#endif
-
-#ifdef USE_ARM64_NEON_H
+#if USE_ARM64_NEON_H
 #include <arm64_neon.h>
 #else
 #include <arm_neon.h>
 #endif
 
-static bool aes_hw_available(void)
+static bool aes_neon_available(void)
 {
     /*
      * For Arm, we delegate to a per-platform AES detection function,
@@ -49,7 +25,7 @@ static bool aes_hw_available(void)
      * give an answer that you could still rely on the first time the
      * OS migrated your process to another CPU.
      */
-    return platform_aes_hw_available();
+    return platform_aes_neon_available();
 }
 
 /*
@@ -57,14 +33,14 @@ static bool aes_hw_available(void)
  */
 
 #define NEON_CIPHER(len, repmacro)                              \
-    static FUNC_ISA inline uint8x16_t aes_neon_##len##_e(       \
+    static inline uint8x16_t aes_neon_##len##_e(                \
         uint8x16_t v, const uint8x16_t *keysched)               \
     {                                                           \
         repmacro(v = vaesmcq_u8(vaeseq_u8(v, *keysched++)););   \
         v = vaeseq_u8(v, *keysched++);                          \
         return veorq_u8(v, *keysched);                          \
     }                                                           \
-    static FUNC_ISA inline uint8x16_t aes_neon_##len##_d(       \
+    static inline uint8x16_t aes_neon_##len##_d(                \
         uint8x16_t v, const uint8x16_t *keysched)               \
     {                                                           \
         repmacro(v = vaesimcq_u8(vaesdq_u8(v, *keysched++)););  \
@@ -79,7 +55,7 @@ NEON_CIPHER(256, REP13)
 /*
  * The main key expansion.
  */
-static FUNC_ISA void aes_neon_key_expand(
+static void aes_neon_key_expand(
     const unsigned char *key, size_t key_words,
     uint8x16_t *keysched_e, uint8x16_t *keysched_d)
 {
@@ -117,8 +93,8 @@ static FUNC_ISA void aes_neon_key_expand(
             }
 
             if (rotate_and_round_constant) {
-                assert(rconpos < lenof(key_setup_round_constants));
-                temp ^= key_setup_round_constants[rconpos++];
+                assert(rconpos < lenof(aes_key_setup_round_constants));
+                temp ^= aes_key_setup_round_constants[rconpos++];
             }
 
             sched[i] = sched[i - key_words] ^ temp;
@@ -155,7 +131,7 @@ static FUNC_ISA void aes_neon_key_expand(
  * the efficiency of the increment. That way we only have to reverse
  * bytes within each lane in this function.
  */
-static FUNC_ISA inline uint8x16_t aes_neon_sdctr_reverse(uint8x16_t v)
+static inline uint8x16_t aes_neon_sdctr_reverse(uint8x16_t v)
 {
     return vrev64q_u8(v);
 }
@@ -167,7 +143,7 @@ static FUNC_ISA inline uint8x16_t aes_neon_sdctr_reverse(uint8x16_t v)
  * unconditionally, and the top half if the bottom half started off as
  * all 1s (in which case there was about to be a carry).
  */
-static FUNC_ISA inline uint8x16_t aes_neon_sdctr_increment(uint8x16_t in)
+static inline uint8x16_t aes_neon_sdctr_increment(uint8x16_t in)
 {
 #ifdef __aarch64__
     /* There will be a carry if the low 64 bits are all 1s. */
@@ -211,9 +187,10 @@ struct aes_neon_context {
     ssh_cipher ciph;
 };
 
-static ssh_cipher *aes_hw_new(const ssh_cipheralg *alg)
+static ssh_cipher *aes_neon_new(const ssh_cipheralg *alg)
 {
-    if (!aes_hw_available_cached())
+    const struct aes_extra *extra = (const struct aes_extra *)alg->extra;
+    if (!check_availability(extra))
         return NULL;
 
     aes_neon_context *ctx = snew(aes_neon_context);
@@ -221,14 +198,14 @@ static ssh_cipher *aes_hw_new(const ssh_cipheralg *alg)
     return &ctx->ciph;
 }
 
-static void aes_hw_free(ssh_cipher *ciph)
+static void aes_neon_free(ssh_cipher *ciph)
 {
     aes_neon_context *ctx = container_of(ciph, aes_neon_context, ciph);
     smemclr(ctx, sizeof(*ctx));
     sfree(ctx);
 }
 
-static void aes_hw_setkey(ssh_cipher *ciph, const void *vkey)
+static void aes_neon_setkey(ssh_cipher *ciph, const void *vkey)
 {
     aes_neon_context *ctx = container_of(ciph, aes_neon_context, ciph);
     const unsigned char *key = (const unsigned char *)vkey;
@@ -237,13 +214,13 @@ static void aes_hw_setkey(ssh_cipher *ciph, const void *vkey)
                       ctx->keysched_e, ctx->keysched_d);
 }
 
-static FUNC_ISA void aes_hw_setiv_cbc(ssh_cipher *ciph, const void *iv)
+static void aes_neon_setiv_cbc(ssh_cipher *ciph, const void *iv)
 {
     aes_neon_context *ctx = container_of(ciph, aes_neon_context, ciph);
     ctx->iv = vld1q_u8(iv);
 }
 
-static FUNC_ISA void aes_hw_setiv_sdctr(ssh_cipher *ciph, const void *iv)
+static void aes_neon_setiv_sdctr(ssh_cipher *ciph, const void *iv)
 {
     aes_neon_context *ctx = container_of(ciph, aes_neon_context, ciph);
     uint8x16_t counter = vld1q_u8(iv);
@@ -252,7 +229,7 @@ static FUNC_ISA void aes_hw_setiv_sdctr(ssh_cipher *ciph, const void *iv)
 
 typedef uint8x16_t (*aes_neon_fn)(uint8x16_t v, const uint8x16_t *keysched);
 
-static FUNC_ISA inline void aes_cbc_neon_encrypt(
+static inline void aes_cbc_neon_encrypt(
     ssh_cipher *ciph, void *vblk, int blklen, aes_neon_fn encrypt)
 {
     aes_neon_context *ctx = container_of(ciph, aes_neon_context, ciph);
@@ -267,7 +244,7 @@ static FUNC_ISA inline void aes_cbc_neon_encrypt(
     }
 }
 
-static FUNC_ISA inline void aes_cbc_neon_decrypt(
+static inline void aes_cbc_neon_decrypt(
     ssh_cipher *ciph, void *vblk, int blklen, aes_neon_fn decrypt)
 {
     aes_neon_context *ctx = container_of(ciph, aes_neon_context, ciph);
@@ -282,7 +259,7 @@ static FUNC_ISA inline void aes_cbc_neon_decrypt(
     }
 }
 
-static FUNC_ISA inline void aes_sdctr_neon(
+static inline void aes_sdctr_neon(
     ssh_cipher *ciph, void *vblk, int blklen, aes_neon_fn encrypt)
 {
     aes_neon_context *ctx = container_of(ciph, aes_neon_context, ciph);
@@ -299,13 +276,13 @@ static FUNC_ISA inline void aes_sdctr_neon(
 }
 
 #define NEON_ENC_DEC(len)                                               \
-    static FUNC_ISA void aes##len##_cbc_hw_encrypt(                     \
+    static void aes##len##_neon_cbc_encrypt(                            \
         ssh_cipher *ciph, void *vblk, int blklen)                       \
     { aes_cbc_neon_encrypt(ciph, vblk, blklen, aes_neon_##len##_e); }   \
-    static FUNC_ISA void aes##len##_cbc_hw_decrypt(                     \
+    static void aes##len##_neon_cbc_decrypt(                            \
         ssh_cipher *ciph, void *vblk, int blklen)                       \
     { aes_cbc_neon_decrypt(ciph, vblk, blklen, aes_neon_##len##_d); }   \
-    static FUNC_ISA void aes##len##_sdctr_hw(                           \
+    static void aes##len##_neon_sdctr(                                  \
         ssh_cipher *ciph, void *vblk, int blklen)                       \
     { aes_sdctr_neon(ciph, vblk, blklen, aes_neon_##len##_e); }         \
 
@@ -313,4 +290,5 @@ NEON_ENC_DEC(128)
 NEON_ENC_DEC(192)
 NEON_ENC_DEC(256)
 
-#endif
+AES_EXTRA(_neon);
+AES_ALL_VTABLES(_neon, "NEON accelerated");

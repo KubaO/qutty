@@ -1,4 +1,4 @@
-/* ----------------------------------------------------------------------
+/*
  * Software implementation of AES.
  *
  * This implementation uses a bit-sliced representation. Instead of
@@ -17,6 +17,12 @@
 #include "ssh.h"
 #include "aes.h"
 #include "mpint_i.h"               /* we reuse the BignumInt system */
+
+static bool aes_sw_available(void)
+{
+    /* Software AES is always available */
+    return true;
+}
 
 #define SLICE_PARALLELISM (BIGNUM_INT_BYTES / 2)
 
@@ -683,8 +689,8 @@ static void aes_sliced_key_setup(
             }
 
             if (rotate_and_round_constant) {
-                assert(rconpos < lenof(key_setup_round_constants));
-                uint8_t rcon = key_setup_round_constants[rconpos++];
+                assert(rconpos < lenof(aes_key_setup_round_constants));
+                uint8_t rcon = aes_key_setup_round_constants[rconpos++];
                 for (size_t i = 0; i < 8; i++)
                     slices[i] ^= 1 & (rcon >> i);
             }
@@ -825,33 +831,33 @@ struct aes_sw_context {
     ssh_cipher ciph;
 };
 
-ssh_cipher *aes_sw_new(const ssh_cipheralg *alg)
+static ssh_cipher *aes_sw_new(const ssh_cipheralg *alg)
 {
     aes_sw_context *ctx = snew(aes_sw_context);
     ctx->ciph.vt = alg;
     return &ctx->ciph;
 }
 
-void aes_sw_free(ssh_cipher *ciph)
+static void aes_sw_free(ssh_cipher *ciph)
 {
     aes_sw_context *ctx = container_of(ciph, aes_sw_context, ciph);
     smemclr(ctx, sizeof(*ctx));
     sfree(ctx);
 }
 
-void aes_sw_setkey(ssh_cipher *ciph, const void *vkey)
+static void aes_sw_setkey(ssh_cipher *ciph, const void *vkey)
 {
     aes_sw_context *ctx = container_of(ciph, aes_sw_context, ciph);
     aes_sliced_key_setup(&ctx->sk, vkey, ctx->ciph.vt->real_keybits);
 }
 
-void aes_sw_setiv_cbc(ssh_cipher *ciph, const void *iv)
+static void aes_sw_setiv_cbc(ssh_cipher *ciph, const void *iv)
 {
     aes_sw_context *ctx = container_of(ciph, aes_sw_context, ciph);
     memcpy(ctx->iv.cbc.prevblk, iv, 16);
 }
 
-void aes_sw_setiv_sdctr(ssh_cipher *ciph, const void *viv)
+static void aes_sw_setiv_sdctr(ssh_cipher *ciph, const void *viv)
 {
     aes_sw_context *ctx = container_of(ciph, aes_sw_context, ciph);
     const uint8_t *iv = (const uint8_t *)viv;
@@ -1016,16 +1022,19 @@ static inline void aes_sdctr_sw(
 }
 
 #define SW_ENC_DEC(len)                                 \
-    void aes##len##_cbc_sw_encrypt(                     \
+    static void aes##len##_sw_cbc_encrypt(              \
         ssh_cipher *ciph, void *vblk, int blklen)       \
     { aes_cbc_sw_encrypt(ciph, vblk, blklen); }         \
-    void aes##len##_cbc_sw_decrypt(                     \
+    static void aes##len##_sw_cbc_decrypt(              \
         ssh_cipher *ciph, void *vblk, int blklen)       \
     { aes_cbc_sw_decrypt(ciph, vblk, blklen); }         \
-    void aes##len##_sdctr_sw(                           \
+    static void aes##len##_sw_sdctr(                    \
         ssh_cipher *ciph, void *vblk, int blklen)       \
     { aes_sdctr_sw(ciph, vblk, blklen); }
 
 SW_ENC_DEC(128)
 SW_ENC_DEC(192)
 SW_ENC_DEC(256)
+
+AES_EXTRA(_sw);
+AES_ALL_VTABLES(_sw, "unaccelerated");

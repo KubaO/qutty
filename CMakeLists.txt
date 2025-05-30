@@ -20,6 +20,7 @@ add_compile_definitions(
     IS_QUTTY=1
     QUTTY_RELEASE_VERSION="${PROJECT_VERSION}"
     CURSORBLINK=1000
+    HAVE_AES_NI=1
 )
 
 if(NOT HAS_GSSAPI)
@@ -66,9 +67,8 @@ set(PROJECT_SOURCES
     QtCompleterWithAdvancedCompletion.cpp
 
     puttysrc/crypto/aes-common.c
-    puttysrc/crypto/aes-neon.c
+    #puttysrc/crypto/aes-neon.c
     puttysrc/crypto/aes-ni.c
-    puttysrc/crypto/aes-none.c
     puttysrc/crypto/aes-select.c
     puttysrc/crypto/aes-sw.c
     puttysrc/crypto/arcfour.c

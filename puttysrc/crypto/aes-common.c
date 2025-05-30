@@ -5,7 +5,7 @@
 #include "ssh.h"
 #include "aes.h"
 
-const uint8_t key_setup_round_constants[10] = {
+const uint8_t aes_key_setup_round_constants[10] = {
     /* The first few powers of X in GF(2^8), used during key setup.
      * This can safely be a lookup table without side channel risks,
      * because key setup iterates through it once in a standard way
