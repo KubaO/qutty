@@ -1,90 +1,56 @@
-/* ----------------------------------------------------------------------
- * Definitions likely to be helpful to multiple implementations.
+/*
+ * Definitions likely to be helpful to multiple SHA-1 implementations.
  */
-
-#include <stdint.h>
 
 /*
- * Start by deciding whether we can support hardware SHA at all.
+ * The 'extra' structure used by SHA-1 implementations is used to
+ * include information about how to check if a given implementation is
+ * available at run time, and whether we've already checked.
  */
-#define HW_SHA1_NONE 0
-#define HW_SHA1_NI 1
-#define HW_SHA1_NEON 2
+struct sha1_extra_mutable;
+struct sha1_extra {
+    /* Function to check availability. Might be expensive, so we don't
+     * want to call it more than once. */
+    bool (*check_available)(void);
 
-#ifdef _FORCE_SHA_NI
-#   define HW_SHA1 HW_SHA1_NI
-#elif defined(__clang__)
-#   if __has_attribute(target) && __has_include(<wmmintrin.h>) &&       \
-    (defined(__x86_64__) || defined(__i386))
-#       define HW_SHA1 HW_SHA1_NI
-#   endif
-#elif defined(__GNUC__)
-#    if (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)) && \
-        (defined(__x86_64__) || defined(__i386))
-#       define HW_SHA1 HW_SHA1_NI
-#    endif
-#elif defined (_MSC_VER)
-#   if (defined(_M_X64) || defined(_M_IX86)) && _MSC_FULL_VER >= 150030729
-#      define HW_SHA1 HW_SHA1_NI
-#   endif
-#endif
-
-#ifdef _FORCE_SHA_NEON
-#   define HW_SHA1 HW_SHA1_NEON
-#elif defined __BYTE_ORDER__ && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-    /* Arm can potentially support both endiannesses, but this code
-     * hasn't been tested on anything but little. If anyone wants to
-     * run big-endian, they'll need to fix it first. */
-#elif defined __ARM_FEATURE_CRYPTO
-    /* If the Arm crypto extension is available already, we can
-     * support NEON SHA without having to enable anything by hand */
-#   define HW_SHA1 HW_SHA1_NEON
-#elif defined(__clang__)
-#   if __has_attribute(target) && __has_include(<arm_neon.h>) &&       \
-    (defined(__aarch64__))
-        /* clang can enable the crypto extension in AArch64 using
-         * __attribute__((target)) */
-#       define HW_SHA1 HW_SHA1_NEON
-#       define USE_CLANG_ATTR_TARGET_AARCH64
-#   endif
-#elif defined _MSC_VER
-    /* Visual Studio supports the crypto extension when targeting
-     * AArch64, but as of VS2017, the AArch32 header doesn't quite
-     * manage it (declaring the shae/shad intrinsics without a round
-     * key operand). */
-#   if defined _M_ARM64
-#       define HW_SHA1 HW_SHA1_NEON
-#       if defined _M_ARM64
-#           define USE_ARM64_NEON_H /* unusual header name in this case */
-#       endif
-#   endif
-#endif
-
-#if defined _FORCE_SOFTWARE_SHA || !defined HW_SHA1
-#   undef HW_SHA1
-#   define HW_SHA1 HW_SHA1_NONE
-#endif
-
-/*
- * The actual query function that asks if hardware acceleration is
- * available.
- */
-bool sha1_hw_available(void);
-
-/*
- * The top-level selection function, caching the results of
- * sha1_hw_available() so it only has to run once.
- */
-static bool sha1_hw_available_cached(void)
+    /* Point to a writable substructure. */
+    struct sha1_extra_mutable *mut;
+};
+struct sha1_extra_mutable {
+    bool checked_availability;
+    bool is_available;
+};
+static inline bool check_availability(const struct sha1_extra *extra)
 {
-    static bool initialised = false;
-    static bool hw_available;
-    if (!initialised) {
-        hw_available = sha1_hw_available();
-        initialised = true;
+    if (!extra->mut->checked_availability) {
+        extra->mut->is_available = extra->check_available();
+        extra->mut->checked_availability = true;
     }
-    return hw_available;
+
+    return extra->mut->is_available;
 }
+
+/*
+ * Macro to define a SHA-1 vtable together with its 'extra'
+ * structure.
+ */
+#define SHA1_VTABLE(impl_c, impl_display)                               \
+    static struct sha1_extra_mutable sha1_ ## impl_c ## _extra_mut;     \
+    static const struct sha1_extra sha1_ ## impl_c ## _extra = {        \
+        .check_available = sha1_ ## impl_c ## _available,               \
+        .mut = &sha1_ ## impl_c ## _extra_mut,                          \
+    };                                                                  \
+    const ssh_hashalg ssh_sha1_ ## impl_c = {                           \
+        ._new = sha1_ ## impl_c ## _new,                                \
+        .reset = sha1_ ## impl_c ## _reset,                             \
+        .copyfrom = sha1_ ## impl_c ## _copyfrom,                       \
+        .digest = sha1_ ## impl_c ## _digest,                           \
+        .free = sha1_ ## impl_c ## _free,                               \
+        .hlen = 20,                                                     \
+        .blocklen = 64,                                                 \
+        HASHALG_NAMES_ANNOTATED("SHA-1", impl_display),                 \
+        .extra = &sha1_ ## impl_c ## _extra,                            \
+    }
 
 extern const uint32_t sha1_initial_state[5];
 

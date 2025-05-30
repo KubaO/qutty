@@ -21,6 +21,7 @@ add_compile_definitions(
     QUTTY_RELEASE_VERSION="${PROJECT_VERSION}"
     CURSORBLINK=1000
     HAVE_AES_NI=1
+    HAVE_SHA_NI=1
 )
 
 if(NOT HAS_GSSAPI)
@@ -94,9 +95,8 @@ set(PROJECT_SOURCES
     puttysrc/crypto/pubkey-ssh1.c
     puttysrc/crypto/rsa.c
     puttysrc/crypto/sha1-common.c
-    puttysrc/crypto/sha1-neon.c
+    #puttysrc/crypto/sha1-neon.c
     puttysrc/crypto/sha1-ni.c
-    puttysrc/crypto/sha1-none.c
     puttysrc/crypto/sha1-select.c
     puttysrc/crypto/sha1-sw.c
     puttysrc/crypto/sha256-common.c

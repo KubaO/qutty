@@ -1,47 +1,23 @@
-/* ----------------------------------------------------------------------
+/*
  * Hardware-accelerated implementation of SHA-1 using Arm NEON.
  */
 
 #include "ssh.h"
 #include "sha1.h"
 
-#if HW_SHA1 == HW_SHA1_NEON
-
-/*
- * Manually set the target architecture, if we decided above that we
- * need to.
- */
-#ifdef USE_CLANG_ATTR_TARGET_AARCH64
-/*
- * A spot of cheating: redefine some ACLE feature macros before
- * including arm_neon.h. Otherwise we won't get the SHA intrinsics
- * defined by that header, because it will be looking at the settings
- * for the whole translation unit rather than the ones we're going to
- * put on some particular functions using __attribute__((target)).
- */
-#define __ARM_NEON 1
-#define __ARM_FEATURE_CRYPTO 1
-#define __ARM_FEATURE_SHA2 1
-#define FUNC_ISA __attribute__ ((target("neon,crypto")))
-#endif /* USE_CLANG_ATTR_TARGET_AARCH64 */
-
-#ifndef FUNC_ISA
-#define FUNC_ISA
-#endif
-
-#ifdef USE_ARM64_NEON_H
+#if USE_ARM64_NEON_H
 #include <arm64_neon.h>
 #else
 #include <arm_neon.h>
 #endif
 
-static bool sha1_hw_available(void)
+static bool sha1_neon_available(void)
 {
     /*
      * For Arm, we delegate to a per-platform detection function (see
-     * explanation in sshaes.c).
+     * explanation in aes-neon.c).
      */
-    return platform_sha1_hw_available();
+    return platform_sha1_neon_available();
 }
 
 typedef struct sha1_neon_core sha1_neon_core;
@@ -50,13 +26,11 @@ struct sha1_neon_core {
     uint32_t e;
 };
 
-FUNC_ISA
 static inline uint32x4_t sha1_neon_load_input(const uint8_t *p)
 {
     return vreinterpretq_u32_u8(vrev32q_u8(vld1q_u8(p)));
 }
 
-FUNC_ISA
 static inline uint32x4_t sha1_neon_schedule_update(
     uint32x4_t m4, uint32x4_t m3, uint32x4_t m2, uint32x4_t m1)
 {
@@ -74,7 +48,7 @@ static inline uint32x4_t sha1_neon_schedule_update(
  * inline function just for that.
  */
 #define SHA1_NEON_ROUND_FN(type)                                        \
-    FUNC_ISA static inline sha1_neon_core sha1_neon_round4_##type(      \
+    static inline sha1_neon_core sha1_neon_round4_##type(               \
         sha1_neon_core old, uint32x4_t sched, uint32x4_t constant)      \
     {                                                                   \
         sha1_neon_core new;                                             \
@@ -87,7 +61,6 @@ SHA1_NEON_ROUND_FN(c)
 SHA1_NEON_ROUND_FN(p)
 SHA1_NEON_ROUND_FN(m)
 
-FUNC_ISA
 static inline void sha1_neon_block(sha1_neon_core *core, const uint8_t *p)
 {
     uint32x4_t constant, s0, s1, s2, s3;
@@ -156,7 +129,8 @@ static void sha1_neon_write(BinarySink *bs, const void *vp, size_t len);
 
 static ssh_hash *sha1_neon_new(const ssh_hashalg *alg)
 {
-    if (!sha1_hw_available_cached())
+    const struct sha1_extra *extra = (const struct sha1_extra *)alg->extra;
+    if (!check_availability(extra))
         return NULL;
 
     sha1_neon *s = snew(sha1_neon);
@@ -213,15 +187,4 @@ static void sha1_neon_digest(ssh_hash *hash, uint8_t *digest)
     PUT_32BIT_MSB_FIRST(digest + 16, s->core.e);
 }
 
-const ssh_hashalg ssh_sha1_hw = {
-    ._new = sha1_neon_new,
-    .reset = sha1_neon_reset,
-    .copyfrom = sha1_neon_copyfrom,
-    .digest = sha1_neon_digest,
-    .free = sha1_neon_free,
-    .hlen = 20,
-    .blocklen = 64,
-    HASHALG_NAMES_ANNOTATED("SHA-1", "NEON accelerated"),
-};
-
-#endif
+SHA1_VTABLE(neon, "NEON accelerated");

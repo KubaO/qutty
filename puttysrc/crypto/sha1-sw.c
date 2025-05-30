@@ -1,10 +1,15 @@
-/* ----------------------------------------------------------------------
+/*
  * Software implementation of SHA-1.
  */
 
 #include "ssh.h"
 #include "sha1.h"
-#include <assert.h>
+
+static bool sha1_sw_available(void)
+{
+    /* Software SHA-1 is always available */
+    return true;
+}
 
 static inline uint32_t rol(uint32_t x, unsigned y)
 {
@@ -147,13 +152,4 @@ static void sha1_sw_digest(ssh_hash *hash, uint8_t *digest)
         PUT_32BIT_MSB_FIRST(digest + 4*i, s->core[i]);
 }
 
-const ssh_hashalg ssh_sha1_sw = {
-    ._new = sha1_sw_new,
-    .reset = sha1_sw_reset,
-    .copyfrom = sha1_sw_copyfrom,
-    .digest = sha1_sw_digest,
-    .free = sha1_sw_free,
-    .hlen = 20,
-    .blocklen = 64,
-    HASHALG_NAMES_ANNOTATED("SHA-1", "unaccelerated"),
-};
+SHA1_VTABLE(sw, "unaccelerated");

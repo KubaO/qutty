@@ -1,30 +1,14 @@
-/* ----------------------------------------------------------------------
+/*
  * Hardware-accelerated implementation of SHA-1 using x86 SHA-NI.
  */
 
 #include "ssh.h"
 #include "sha1.h"
 
-#if HW_SHA1 == HW_SHA1_NI
-
-/*
- * Set target architecture for Clang and GCC
- */
-
-#if defined(__clang__) || defined(__GNUC__)
-#    define FUNC_ISA __attribute__ ((target("sse4.1,sha")))
-#if !defined(__clang__)
-#    pragma GCC target("sha")
-#    pragma GCC target("sse4.1")
-#endif
-#else
-#    define FUNC_ISA
-#endif
-
 #include <wmmintrin.h>
 #include <smmintrin.h>
 #include <immintrin.h>
-#if defined(__clang__) || defined(__GNUC__)
+#if HAVE_SHAINTRIN_H
 #include <shaintrin.h>
 #endif
 
@@ -39,7 +23,7 @@
 #define GET_CPU_ID_7(out) __cpuidex(out, 7, 0)
 #endif
 
-bool sha1_hw_available(void)
+static bool sha1_ni_available(void)
 {
     unsigned int CPUInfo[4];
     GET_CPU_ID_0(CPUInfo);
@@ -54,7 +38,6 @@ bool sha1_hw_available(void)
    The code is based on Jeffrey Walton's SHA1 implementation:
    https://github.com/noloader/SHA-Intrinsics
 */
-FUNC_ISA
 static inline void sha1_ni_block(__m128i *core, const uint8_t *p)
 {
     __m128i ABCD, E0, E1, MSG0, MSG1, MSG2, MSG3;
@@ -263,7 +246,8 @@ static sha1_ni *sha1_ni_alloc(void)
 
 static ssh_hash *sha1_ni_new(const ssh_hashalg *alg)
 {
-    if (!sha1_hw_available_cached())
+    const struct sha1_extra *extra = (const struct sha1_extra *)alg->extra;
+    if (!check_availability(extra))
         return NULL;
 
     sha1_ni *s = sha1_ni_alloc();
@@ -274,7 +258,7 @@ static ssh_hash *sha1_ni_new(const ssh_hashalg *alg)
     return &s->hash;
 }
 
-FUNC_ISA static void sha1_ni_reset(ssh_hash *hash)
+static void sha1_ni_reset(ssh_hash *hash)
 {
     sha1_ni *s = container_of(hash, sha1_ni, hash);
 
@@ -317,7 +301,7 @@ static void sha1_ni_write(BinarySink *bs, const void *vp, size_t len)
             sha1_ni_block(s->core, s->blk.block);
 }
 
-FUNC_ISA static void sha1_ni_digest(ssh_hash *hash, uint8_t *digest)
+static void sha1_ni_digest(ssh_hash *hash, uint8_t *digest)
 {
     sha1_ni *s = container_of(hash, sha1_ni, hash);
 
@@ -338,15 +322,4 @@ FUNC_ISA static void sha1_ni_digest(ssh_hash *hash, uint8_t *digest)
     PUT_32BIT_MSB_FIRST(digest + 16, e);
 }
 
-const ssh_hashalg ssh_sha1_hw = {
-    ._new = sha1_ni_new,
-    .reset = sha1_ni_reset,
-    .copyfrom = sha1_ni_copyfrom,
-    .digest = sha1_ni_digest,
-    .free = sha1_ni_free,
-    .hlen = 20,
-    .blocklen = 64,
-    HASHALG_NAMES_ANNOTATED("SHA-1", "SHA-NI accelerated"),
-};
-
-#endif
+SHA1_VTABLE(ni, "SHA-NI accelerated");
