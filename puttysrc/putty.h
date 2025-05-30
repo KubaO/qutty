@@ -1869,7 +1869,7 @@ static inline void lp_logging_error(LogPolicy *lp, const char *event)
 static inline bool lp_verbose(LogPolicy *lp)
 { return lp->vt->verbose(lp); }
 
-/* Defined in conscli.c, used in several console command-line tools */
+/* Defined in clicons.c, used in several console command-line tools */
 extern LogPolicy console_cli_logpolicy[];
 
 int console_askappend(LogPolicy *lp, Filename *filename,
@@ -1887,6 +1887,7 @@ void logfopen(LogContext *logctx);
 void logfclose(LogContext *logctx);
 void logtraffic(LogContext *logctx, unsigned char c, int logmode);
 void logflush(LogContext *logctx);
+LogPolicy *log_get_policy(LogContext *logctx);
 void logevent(LogContext *logctx, const char *event);
 void logeventf(LogContext *logctx, const char *fmt, ...) PRINTF_LIKE(2, 3);
 void logeventvf(LogContext *logctx, const char *fmt, va_list ap);
