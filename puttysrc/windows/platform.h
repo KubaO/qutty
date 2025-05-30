@@ -26,20 +26,6 @@ extern "C" {
 #define BUILDINFO_PLATFORM "Windows"
 #endif
 
-#define PUTTY_REG_POS "Software\\SimonTatham\\PuTTY"
-#define PUTTY_REG_PARENT "Software\\SimonTatham"
-#define PUTTY_REG_PARENT_CHILD "PuTTY"
-#define PUTTY_REG_GPARENT "Software"
-#define PUTTY_REG_GPARENT_CHILD "SimonTatham"
-
-/* Result values for the jumplist registry functions. */
-#define JUMPLISTREG_OK 0
-#define JUMPLISTREG_ERROR_INVALID_PARAMETER 1
-#define JUMPLISTREG_ERROR_KEYOPENCREATE_FAILURE 2
-#define JUMPLISTREG_ERROR_VALUEREAD_FAILURE 3
-#define JUMPLISTREG_ERROR_VALUEWRITE_FAILURE 4
-#define JUMPLISTREG_ERROR_INVALID_VALUE 5
-
 struct Filename {
     char path[FILENAME_MAX];
 };
@@ -121,13 +107,37 @@ static void clear_jumplist(void) {}
  *
  * (DECL_WINDOWS_FUNCTION works with both these variants.)
  */
-#define DECL_WINDOWS_FUNCTION(linkage, rettype, name, params) \
-  typedef rettype(WINAPI *t_##name) params;                   \
-  linkage t_##name p_##name
-#define GET_WINDOWS_FUNCTION_PP(module, name) \
-  (p_##name = module ? (t_##name)GetProcAddress(module, STR(name)) : NULL)
-#define GET_WINDOWS_FUNCTION(module, name) \
-  (p_##name = module ? (t_##name)GetProcAddress(module, #name) : NULL)
+#define DECL_WINDOWS_FUNCTION(linkage, rettype, name, params)   \
+    typedef rettype (WINAPI *t_##name) params;                  \
+    linkage t_##name p_##name
+/* If you DECL_WINDOWS_FUNCTION as extern in a header file, use this to
+ * define the function pointer in a source file */
+#define DEF_WINDOWS_FUNCTION(name) t_##name p_##name
+#define GET_WINDOWS_FUNCTION_PP(module, name)                           \
+    TYPECHECK((t_##name)NULL == name,                                   \
+              (p_##name = module ?                                      \
+               (t_##name) GetProcAddress(module, STR(name)) : NULL))
+#define GET_WINDOWS_FUNCTION(module, name)                              \
+    TYPECHECK((t_##name)NULL == name,                                   \
+              (p_##name = module ?                                      \
+               (t_##name) GetProcAddress(module, #name) : NULL))
+#define GET_WINDOWS_FUNCTION_NO_TYPECHECK(module, name) \
+    (p_##name = module ?                                \
+     (t_##name) GetProcAddress(module, #name) : NULL)
+
+#define PUTTY_REG_POS "Software\\SimonTatham\\PuTTY"
+#define PUTTY_REG_PARENT "Software\\SimonTatham"
+#define PUTTY_REG_PARENT_CHILD "PuTTY"
+#define PUTTY_REG_GPARENT "Software"
+#define PUTTY_REG_GPARENT_CHILD "SimonTatham"
+
+/* Result values for the jumplist registry functions. */
+#define JUMPLISTREG_OK 0
+#define JUMPLISTREG_ERROR_INVALID_PARAMETER 1
+#define JUMPLISTREG_ERROR_KEYOPENCREATE_FAILURE 2
+#define JUMPLISTREG_ERROR_VALUEREAD_FAILURE 3
+#define JUMPLISTREG_ERROR_VALUEWRITE_FAILURE 4
+#define JUMPLISTREG_ERROR_INVALID_VALUE 5
 
 HMODULE load_system32_dll(const char *libname);
 

@@ -1,5 +1,5 @@
 /*
- * windefs.c: default settings that are specific to Windows.
+ * windows/utils/defaults.c: default settings that are specific to Windows.
  */
 
 #include "putty.h"
