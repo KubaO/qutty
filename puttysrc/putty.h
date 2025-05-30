@@ -474,7 +474,8 @@ enum {
      * Proxy types.
      */
     PROXY_NONE, PROXY_SOCKS4, PROXY_SOCKS5,
-    PROXY_HTTP, PROXY_TELNET, PROXY_CMD, PROXY_FUZZ
+    PROXY_HTTP, PROXY_TELNET, PROXY_CMD, PROXY_SSH,
+    PROXY_FUZZ
 };
 
 enum {
@@ -532,7 +533,14 @@ enum {
     FUNKY_XTERM,
     FUNKY_VT400,
     FUNKY_VT100P,
-    FUNKY_SCO
+    FUNKY_SCO,
+    FUNKY_XTERM_216
+};
+
+enum {
+    /* Shifted arrow key types (CONF_sharrow_type) */
+    SHARROW_APPLICATION,  /* Ctrl flips between ESC O A and ESC [ A */
+    SHARROW_BITMAP        /* ESC [ 1 ; n A, where n = 1 + bitmap of CAS */
 };
 
 enum {
@@ -1473,6 +1481,7 @@ NORETURN void cleanup_exit(int);
     X(BOOL, NONE, bksp_is_delete) \
     X(BOOL, NONE, rxvt_homeend) \
     X(INT, NONE, funky_type) /* FUNKY_XTERM, FUNKY_LINUX, ... */ \
+    X(INT, NONE, sharrow_type) /* SHARROW_APPLICATION, SHARROW_BITMAP, ... */ \
     X(BOOL, NONE, no_applic_c) /* totally disable app cursor keys */ \
     X(BOOL, NONE, no_applic_k) /* totally disable app keypad */ \
     X(BOOL, NONE, no_mouse_rep) /* totally disable mouse reporting */ \
@@ -1605,6 +1614,7 @@ NORETURN void cleanup_exit(int);
     X(INT, NONE, sshbug_oldgex2) \
     X(INT, NONE, sshbug_winadj) \
     X(INT, NONE, sshbug_chanreq) \
+    X(INT, NONE, sshbug_dropstart) \
     /*                                                                \
      * ssh_simple means that we promise never to open any channel     \
      * other than the main one, which means it can safely use a very  \
