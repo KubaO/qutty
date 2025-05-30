@@ -45,7 +45,7 @@ static ssh_hash *sha512_select(const ssh_hashalg *alg)
 }
 
 const ssh_hashalg ssh_sha512 = {
-    ._new = sha512_select,
+    .new = sha512_select,
     .hlen = 64,
     .blocklen = 128,
     HASHALG_NAMES_ANNOTATED("SHA-512", "dummy selector vtable"),
@@ -53,7 +53,7 @@ const ssh_hashalg ssh_sha512 = {
 };
 
 const ssh_hashalg ssh_sha384 = {
-    ._new = sha512_select,
+    .new = sha512_select,
     .hlen = 48,
     .blocklen = 128,
     HASHALG_NAMES_ANNOTATED("SHA-384", "dummy selector vtable"),

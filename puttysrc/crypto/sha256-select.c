@@ -37,7 +37,7 @@ static ssh_hash *sha256_select(const ssh_hashalg *alg)
 }
 
 const ssh_hashalg ssh_sha256 = {
-    ._new = sha256_select,
+    .new = sha256_select,
     .hlen = 32,
     .blocklen = 64,
     HASHALG_NAMES_ANNOTATED("SHA-256", "dummy selector vtable"),

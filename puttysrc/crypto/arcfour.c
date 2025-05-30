@@ -104,7 +104,7 @@ static void arcfour_ssh2_block(ssh_cipher *cipher, void *blk, int len)
 }
 
 const ssh_cipheralg ssh_arcfour128_ssh2 = {
-    ._new = arcfour_new,
+    .new = arcfour_new,
     .free = arcfour_free,
     .setiv = arcfour_ssh2_setiv,
     .setkey = arcfour_ssh2_setkey,
@@ -119,7 +119,7 @@ const ssh_cipheralg ssh_arcfour128_ssh2 = {
 };
 
 const ssh_cipheralg ssh_arcfour256_ssh2 = {
-    ._new = arcfour_new,
+    .new = arcfour_new,
     .free = arcfour_free,
     .setiv = arcfour_ssh2_setiv,
     .setkey = arcfour_ssh2_setkey,

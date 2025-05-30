@@ -334,6 +334,22 @@ set_property(SOURCE
     puttysrc/windows/unicode.c
     PROPERTY COMPILE_DEFINITIONS "${UCS_OVERRIDES}"
 )
+set_property(SOURCE
+    puttysrc/crypto/aes-select.c
+    puttysrc/crypto/arcfour.c
+    puttysrc/crypto/blake2.c
+    puttysrc/crypto/blowfish.c
+    puttysrc/crypto/chacha20-poly1305.c
+    puttysrc/crypto/des.c
+    puttysrc/crypto/hmac.c
+    puttysrc/crypto/md5.c
+    puttysrc/crypto/sha1-select.c
+    puttysrc/crypto/sha256-select.c
+    puttysrc/crypto/sha3.c
+    puttysrc/crypto/sha512-select.c
+    PROPERTY COMPILE_DEFINITIONS new=_new
+)
+
 
 if (WIN32)
     # winnoise.c and winstore.c must be built without UNICODE nor _UNICODE

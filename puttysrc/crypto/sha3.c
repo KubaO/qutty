@@ -282,7 +282,7 @@ static void sha3_reset(ssh_hash *hash)
 
 #define DEFINE_SHA3(bits)                       \
     const ssh_hashalg ssh_sha3_##bits = {       \
-        ._new = keccak_new,                     \
+        .new = keccak_new,                      \
         .reset = sha3_reset,                    \
         .copyfrom = keccak_copyfrom,            \
         .digest = keccak_digest,                \
@@ -316,7 +316,7 @@ static void shake256_reset(ssh_hash *hash)
 
 #define DEFINE_SHAKE(param, hashbytes)                          \
     const ssh_hashalg ssh_shake##param##_##hashbytes##bytes = { \
-        ._new = keccak_new,                                     \
+        .new = keccak_new,                                      \
         .reset = shake##param##_reset,                          \
         .copyfrom = keccak_copyfrom,                            \
         .digest = keccak_digest,                                \

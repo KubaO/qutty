@@ -648,7 +648,7 @@ static void blowfish_ssh2_sdctr(ssh_cipher *cipher, void *blk, int len)
 }
 
 const ssh_cipheralg ssh_blowfish_ssh1 = {
-    ._new = blowfish_new,
+    .new = blowfish_new,
     .free = blowfish_free,
     .setiv = blowfish_ssh1_setiv,
     .setkey = blowfish_ssh_setkey,
@@ -662,7 +662,7 @@ const ssh_cipheralg ssh_blowfish_ssh1 = {
 };
 
 const ssh_cipheralg ssh_blowfish_ssh2 = {
-    ._new = blowfish_new,
+    .new = blowfish_new,
     .free = blowfish_free,
     .setiv = blowfish_ssh2_setiv,
     .setkey = blowfish_ssh_setkey,
@@ -677,7 +677,7 @@ const ssh_cipheralg ssh_blowfish_ssh2 = {
 };
 
 const ssh_cipheralg ssh_blowfish_ssh2_ctr = {
-    ._new = blowfish_new,
+    .new = blowfish_new,
     .free = blowfish_free,
     .setiv = blowfish_ssh2_setiv,
     .setkey = blowfish_ssh_setkey,

@@ -944,7 +944,7 @@ static const char *poly_text_name(ssh2_mac *mac)
 }
 
 const ssh2_macalg ssh2_poly1305 = {
-    ._new = poly_ssh2_new,
+    .new = poly_ssh2_new,
     .free = poly_ssh2_free,
     .setkey = poly_setkey,
     .start = poly_start,
@@ -1038,7 +1038,7 @@ static void ccp_decrypt_length(ssh_cipher *cipher, void *blk, int len,
 }
 
 const ssh_cipheralg ssh2_chacha20_poly1305 = {
-    ._new = ccp_new,
+    .new = ccp_new,
     .free = ccp_free,
     .setiv = ccp_iv,
     .setkey = ccp_key,

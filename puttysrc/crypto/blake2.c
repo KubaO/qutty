@@ -212,7 +212,7 @@ static void blake2b_digest(ssh_hash *hash, uint8_t *digest)
 }
 
 const ssh_hashalg ssh_blake2b = {
-    ._new = blake2b_new,
+    .new = blake2b_new,
     .reset = blake2b_reset,
     .copyfrom = blake2b_copyfrom,
     .digest = blake2b_digest,

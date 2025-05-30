@@ -683,7 +683,7 @@ static void des_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_des = {
-    ._new = des_cbc_new,
+    .new = des_cbc_new,
     .free = des_cbc_free,
     .setiv = des_cbc_setiv,
     .setkey = des_cbc_setkey,
@@ -699,7 +699,7 @@ const ssh_cipheralg ssh_des = {
 
 const ssh_cipheralg ssh_des_sshcom_ssh2 = {
     /* Same as ssh_des_cbc, but with a different SSH-2 ID */
-    ._new = des_cbc_new,
+    .new = des_cbc_new,
     .free = des_cbc_free,
     .setiv = des_cbc_setiv,
     .setkey = des_cbc_setkey,
@@ -802,7 +802,7 @@ static void des3_cbc1_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_3des_ssh2 = {
-    ._new = des3_cbc1_new,
+    .new = des3_cbc1_new,
     .free = des3_cbc1_free,
     .setiv = des3_cbc1_setiv,
     .setkey = des3_cbc1_setkey,
@@ -899,7 +899,7 @@ static void des3_sdctr_encrypt_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_3des_ssh2_ctr = {
-    ._new = des3_sdctr_new,
+    .new = des3_sdctr_new,
     .free = des3_sdctr_free,
     .setiv = des3_sdctr_setiv,
     .setkey = des3_sdctr_setkey,
@@ -1034,7 +1034,7 @@ static void des3_cbc3_cbc_decrypt(ssh_cipher *ciph, void *vdata, int len)
 }
 
 const ssh_cipheralg ssh_3des_ssh1 = {
-    ._new = des3_cbc3_new,
+    .new = des3_cbc3_new,
     .free = des3_cbc3_free,
     .setiv = des3_cbc3_setiv,
     .setkey = des3_cbc3_setkey,

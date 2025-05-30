@@ -162,7 +162,7 @@ static const char *hmac_text_name(ssh2_mac *mac)
 
 static const struct hmac_extra ssh_hmac_sha256_extra = { &ssh_sha256, "" };
 const ssh2_macalg ssh_hmac_sha256 = {
-    ._new = hmac_new,
+    .new = hmac_new,
     .free = hmac_free,
     .setkey = hmac_key,
     .start = hmac_start,
@@ -177,7 +177,7 @@ const ssh2_macalg ssh_hmac_sha256 = {
 
 static const struct hmac_extra ssh_hmac_md5_extra = { &ssh_md5, "" };
 const ssh2_macalg ssh_hmac_md5 = {
-    ._new = hmac_new,
+    .new = hmac_new,
     .free = hmac_free,
     .setkey = hmac_key,
     .start = hmac_start,
@@ -193,7 +193,7 @@ const ssh2_macalg ssh_hmac_md5 = {
 static const struct hmac_extra ssh_hmac_sha1_extra = { &ssh_sha1, "" };
 
 const ssh2_macalg ssh_hmac_sha1 = {
-    ._new = hmac_new,
+    .new = hmac_new,
     .free = hmac_free,
     .setkey = hmac_key,
     .start = hmac_start,
@@ -209,7 +209,7 @@ const ssh2_macalg ssh_hmac_sha1 = {
 static const struct hmac_extra ssh_hmac_sha1_96_extra = { &ssh_sha1, "-96" };
 
 const ssh2_macalg ssh_hmac_sha1_96 = {
-    ._new = hmac_new,
+    .new = hmac_new,
     .free = hmac_free,
     .setkey = hmac_key,
     .start = hmac_start,
@@ -227,7 +227,7 @@ static const struct hmac_extra ssh_hmac_sha1_buggy_extra = {
 };
 
 const ssh2_macalg ssh_hmac_sha1_buggy = {
-    ._new = hmac_new,
+    .new = hmac_new,
     .free = hmac_free,
     .setkey = hmac_key,
     .start = hmac_start,
@@ -244,7 +244,7 @@ static const struct hmac_extra ssh_hmac_sha1_96_buggy_extra = {
 };
 
 const ssh2_macalg ssh_hmac_sha1_96_buggy = {
-    ._new = hmac_new,
+    .new = hmac_new,
     .free = hmac_free,
     .setkey = hmac_key,
     .start = hmac_start,

@@ -234,7 +234,7 @@ static void md5_digest(ssh_hash *hash, uint8_t *digest)
 }
 
 const ssh_hashalg ssh_md5 = {
-    ._new = md5_new,
+    .new = md5_new,
     .reset = md5_reset,
     .copyfrom = md5_copyfrom,
     .digest = md5_digest,

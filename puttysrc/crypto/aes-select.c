@@ -48,7 +48,7 @@ static ssh_cipher *aes_select(const ssh_cipheralg *alg)
         NULL,                                                           \
     };                                                                  \
     const ssh_cipheralg ssh_aes ## bits ## _ ## mode_c = {              \
-        ._new = aes_select,                                             \
+        .new = aes_select,                                              \
         .ssh2_id = "aes" #bits "-" mode_protocol,                       \
         .blksize = 16,                                                  \
         .real_keybits = bits,                                           \
@@ -67,7 +67,7 @@ AES_SELECTOR_VTABLE(sdctr, "ctr", "SDCTR", 256);
 
 static const ssh_cipheralg ssh_rijndael_lysator = {
     /* Same as aes256_cbc, but with a different protocol ID */
-    ._new = aes_select,
+    .new = aes_select,
     .ssh2_id = "rijndael-cbc@lysator.liu.se",
     .blksize = 16,
     .real_keybits = 256,

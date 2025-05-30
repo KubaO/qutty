@@ -37,7 +37,7 @@ static ssh_hash *sha1_select(const ssh_hashalg *alg)
 }
 
 const ssh_hashalg ssh_sha1 = {
-    ._new = sha1_select,
+    .new = sha1_select,
     .hlen = 20,
     .blocklen = 64,
     HASHALG_NAMES_ANNOTATED("SHA-1", "dummy selector vtable"),
