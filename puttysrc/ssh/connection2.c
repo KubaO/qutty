@@ -18,8 +18,6 @@ static bool ssh2_connection_get_specials(
     PacketProtocolLayer *ppl, add_special_fn_t add_special, void *ctx);
 static void ssh2_connection_special_cmd(PacketProtocolLayer *ppl,
                                         SessionSpecialCode code, int arg);
-static bool ssh2_connection_want_user_input(PacketProtocolLayer *ppl);
-static void ssh2_connection_got_user_input(PacketProtocolLayer *ppl);
 static void ssh2_connection_reconfigure(PacketProtocolLayer *ppl, Conf *conf);
 
 static const PacketProtocolLayerVtable ssh2_connection_vtable = {
@@ -27,8 +25,6 @@ static const PacketProtocolLayerVtable ssh2_connection_vtable = {
     .process_queue = ssh2_connection_process_queue,
     .get_specials = ssh2_connection_get_specials,
     .special_cmd = ssh2_connection_special_cmd,
-    .want_user_input = ssh2_connection_want_user_input,
-    .got_user_input = ssh2_connection_got_user_input,
     .reconfigure = ssh2_connection_reconfigure,
     .queued_data_size = ssh_ppl_default_queued_data_size,
     .name = "ssh-connection",
@@ -63,6 +59,8 @@ static bool ssh2_ldisc_option(ConnectionLayer *cl, int option);
 static void ssh2_set_ldisc_option(ConnectionLayer *cl, int option, bool value);
 static void ssh2_enable_x_fwd(ConnectionLayer *cl);
 static void ssh2_set_wants_user_input(ConnectionLayer *cl, bool wanted);
+static bool ssh2_get_wants_user_input(ConnectionLayer *cl);
+static void ssh2_got_user_input(ConnectionLayer *cl);
 
 static const ConnectionLayerVtable ssh2_connlayer_vtable = {
     .rportfwd_alloc = ssh2_rportfwd_alloc,
@@ -88,6 +86,8 @@ static const ConnectionLayerVtable ssh2_connlayer_vtable = {
     .set_ldisc_option = ssh2_set_ldisc_option,
     .enable_x_fwd = ssh2_enable_x_fwd,
     .set_wants_user_input = ssh2_set_wants_user_input,
+    .get_wants_user_input = ssh2_get_wants_user_input,
+    .got_user_input = ssh2_got_user_input,
 };
 
 static char *ssh2_channel_open_failure_error_text(PktIn *pktin)
@@ -178,6 +178,7 @@ void ssh2_queue_global_request_handler(
         snew(struct outstanding_global_request);
     ogr->handler = handler;
     ogr->ctx = ctx;
+    ogr->next = NULL;
     if (s->globreq_tail)
         s->globreq_tail->next = ogr;
     else
@@ -239,7 +240,8 @@ static void ssh2_channel_free(struct ssh2_channel *c)
 
 PacketProtocolLayer *ssh2_connection_new(
     Ssh *ssh, ssh_sharing_state *connshare, bool is_simple,
-    Conf *conf, const char *peer_verstring, ConnectionLayer **cl_out)
+    Conf *conf, const char *peer_verstring, bufchain *user_input,
+    ConnectionLayer **cl_out)
 {
     struct ssh2_connection_state *s = snew(struct ssh2_connection_state);
     memset(s, 0, sizeof(*s));
@@ -263,6 +265,8 @@ PacketProtocolLayer *ssh2_connection_new(
     s->channels = newtree234(ssh2_channelcmp);
 
     s->x11authtree = newtree234(x11_authcmp);
+
+    s->user_input = user_input;
 
     /* Need to get the log context for s->cl now, because we won't be
      * helpfully notified when a copy is written into s->ppl by our
@@ -369,6 +373,8 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
                 s->globreq_head = s->globreq_head->next;
                 sfree(tmp);
             }
+            if (!s->globreq_head)
+                s->globreq_tail = NULL;
 
             pq_pop(s->ppl.in_pq);
             break;
@@ -391,7 +397,7 @@ static bool ssh2_connection_filter_queue(struct ssh2_connection_state *s)
                  * This channel-open request needs to go to a
                  * connection-sharing downstream, so abandon our own
                  * channel-open procedure and just pass the message on
-                 * to sshshare.c.
+                 * to sharing.c.
                  */
                 share_got_pkt_from_server(
                     chanopen_result.u.downstream.share_ctx, pktin->type,
@@ -982,7 +988,7 @@ static void ssh2_connection_process_queue(PacketProtocolLayer *ppl)
      * connection-sharing downstream).
      */
     if (ssh2_connection_need_antispoof_prompt(s)) {
-        s->antispoof_prompt = new_prompts();
+        s->antispoof_prompt = ssh_ppl_new_prompts(&s->ppl);
         s->antispoof_prompt->to_server = true;
         s->antispoof_prompt->from_server = false;
         s->antispoof_prompt->name = dupstr("Authentication successful");
@@ -990,19 +996,11 @@ static void ssh2_connection_process_queue(PacketProtocolLayer *ppl)
             s->antispoof_prompt,
             dupstr("Access granted. Press Return to begin session. "), false);
         s->antispoof_ret = seat_get_userpass_input(
-            s->ppl.seat, s->antispoof_prompt, NULL);
-        while (1) {
-            while (s->antispoof_ret < 0 &&
-                   bufchain_size(s->ppl.user_input) > 0)
-                s->antispoof_ret = seat_get_userpass_input(
-                    s->ppl.seat, s->antispoof_prompt, s->ppl.user_input);
-
-            if (s->antispoof_ret >= 0)
-                break;
-
-            s->want_user_input = true;
+            ppl_get_iseat(&s->ppl), s->antispoof_prompt);
+        while (s->antispoof_ret.kind == SPRK_INCOMPLETE) {
             crReturnV;
-            s->want_user_input = false;
+            s->antispoof_ret = seat_get_userpass_input(
+                ppl_get_iseat(&s->ppl), s->antispoof_prompt);
         }
         free_prompts(s->antispoof_prompt);
         s->antispoof_prompt = NULL;
@@ -1157,6 +1155,7 @@ static size_t ssh2_try_send(struct ssh2_channel *c)
     if (!bufsize && c->pending_eof)
         ssh2_channel_try_eof(c);
 
+    ssh_sendbuffer_changed(s->ppl.ssh);
     return bufsize;
 }
 
@@ -1708,27 +1707,29 @@ static void ssh2_set_wants_user_input(ConnectionLayer *cl, bool wanted)
         container_of(cl, struct ssh2_connection_state, cl);
 
     s->want_user_input = wanted;
+    if (wanted)
+        ssh_check_sendok(s->ppl.ssh);
 }
 
-static bool ssh2_connection_want_user_input(PacketProtocolLayer *ppl)
+static bool ssh2_get_wants_user_input(ConnectionLayer *cl)
 {
     struct ssh2_connection_state *s =
-        container_of(ppl, struct ssh2_connection_state, ppl);
+        container_of(cl, struct ssh2_connection_state, cl);
     return s->want_user_input;
 }
 
-static void ssh2_connection_got_user_input(PacketProtocolLayer *ppl)
+static void ssh2_got_user_input(ConnectionLayer *cl)
 {
     struct ssh2_connection_state *s =
-        container_of(ppl, struct ssh2_connection_state, ppl);
+        container_of(cl, struct ssh2_connection_state, cl);
 
-    while (s->mainchan && bufchain_size(s->ppl.user_input) > 0) {
+    while (s->mainchan && bufchain_size(s->user_input) > 0) {
         /*
          * Add user input to the main channel's buffer.
          */
-        ptrlen data = bufchain_prefix(s->ppl.user_input);
+        ptrlen data = bufchain_prefix(s->user_input);
         sshfwd_write(s->mainchan_sc, data.ptr, data.len);
-        bufchain_consume(s->ppl.user_input, data.len);
+        bufchain_consume(s->user_input, data.len);
     }
 }
 

@@ -54,7 +54,7 @@ static const BinaryPacketProtocolVtable ssh2_bpp_vtable = {
     .handle_input = ssh2_bpp_handle_input,
     .handle_output = ssh2_bpp_handle_output,
     .new_pktout = ssh2_bpp_new_pktout,
-    .queue_disconnect = ssh2_bpp_queue_disconnect, /* in sshcommon.c */
+    .queue_disconnect = ssh2_bpp_queue_disconnect, /* in common.c */
     .packet_size_limit = 0xFFFFFFFF, /* no special limit for this bpp */
 };
 
@@ -979,4 +979,6 @@ static void ssh2_bpp_handle_output(BinaryPacketProtocol *bpp)
             ssh2_bpp_enable_pending_compression(s);
         }
     }
+
+    ssh_sendbuffer_changed(bpp->ssh);
 }

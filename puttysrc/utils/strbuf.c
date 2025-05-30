@@ -100,21 +100,6 @@ char *strbuf_to_str(strbuf *buf_o)
     sfree(buf);
     return ret;
 }
-void strbuf_catfv(strbuf *buf_o, const char *fmt, va_list ap)
-{
-    struct strbuf_impl *buf = container_of(buf_o, struct strbuf_impl, visible);
-    STRBUF_SET_PTR(buf, dupvprintf_inner(buf->visible.s, buf->visible.len,
-                                         &buf->size, fmt, ap));
-    buf->visible.len += strlen(buf->visible.s + buf->visible.len);
-}
-void strbuf_catf(strbuf *buf_o, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    strbuf_catfv(buf_o, fmt, ap);
-    va_end(ap);
-}
-
 strbuf *strbuf_new_for_agent_query(void)
 {
     strbuf *buf = strbuf_new();

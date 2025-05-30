@@ -129,6 +129,7 @@ static void mainchan_open_confirmation(Channel *chan)
 
     seat_update_specials_menu(mc->ppl->seat);
     ppl_logevent("Opened main channel");
+    seat_notify_session_started(mc->ppl->seat);
 
     if (mc->is_simple)
         sshfwd_hint_channel_is_simple(mc->sc);
@@ -295,8 +296,8 @@ static void mainchan_request_response(Channel *chan, bool success)
              * If there's no remote_cmd2 configured, then we have no
              * fallback command, so we've run out of options.
              */
-            ssh_sw_abort(mc->ppl->ssh,
-                         "Server refused to start a shell/command");
+            ssh_sw_abort_deferred(mc->ppl->ssh,
+                                  "Server refused to start a shell/command");
         }
         return;
     }
@@ -309,8 +310,8 @@ static void mainchan_request_response(Channel *chan, bool success)
             ssh_got_fallback_cmd(mc->ppl->ssh);
             mainchan_ready(mc);
         } else {
-            ssh_sw_abort(mc->ppl->ssh,
-                         "Server refused to start a shell/command");
+            ssh_sw_abort_deferred(mc->ppl->ssh,
+                                  "Server refused to start a shell/command");
         }
         return;
     }
@@ -321,7 +322,7 @@ static void mainchan_ready(mainchan *mc)
     mc->ready = true;
 
     ssh_set_wants_user_input(mc->cl, true);
-    ssh_ppl_got_user_input(mc->ppl); /* in case any is already queued */
+    ssh_got_user_input(mc->cl); /* in case any is already queued */
 
     /* If an EOF arrived before we were ready, handle it now. */
     if (mc->eof_pending) {
@@ -433,7 +434,7 @@ static bool mainchan_rcvd_exit_signal(
             exitcode = 128 + SIG ## s;
     #define SIGNAL_MAIN(s, text) SIGNAL_SUB(s)
     #define SIGNALS_LOCAL_ONLY
-    #include "ssh/signal-list.h"
+    #include "signal-list.h"
     #undef SIGNAL_SUB
     #undef SIGNAL_MAIN
     #undef SIGNALS_LOCAL_ONLY
@@ -473,7 +474,7 @@ void mainchan_get_specials(
     #define SIGNAL_MAIN(name, desc) \
     add_special(ctx, "SIG" #name " (" desc ")", SS_SIG ## name, 0);
     #define SIGNAL_SUB(name)
-    #include "ssh/signal-list.h"
+    #include "signal-list.h"
     #undef SIGNAL_MAIN
     #undef SIGNAL_SUB
 
@@ -482,7 +483,7 @@ void mainchan_get_specials(
     #define SIGNAL_MAIN(name, desc)
     #define SIGNAL_SUB(name) \
     add_special(ctx, "SIG" #name, SS_SIG ## name, 0);
-    #include "ssh/signal-list.h"
+    #include "signal-list.h"
     #undef SIGNAL_MAIN
     #undef SIGNAL_SUB
 
@@ -494,12 +495,12 @@ static const char *ssh_signal_lookup(SessionSpecialCode code)
     #define SIGNAL_SUB(name) \
     if (code == SS_SIG ## name) return #name;
     #define SIGNAL_MAIN(name, desc) SIGNAL_SUB(name)
-    #include "ssh/signal-list.h"
+    #include "signal-list.h"
     #undef SIGNAL_MAIN
     #undef SIGNAL_SUB
 
-  /* If none of those clauses matched, fail lookup. */
-  return NULL;
+    /* If none of those clauses matched, fail lookup. */
+    return NULL;
 }
 
 void mainchan_special_cmd(mainchan *mc, SessionSpecialCode code, int arg)

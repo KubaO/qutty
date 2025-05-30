@@ -937,28 +937,25 @@ static void share_disconnect(struct ssh_sharing_connstate *cs,
     share_begin_cleanup(cs);
 }
 
-static void share_closing(Plug *plug, const char *error_msg, int error_code,
-                          bool calling_back)
+static void share_closing(Plug *plug, PlugCloseType type,
+                          const char *error_msg)
 {
     struct ssh_sharing_connstate *cs = container_of(
         plug, struct ssh_sharing_connstate, plug);
 
-    if (error_msg) {
-#ifdef BROKEN_PIPE_ERROR_CODE
-        /*
-         * Most of the time, we log what went wrong when a downstream
-         * disappears with a socket error. One exception, though, is
-         * receiving EPIPE when we haven't received a protocol version
-         * string from the downstream, because that can happen as a result
-         * of plink -shareexists (opening the connection and instantly
-         * closing it again without bothering to read our version string).
-         * So that one case is not treated as a log-worthy error.
-         */
-        if (error_code == BROKEN_PIPE_ERROR_CODE && !cs->got_verstring)
-            /* do nothing */;
-        else
-#endif
-            log_downstream(cs, "Socket error: %s", error_msg);
+    /*
+     * Most of the time, we log what went wrong when a downstream
+     * disappears with a socket error. One exception, though, is
+     * receiving EPIPE when we haven't received a protocol version
+     * string from the downstream, because that can happen as a result
+     * of plink -shareexists (opening the connection and instantly
+     * closing it again without bothering to read our version string).
+     * So that one case is not treated as a log-worthy error.
+     */
+    if (type == PLUGCLOSE_BROKEN_PIPE && !cs->got_verstring) {
+        /* do nothing */;
+    } else if (type != PLUGCLOSE_NORMAL) {
+        log_downstream(cs, "Socket error: %s", error_msg);
     }
     share_begin_cleanup(cs);
 }
@@ -1846,12 +1843,12 @@ static void share_sent(Plug *plug, size_t bufsize)
      */
 }
 
-static void share_listen_closing(Plug *plug, const char *error_msg,
-                                 int error_code, bool calling_back)
+static void share_listen_closing(Plug *plug, PlugCloseType type,
+                                 const char *error_msg)
 {
     ssh_sharing_state *sharestate =
         container_of(plug, ssh_sharing_state, plug);
-    if (error_msg)
+    if (type != PLUGCLOSE_NORMAL)
         log_general(sharestate, "listening socket: %s", error_msg);
     sk_close(sharestate->listensock);
     sharestate->listensock = NULL;
@@ -1906,6 +1903,7 @@ static const PlugVtable ssh_sharing_conn_plugvt = {
     .closing = share_closing,
     .receive = share_receive,
     .sent = share_sent,
+    .log = nullplug_log,
 };
 
 static int share_listen_accepting(Plug *plug,
@@ -2047,6 +2045,7 @@ bool ssh_share_test_for_upstream(const char *host, int port, Conf *conf)
 static const PlugVtable ssh_sharing_listen_plugvt = {
     .closing = share_listen_closing,
     .accepting = share_listen_accepting,
+    .log = nullplug_log,
 };
 
 void ssh_connshare_provide_connlayer(ssh_sharing_state *sharestate,

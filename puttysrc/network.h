@@ -51,9 +51,14 @@ typedef enum PlugLogType {
     PLUGLOG_PROXY_MSG,
 } PlugLogType;
 
+typedef enum PlugCloseType {
+    PLUGCLOSE_NORMAL,
+    PLUGCLOSE_ERROR,
+    PLUGCLOSE_BROKEN_PIPE,
+    PLUGCLOSE_USER_ABORT,
+} PlugCloseType;
+
 struct PlugVtable {
-    void (*log)(Plug *p, PlugLogType type, SockAddr *addr, int port,
-                const char *error_msg, int error_code);
     /*
      * Passes the client progress reports on the process of setting
      * up the connection.
@@ -86,6 +91,8 @@ struct PlugVtable {
      * all Plugs must implement this method, even if only to ignore
      * the logged events.
      */
+    void (*log)(Plug *p, PlugLogType type, SockAddr *addr, int port,
+                const char *error_msg, int error_code);
 
     /*
      * Notifies the Plug that the socket is closing, and something
@@ -117,12 +124,8 @@ struct PlugVtable {
      *    non-interactive error reporting (e.g. event logs) can still
      *    record why the connection terminated.
      */
-    void (*closing)
-     (Plug *p, const char *error_msg, int error_code, bool calling_back);
-    /* error_msg is NULL iff it is not an error (ie it closed normally) */
-    /* calling_back != 0 iff there is a Plug function */
-    /* currently running (would cure the fixme in try_send()) */
-    void (*receive) (Plug *p, int urgent, const char *data, size_t len);
+    void (*closing)(Plug *p, PlugCloseType type, const char *error_msg);
+
     /*
      * Provides incoming socket data to the Plug. Three cases:
      *
@@ -135,19 +138,22 @@ struct PlugVtable {
      *  - urgent==2. `data' points to `len' bytes of data,
      *    the first of which was the one at the Urgent mark.
      */
-    void (*sent) (Plug *p, size_t bufsize);
+    void (*receive) (Plug *p, int urgent, const char *data, size_t len);
+
     /*
      * Called when the pending send backlog on a socket is cleared or
      * partially cleared. The new backlog size is passed in the
      * `bufsize' parameter.
      */
-    int (*accepting)(Plug *p, accept_fn_t constructor, accept_ctx_t ctx);
+    void (*sent) (Plug *p, size_t bufsize);
+
     /*
      * Only called on listener-type sockets, and is passed a
      * constructor function+context that will create a fresh Socket
      * describing the connection. It returns nonzero if it doesn't
      * want the connection for some reason, or 0 on success.
      */
+    int (*accepting)(Plug *p, accept_fn_t constructor, accept_ctx_t ctx);
 };
 
 /* Proxy indirection layer.
@@ -177,7 +183,7 @@ struct PlugVtable {
 Socket *new_connection(SockAddr *addr, const char *hostname,
                        int port, bool privport,
                        bool oobinline, bool nodelay, bool keepalive,
-                       Plug *plug, Conf *conf);
+                       Plug *plug, Conf *conf, Interactor *interactor);
 Socket *new_listener(const char *srcaddr, int port, Plug *plug,
                      bool local_host_only, Conf *conf, int addressfamily);
 SockAddr *name_lookup(const char *host, int port, char **canonicalname,
@@ -189,7 +195,13 @@ SockAddr *name_lookup(const char *host, int port, char **canonicalname,
 Socket *platform_new_connection(SockAddr *addr, const char *hostname,
                                 int port, bool privport,
                                 bool oobinline, bool nodelay, bool keepalive,
-                                Plug *plug, Conf *conf);
+                                Plug *plug, Conf *conf, Interactor *itr);
+
+/* callback for SSH jump-host proxying */
+Socket *sshproxy_new_connection(SockAddr *addr, const char *hostname,
+                                int port, bool privport,
+                                bool oobinline, bool nodelay, bool keepalive,
+                                Plug *plug, Conf *conf, Interactor *itr);
 
 /* socket functions */
 
@@ -232,17 +244,17 @@ static inline size_t sk_write_oob(Socket *s, const void *data, size_t len)
 static inline void sk_write_eof(Socket *s)
 { s->vt->write_eof(s); }
 
-#ifdef IS_QUTTY
 static inline void plug_log(
     Plug *p, PlugLogType type, SockAddr *addr, int port, const char *msg, int code)
-#else
-static inline void plug_log(
-    Plug *p, int type, SockAddr *addr, int port, const char *msg, int code)
-#endif
 { p->vt->log(p, type, addr, port, msg, code); }
-static inline void plug_closing(
-    Plug *p, const char *msg, int code, bool calling_back)
-{ p->vt->closing(p, msg, code, calling_back); }
+static inline void plug_closing(Plug *p, PlugCloseType type, const char *msg)
+{ p->vt->closing(p, type, msg); }
+static inline void plug_closing_normal(Plug *p)
+{ p->vt->closing(p, PLUGCLOSE_NORMAL, NULL); }
+static inline void plug_closing_error(Plug *p, const char *msg)
+{ p->vt->closing(p, PLUGCLOSE_ERROR, msg); }
+static inline void plug_closing_user_abort(Plug *p)
+{ p->vt->closing(p, PLUGCLOSE_USER_ABORT, "User aborted connection setup"); }
 static inline void plug_receive(Plug *p, int urg, const char *data, size_t len)
 { p->vt->receive(p, urg, data, len); }
 static inline void plug_sent (Plug *p, size_t bufsize)
@@ -334,7 +346,7 @@ void sk_free_peer_info(SocketPeerInfo *pi);
  * can just return 0 - this function is not required to handle
  * numeric port specifications.
  */
-int net_service_lookup(char *service);
+int net_service_lookup(const char *service);
 
 /*
  * Look up the local hostname; return value needs freeing.
@@ -358,6 +370,19 @@ Socket *new_error_socket_consume_string(Plug *plug, char *errmsg);
  */
 extern Plug *const nullplug;
 
+/*
+ * Some trivial no-op plug functions, also in nullplug.c; exposed here
+ * so that other Plug implementations can use them too.
+ *
+ * In particular, nullplug_log is useful to Plugs that don't need to
+ * worry about logging.
+ */
+void nullplug_log(Plug *plug, PlugLogType type, SockAddr *addr,
+                  int port, const char *err_msg, int err_code);
+void nullplug_closing(Plug *plug, PlugCloseType type, const char *error_msg);
+void nullplug_receive(Plug *plug, int urgent, const char *data, size_t len);
+void nullplug_sent(Plug *plug, size_t bufsize);
+
 /* ----------------------------------------------------------------------
  * Functions defined outside the network code, which have to be
  * declared in this header file rather than the main putty.h because
@@ -376,5 +401,32 @@ typedef struct ProxyStderrBuf {
 void psb_init(ProxyStderrBuf *psb);
 void log_proxy_stderr(
     Plug *plug, ProxyStderrBuf *psb, const void *vdata, size_t len);
+
+/* ----------------------------------------------------------------------
+ * The DeferredSocketOpener trait. This is a thing that some Socket
+ * implementations may choose to own if they need to delay actually
+ * setting up the underlying connection. For example, sockets used in
+ * local-proxy handling (Unix FdSocket / Windows HandleSocket) might
+ * need to do this if they have to prompt the user interactively for
+ * parts of the command they'll run.
+ *
+ * Mostly, a DeferredSocketOpener implementation will keep to itself,
+ * arrange its own callbacks in order to do whatever setup it needs,
+ * and when it's ready, call back to its parent Socket via some
+ * implementation-specific API of its own. So the shared API here
+ * requires almost nothing: the only thing we need is a free function,
+ * so that if the owner of a Socket of this kind needs to close it
+ * before the deferred connection process is finished, the Socket can
+ * also clean up the DeferredSocketOpener dangling off it.
+ */
+
+struct DeferredSocketOpener {
+    const DeferredSocketOpenerVtable *vt;
+};
+struct DeferredSocketOpenerVtable {
+    void (*free)(DeferredSocketOpener *);
+};
+static inline void deferred_socket_opener_free(DeferredSocketOpener *dso)
+{ dso->vt->free(dso); }
 
 #endif

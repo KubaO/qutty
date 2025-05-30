@@ -30,9 +30,9 @@ static const BinaryPacketProtocolVtable ssh2_bare_bpp_vtable = {
     .handle_input = ssh2_bare_bpp_handle_input,
     .handle_output = ssh2_bare_bpp_handle_output,
     .new_pktout = ssh2_bare_bpp_new_pktout,
-    .queue_disconnect = ssh2_bpp_queue_disconnect, /* in sshcommon.c */
+    .queue_disconnect = ssh2_bpp_queue_disconnect, /* in common.c */
 
-    /* packet size limit, per protocol spec in sshshare.c comment */
+    /* packet size limit, per protocol spec in sharing.c comment */
     .packet_size_limit = 0x4000,
 };
 
@@ -201,4 +201,6 @@ static void ssh2_bare_bpp_handle_output(BinaryPacketProtocol *bpp)
         ssh2_bare_bpp_format_packet(s, pkt);
         ssh_free_pktout(pkt);
     }
+
+    ssh_sendbuffer_changed(bpp->ssh);
 }
