@@ -13,6 +13,7 @@
 extern "C" {
 #include "putty.h"
 }
+#undef debug  // clashes with debug in qlogging.h
 
 #define SUCCESS 0
 

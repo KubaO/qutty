@@ -1,6 +1,3 @@
-extern "C" {
-#include "putty.h"
-}
 #include <QDebug>
 
 #include "GuiTerminalWindow.hpp"
@@ -14,6 +11,8 @@ struct TmuxBackend {
   Plug plug;
   Backend backend;
   LogContext *logctx;
+
+  size_t sendbufferLength = 0;
 };
 
 void tmux_log(Plug * /*plug*/, PlugLogType /*type*/, SockAddr * /*addr*/, int /*port*/,
@@ -21,8 +20,7 @@ void tmux_log(Plug * /*plug*/, PlugLogType /*type*/, SockAddr * /*addr*/, int /*
   qDebug() << __FUNCTION__;
 }
 
-void tmux_closing(Plug * /*plug*/, const char * /*error_msg*/, int /*error_code*/,
-                  bool /*calling_back*/) {
+void tmux_closing(Plug * /*plug*/, PlugCloseType /* type */, const char * /*error_msg*/) {
   qDebug() << __FUNCTION__;
 }
 
@@ -65,7 +63,7 @@ void tmux_reconfig(Backend * /*be*/, Conf * /*cfg*/) {}
 /*
  * Called to send data down the backend connection.
  */
-size_t tmux_send(Backend *be, const char *buf, size_t len) {
+void tmux_send(Backend *be, const char *buf, size_t len) {
   TmuxBackend *tmuxpane = container_of(be, TmuxBackend, backend);
   const size_t wbuf_len = 20480;
   wchar_t wbuf[wbuf_len];  // for plenty of speed
@@ -82,15 +80,16 @@ size_t tmux_send(Backend *be, const char *buf, size_t len) {
     rem_buf += i;
     rem_len -= i;
   } while (rem_len > 0);
-  return len;
+
+  tmuxpane->sendbufferLength = len;
 }
 
 /*
- * Called to query the current socket sendability status.
+ * Returns the current amount of buffered data.
  */
-size_t tmux_sendbuffer(Backend * /*be*/) {
-  qDebug() << __FUNCTION__;
-  return 1;
+size_t tmux_sendbuffer(Backend *be) {
+  TmuxBackend *tmuxpane = container_of(be, TmuxBackend, backend);
+  return tmuxpane->sendbufferLength;
 }
 
 void tmux_unthrottle(Backend * /*be*/, size_t /*backlog*/) {
@@ -113,7 +112,8 @@ char *tmux_close_warn_text(Backend *be) { return (char *)"tmux_close_warn_text";
 int tmux_cfg_info(Backend * /*be*/) { return 0; }
 
 static const char tmux_id[] = "tmux_id_NOTIMPL";
-static const char tmux_client_backend_name[] = "tmux_client_backend";
+static const char tmux_client_backend_name_tc[] = "TMUX Client Backend";
+static const char tmux_client_backend_name_lc[] = "tmux client backend";
 
 BackendVtable tmux_client_backend = {tmux_client_init,
                                      tmux_free,
@@ -133,6 +133,7 @@ BackendVtable tmux_client_backend = {tmux_client_init,
                                      NULL /*test_for_upstream*/,
                                      tmux_close_warn_text,
                                      tmux_id,
-                                     tmux_client_backend_name,
+                                     tmux_client_backend_name_tc,
+                                     tmux_client_backend_name_lc,
                                      PROT_TMUX_CLIENT,
                                      -1};

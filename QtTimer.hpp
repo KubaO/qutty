@@ -6,7 +6,7 @@
 extern "C" {
 #include "putty.h"
 }
-#include "QtStuff.h"
+#include "platform.h"
 
 class QtTimer : public QObject {
   Q_OBJECT

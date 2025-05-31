@@ -339,6 +339,9 @@ QString formatTTYMode(const QString &value);
   X("rb_fnkeys_vt400", funky_type, FUNKY_VT400)                                \
   X("rb_fnkeys_vt100", funky_type, FUNKY_VT100P)                               \
   X("rb_fnkeys_sco", funky_type, FUNKY_SCO)                                    \
+  X("rb_fnkeys_xterm216", funky_type, FUNKY_XTERM_216)                         \
+  X("rb_sharrow_application", sharrow_type, SHARROW_APPLICATION)               \
+  X("rb_sharrow_bitmap", sharrow_type, SHARROW_BITMAP)                         \
   X("rb_inicursorkeys_normal", app_cursor, false)                              \
   X("rb_inicursorkeys_app", app_cursor, true)                                  \
   X("rb_ininumkeys_normal", app_keypad, false)                                 \
@@ -471,6 +474,7 @@ QString formatTTYMode(const QString &value);
   X("rb_proxytype_socks5", proxy_type, PROXY_SOCKS5)                           \
   X("rb_proxytype_http", proxy_type, PROXY_HTTP)                               \
   X("rb_proxytype_telnet", proxy_type, PROXY_TELNET)                           \
+  X("rb_proxytype_ssh", proxy_type, PROXY_SSH)                                 \
   X("rb_proxytype_local", proxy_type, PROXY_CMD)                               \
   X("le_proxy_host", proxy_host)                                               \
   X("le_proxy_port", proxy_port)                                               \
@@ -560,6 +564,7 @@ QString formatTTYMode(const QString &value);
   X("cb_sshbug_maxpkt2", sshbug_maxpkt2)                                       \
   X("cb_sshbug_chanreq", sshbug_chanreq)                                       \
   X("cb_sshbug_oldgex2", sshbug_oldgex2)                                       \
+  X("cb_sshbug_dropstart", sshbug_dropstart)                                   \
   /* Serial Port  */                                                           \
   X("le_serial_line", serline)                                                 \
   X("le_config_speed", serspeed)                                               \

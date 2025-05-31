@@ -5,7 +5,7 @@
 #include "GuiTerminalWindow.hpp"
 #include "serialize/QtWebPluginMap.hpp"
 extern "C" {
-#include "puttysrc/terminal.h"
+#include "terminal/terminal.h"
 }
 
 GuiTextFilterWindow::GuiTextFilterWindow(GuiMainWindow *p, bool isEditable, const QString &lbl)

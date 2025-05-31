@@ -44,12 +44,12 @@ static void on_readyRead(QtSocket *s) {
 
 static void on_error(QtSocket *s, QTcpSocket::SocketError err) {
   QByteArray errStr = s->qtsock->errorString().toLocal8Bit();
-  plug_closing(s->plug, errStr, s->qtsock->error(), 0);
+  plug_closing(s->plug, PLUGCLOSE_ERROR, errStr);
 }
 
 static void on_disconnected(QtSocket *s) {
   QByteArray errStr = s->qtsock->errorString().toLocal8Bit();
-  plug_closing(s->plug, errStr, s->qtsock->error(), 0);
+  plug_closing(s->plug, PLUGCLOSE_BROKEN_PIPE, errStr);
 }
 
 static const char *sk_tcp_socket_error(Socket *sock) {
@@ -321,11 +321,36 @@ SockAddr *platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*
   return NULL;
 }
 
+/* Proxy indirection layer.
+ *
+ * Calling new_connection transfers ownership of 'addr': the proxy
+ * layer is now responsible for freeing it, and the caller shouldn't
+ * assume it exists any more.
+ *
+ * If calling this from a backend with a Seat, you can also give it a
+ * pointer to the backend's Interactor trait. In that situation, it
+ * might replace the backend's seat with a temporary seat of its own,
+ * and give the real Seat to an Interactor somewhere in the proxy
+ * system so that it can ask for passwords (and, in the case of SSH
+ * proxying, other prompts like host key checks). If that happens,
+ * then the resulting 'temp seat' is the backend's property, and it
+ * will have to remember to free it when cleaning up, or after
+ * flushing it back into the real seat when the network connection
+ * attempt completes.
+ *
+ * You can free your TempSeat and resume using the real Seat when one
+ * of two things happens: either your Plug's closing() method is
+ * called (indicating failure to connect), or its log() method is
+ * called with PLUGLOG_CONNECT_SUCCESS. In the latter case, you'll
+ * probably want to flush the TempSeat's contents into the real Seat,
+ * of course.
+ */
 Socket *platform_new_connection(SockAddr * /*addr*/, const char * /*hostname*/, int /*port*/,
                                 bool /*privport*/, bool /*oobinline*/, bool /*nodelay*/,
-                                bool /*keepalive*/, Plug * /*plug*/, Conf * /*cfg*/) {
-  // TODO not yet implemented
-  return NULL;
+                                bool /*keepalive*/, Plug * /*plug*/, Conf * /*cfg*/,
+                                Interactor * /*itr*/) {
+  qDebug() << __FUNCTION__ << "NOTIMPL";  // TODO
+  return nullptr;
 }
 
 int platform_ssh_share(const char *name, Conf *conf, Plug *downplug, Plug *upplug, Socket **sock,
@@ -333,3 +358,12 @@ int platform_ssh_share(const char *name, Conf *conf, Plug *downplug, Plug *upplu
                        int can_downstream) {
   return SHARE_NONE;
 }
+
+/*
+ * Simple wrapper on getservbyname(), needed by portfwd.c. Returns the
+ * port number, in host byte order (suitable for printf and so on).
+ * Returns 0 on failure. Any platform not supporting getservbyname
+ * can just return 0 - this function is not required to handle
+ * numeric port specifications.
+ */
+int net_service_lookup(const char *service) { return 0; }

@@ -11,7 +11,7 @@
 #include "GuiMainWindow.hpp"
 #include "GuiTerminalWindow.hpp"
 extern "C" {
-#include "puttysrc/terminal.h"
+#include "terminal/terminal.h"
 }
 
 GuiFindToolBar::GuiFindToolBar(GuiMainWindow *p) : QToolBar(p), mainWnd(p) {

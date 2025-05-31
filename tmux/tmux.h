@@ -5,7 +5,12 @@
 extern "C" {
 #endif
 
-#include "putty.h"
+#ifndef TMUX_INLINE
+
+#include "defs.h"
+
+#endif
+
 extern BackendVtable tmux_client_backend;
 
 enum tmux_mode_t {
