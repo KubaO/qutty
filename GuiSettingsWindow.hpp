@@ -49,6 +49,7 @@ class GuiSettingsWindow : public QDialog {
     GUI_PAGE_HOST_KEYS,
     GUI_PAGE_CIPHER,
     GUI_PAGE_AUTH,
+    GUI_PAGE_CREDENTIALS,
     GUI_PAGE_GSSAPI,
     GUI_PAGE_TTY,
     GUI_PAGE_X11,

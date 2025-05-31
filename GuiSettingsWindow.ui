@@ -185,6 +185,11 @@
         </property>
         <item>
          <property name="text">
+          <string>Credentials</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>GSSAPI</string>
          </property>
         </item>
@@ -269,7 +274,7 @@
       <enum>QFrame::Shape::NoFrame</enum>
      </property>
      <property name="currentIndex">
-      <number>25</number>
+      <number>26</number>
      </property>
      <widget class="QWidget" name="page_1">
       <layout class="QVBoxLayout" name="verticalLayout_25" stretch="0,1,0,0">
@@ -5468,10 +5473,115 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_40">
-          <item row="4" column="1">
+          <item row="3" column="0">
+           <widget class="QWidget" name="widget_42" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="0" colspan="2">
+           <widget class="QLabel" name="label_76">
+            <property name="text">
+             <string>Proxy type:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QComboBox" name="cb_proxyType">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <item>
+             <property name="text">
+              <string>None</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>SOCKS 5</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>SOCKS 4</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>HTTP CONNECT</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>SSH to proxy and use port forwarding</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>SSH to proxy and execute a command</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>SSH to proxy and invoke a subsystem</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Local (run a subprogram to connect)</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>'Telnet' (send an ad-hoc command)</string>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item row="6" column="1" colspan="2">
            <widget class="QLineEdit" name="le_proxy_exclude_list"/>
           </item>
-          <item row="7" column="1">
+          <item row="7" column="1" colspan="2">
+           <widget class="QCheckBox" name="chb_even_proxy_localhost">
+            <property name="text">
+             <string>Consider proxying local host connections</string>
+            </property>
+           </widget>
+          </item>
+          <item row="8" column="0" colspan="3">
+           <widget class="QLabel" name="label_80">
+            <property name="text">
+             <string>Do DNS name lookup at proxy end:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0" colspan="3">
+           <widget class="QLabel" name="label_79">
+            <property name="text">
+             <string>Exclude Hosts/IPs</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="1" colspan="2">
            <layout class="QHBoxLayout" name="horizontalLayout_13">
             <item>
              <widget class="QRadioButton" name="rb_proxydns_no">
@@ -5508,7 +5618,58 @@
             </item>
            </layout>
           </item>
-          <item row="12" column="1">
+          <item row="10" column="1" colspan="2">
+           <layout class="QGridLayout" name="gridLayout_15">
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="le_proxy_username">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                <horstretch>2</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="label_81">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                <horstretch>1</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="text">
+               <string>Username</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="label_82">
+              <property name="text">
+               <string>Password</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="le_proxy_password"/>
+            </item>
+           </layout>
+          </item>
+          <item row="11" column="0" colspan="3">
+           <widget class="QLabel" name="label_83">
+            <property name="text">
+             <string>Telnet command, or local proxy command</string>
+            </property>
+           </widget>
+          </item>
+          <item row="12" column="1" colspan="2">
+           <widget class="QLineEdit" name="le_proxy_telnet_command">
+            <property name="text">
+             <string>connect %host %port\n</string>
+            </property>
+           </widget>
+          </item>
+          <item row="14" column="1" colspan="2">
            <layout class="QHBoxLayout" name="horizontalLayout_10">
             <item>
              <widget class="QRadioButton" name="rb_proxy_log_to_term_no">
@@ -5545,14 +5706,14 @@
             </item>
            </layout>
           </item>
-          <item row="10" column="1">
-           <widget class="QLineEdit" name="le_proxy_telnet_command">
+          <item row="13" column="0" colspan="3">
+           <widget class="QLabel" name="label_136">
             <property name="text">
-             <string>connect %host %port\n</string>
+             <string>Print proxy diagnostics in the terminal window</string>
             </property>
            </widget>
           </item>
-          <item row="2" column="1">
+          <item row="3" column="1" colspan="2">
            <layout class="QGridLayout" name="gridLayout_13">
             <item row="0" column="0">
              <widget class="QLabel" name="label_77">
@@ -5595,163 +5756,6 @@
              </widget>
             </item>
            </layout>
-          </item>
-          <item row="1" column="1">
-           <layout class="QGridLayout" name="gridLayout_14">
-            <item row="1" column="2">
-             <widget class="QRadioButton" name="rb_proxytype_local">
-              <property name="text">
-               <string>Local</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QRadioButton" name="rb_proxytype_socks5">
-              <property name="text">
-               <string>SOCKS 5</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QRadioButton" name="rb_proxy_socks4">
-              <property name="text">
-               <string>SOCKS 4</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QRadioButton" name="rb_proxytype_none">
-              <property name="text">
-               <string>None</string>
-              </property>
-              <property name="checked">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="3">
-             <widget class="QRadioButton" name="rb_proxytype_http">
-              <property name="text">
-               <string>HTTP</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QRadioButton" name="rb_proxytype_telnet">
-              <property name="text">
-               <string>Telnet</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QRadioButton" name="rb_proxytype_ssh">
-              <property name="text">
-               <string>SSH</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item row="8" column="1">
-           <layout class="QGridLayout" name="gridLayout_15">
-            <item row="0" column="1">
-             <widget class="QLineEdit" name="le_proxy_username">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>2</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_81">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                <horstretch>1</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="text">
-               <string>Username</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_82">
-              <property name="text">
-               <string>Password</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QLineEdit" name="le_proxy_password"/>
-            </item>
-           </layout>
-          </item>
-          <item row="5" column="1">
-           <widget class="QCheckBox" name="chb_even_proxy_localhost">
-            <property name="text">
-             <string>Consider proxying local host connections</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0" colspan="2">
-           <widget class="QLabel" name="label_76">
-            <property name="text">
-             <string>Proxy type:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="0" colspan="2">
-           <widget class="QLabel" name="label_79">
-            <property name="text">
-             <string>Exclude Hosts/IPs</string>
-            </property>
-           </widget>
-          </item>
-          <item row="6" column="0" colspan="2">
-           <widget class="QLabel" name="label_80">
-            <property name="text">
-             <string>Do DNS name lookup at proxy end:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="9" column="0" colspan="2">
-           <widget class="QLabel" name="label_83">
-            <property name="text">
-             <string>Telnet command, or local proxy command</string>
-            </property>
-           </widget>
-          </item>
-          <item row="11" column="0" colspan="2">
-           <widget class="QLabel" name="label_136">
-            <property name="text">
-             <string>Print proxy diagnostics in the terminal window</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QWidget" name="widget_42" native="true">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>10</width>
-              <height>10</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>10</width>
-              <height>10</height>
-             </size>
-            </property>
-           </widget>
           </item>
          </layout>
         </widget>
@@ -6740,27 +6744,17 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_17">
-          <item row="3" column="2">
-           <widget class="QPushButton" name="btn_ssh_auth_browse_keyfile">
+          <item row="1" column="1" colspan="2">
+           <widget class="QCheckBox" name="chb_ssh_change_username">
             <property name="text">
-             <string>Browse...</string>
+             <string>Allow attempted changes of username in SSH-2</string>
             </property>
            </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QLineEdit" name="le_ssh_auth_keyfile"/>
           </item>
           <item row="0" column="1" colspan="2">
            <widget class="QCheckBox" name="chb_ssh_agentfwd">
             <property name="text">
              <string>Allow agent forwarding</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1" colspan="2">
-           <widget class="QCheckBox" name="chb_ssh_change_username">
-            <property name="text">
-             <string>Allow attempted changes of username in SSH-2</string>
             </property>
            </widget>
           </item>
@@ -6786,13 +6780,6 @@
             </property>
            </widget>
           </item>
-          <item row="2" column="0" colspan="3">
-           <widget class="QLabel" name="label_99">
-            <property name="text">
-             <string>Private key file for authentication:</string>
-            </property>
-           </widget>
-          </item>
          </layout>
         </widget>
        </item>
@@ -6812,6 +6799,154 @@
       </layout>
      </widget>
      <widget class="QWidget" name="page_22">
+      <layout class="QVBoxLayout" name="verticalLayout_13">
+       <item>
+        <widget class="QLabel" name="label_150">
+         <property name="frameShape">
+          <enum>QFrame::Shape::StyledPanel</enum>
+         </property>
+         <property name="text">
+          <string>Credentials to authenticate with</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignmentFlag::AlignCenter</set>
+         </property>
+         <property name="margin">
+          <number>2</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_62">
+         <property name="title">
+          <string>Public-key authentication</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_14">
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="le_keyfile"/>
+          </item>
+          <item row="1" column="0" colspan="3">
+           <widget class="QLabel" name="label_148">
+            <property name="text">
+             <string>Private key file for authentication:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QWidget" name="widget_70" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="2">
+           <widget class="QPushButton" name="btn_browse_keyfile">
+            <property name="text">
+             <string>Browse...</string>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="0" colspan="3">
+           <widget class="QLabel" name="label_149">
+            <property name="text">
+             <string>Certificate to use with the private key:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="4" column="1">
+           <widget class="QLineEdit" name="le_detached_cert"/>
+          </item>
+          <item row="4" column="2">
+           <widget class="QPushButton" name="btn_browse_detached_cert">
+            <property name="text">
+             <string>Browse...</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_63">
+         <property name="title">
+          <string>Plugin to provide authentication responses</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_69">
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="le_auth_plugin"/>
+          </item>
+          <item row="1" column="0" colspan="2">
+           <widget class="QLabel" name="label_151">
+            <property name="text">
+             <string>Plugin command to run</string>
+            </property>
+            <property name="buddy">
+             <cstring>le_auth_plugin</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QWidget" name="widget_71" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer_30">
+         <property name="orientation">
+          <enum>Qt::Orientation::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="page_23">
       <layout class="QVBoxLayout" name="verticalLayout_66">
        <property name="topMargin">
         <number>0</number>
@@ -6981,7 +7116,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_23">
+     <widget class="QWidget" name="page_24">
       <layout class="QVBoxLayout" name="verticalLayout_67">
        <property name="topMargin">
         <number>0</number>
@@ -7194,7 +7329,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_24">
+     <widget class="QWidget" name="page_25">
       <layout class="QVBoxLayout" name="verticalLayout_68">
        <property name="topMargin">
         <number>0</number>
@@ -7339,7 +7474,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_25">
+     <widget class="QWidget" name="page_26">
       <layout class="QVBoxLayout" name="verticalLayout_69">
        <property name="topMargin">
         <number>0</number>
@@ -7580,7 +7715,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_26">
+     <widget class="QWidget" name="page_27">
       <layout class="QVBoxLayout" name="verticalLayout_12">
        <item>
         <widget class="QLabel" name="label_116">
@@ -8101,6 +8236,16 @@
           <string>Manually Enabled Workarounds</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_68">
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_146">
+            <property name="text">
+             <string>Discards data sent before its greeting</string>
+            </property>
+            <property name="buddy">
+             <cstring></cstring>
+            </property>
+           </widget>
+          </item>
           <item row="0" column="0">
            <widget class="QWidget" name="widget_69" native="true">
             <property name="sizePolicy">
@@ -8120,13 +8265,6 @@
               <width>10</width>
               <height>10</height>
              </size>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLabel" name="label_146">
-            <property name="text">
-             <string>Discards data sent before its greeting</string>
             </property>
            </widget>
           </item>
@@ -8150,12 +8288,39 @@
             </item>
            </widget>
           </item>
+          <item row="1" column="1">
+           <widget class="QLabel" name="label_152">
+            <property name="text">
+             <string>Chokes on PuTTY's full KEXINIT</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="2">
+           <widget class="QComboBox" name="cb_sshbug_filter_kexinit">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <item>
+             <property name="text">
+              <string>On</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Off</string>
+             </property>
+            </item>
+           </widget>
+          </item>
          </layout>
         </widget>
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_27">
+     <widget class="QWidget" name="page_28">
       <layout class="QVBoxLayout" name="verticalLayout_72">
        <property name="topMargin">
         <number>0</number>
@@ -8391,7 +8556,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_28">
+     <widget class="QWidget" name="page_29">
       <layout class="QVBoxLayout" name="verticalLayout_8">
        <property name="topMargin">
         <number>0</number>
@@ -8577,7 +8742,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_29">
+     <widget class="QWidget" name="page_30">
       <layout class="QVBoxLayout" name="verticalLayout_59">
        <property name="topMargin">
         <number>0</number>
@@ -8641,7 +8806,7 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="page_30">
+     <widget class="QWidget" name="page_31">
       <layout class="QVBoxLayout" name="verticalLayout_11">
        <property name="topMargin">
         <number>0</number>
@@ -8885,10 +9050,6 @@
   <tabstop>rb_connectprotocol_ipv6</tabstop>
   <tabstop>le_loghost</tabstop>
   <tabstop>tb_env_vars</tabstop>
-  <tabstop>rb_proxytype_none</tabstop>
-  <tabstop>rb_proxy_socks4</tabstop>
-  <tabstop>rb_proxytype_socks5</tabstop>
-  <tabstop>rb_proxytype_local</tabstop>
   <tabstop>le_proxy_host</tabstop>
   <tabstop>le_proxy_port</tabstop>
   <tabstop>le_proxy_exclude_list</tabstop>
