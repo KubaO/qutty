@@ -233,8 +233,9 @@ struct DataList {
   }
 };
 
-// From putty-0.63/config.c
+// From putty-0.78/config.c
 static const DataItem ciphers[] = {{"ChaCha20 (SSH-2 only)", CIPHER_CHACHA20},
+                                   {"AES-GCM (SSH-2 only)", CIPHER_AESGCM},
                                    {"3DES", CIPHER_3DES},
                                    {"Blowfish", CIPHER_BLOWFISH},
                                    {"DES", CIPHER_DES},
@@ -242,11 +243,16 @@ static const DataItem ciphers[] = {{"ChaCha20 (SSH-2 only)", CIPHER_CHACHA20},
                                    {"Arcfour (SSH-2 only)", CIPHER_ARCFOUR},
                                    {"-- warn below here --", CIPHER_WARN}};
 
-static const DataItem kexes[] = {{"Diffie-Hellman group 1", KEX_DHGROUP1},
-                                 {"Diffie-Hellman group 14", KEX_DHGROUP14},
+static const DataItem kexes[] = {{"Diffie-Hellman group 1 (1024-bit)", KEX_DHGROUP1},
+                                 {"Diffie-Hellman group 14 (2048-bit)", KEX_DHGROUP14},
+                                 {"Diffie-Hellman group 15 (3072-bit)", KEX_DHGROUP15},
+                                 {"Diffie-Hellman group 16 (4096-bit)", KEX_DHGROUP16},
+                                 {"Diffie-Hellman group 17 (6144-bit)", KEX_DHGROUP17},
+                                 {"Diffie-Hellman group 18 (8192-bit)", KEX_DHGROUP18},
                                  {"Diffie-Hellman group exchange", KEX_DHGEX},
                                  {"RSA-based key exchange", KEX_RSA},
                                  {"ECDH key exchange", KEX_ECDH},
+                                 {"NTRU Prime / Curve25519 hybrid kex", KEX_NTRU_HYBRID},
                                  {"-- warn below here --", KEX_WARN}};
 
 // From putty-0.75/config.c
@@ -474,7 +480,7 @@ QString formatTTYMode(const QString &value);
   X("rb_proxytype_socks5", proxy_type, PROXY_SOCKS5)                           \
   X("rb_proxytype_http", proxy_type, PROXY_HTTP)                               \
   X("rb_proxytype_telnet", proxy_type, PROXY_TELNET)                           \
-  X("rb_proxytype_ssh", proxy_type, PROXY_SSH)                                 \
+  X("rb_proxytype_ssh", proxy_type, PROXY_SSH_TCPIP)                           \
   X("rb_proxytype_local", proxy_type, PROXY_CMD)                               \
   X("le_proxy_host", proxy_host)                                               \
   X("le_proxy_port", proxy_port)                                               \

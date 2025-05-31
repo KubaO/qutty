@@ -206,10 +206,9 @@ void qt_logging_error(LogPolicy *lp, const char *event) { qDebug() << lp << even
  *    back via the provided function with a result that's either 0
  *    or +1'.
  */
-// from putty-0.69/windlg.c
 SeatPromptResult qt_confirm_ssh_host_key(Seat *seat, const char *host, int port,
-                                         const char *keytype, char *keystr, const char *keydisp,
-                                         char **key_fingerprints, bool mismatch,
+                                         const char *keytype, char *keystr, SeatDialogText *text,
+                                         HelpCtx helpctx,
                                          void (*callback)(void *ctx, SeatPromptResult result),
                                          void *ctx) {
   assert(seat);
@@ -237,7 +236,7 @@ SeatPromptResult qt_confirm_ssh_host_key(Seat *seat, const char *host, int port,
       "server administrator has changed the host key, or you\n"
       "have actually connected to another computer pretending\n"
       "to be the server.\n"
-      "The new %2 key fingerprints are:\n"
+      "The new %2 key fingerprint is:\n"
       "%3\n"
       "If you were expecting this change and trust the new key,\n"
       "hit Yes to update %4's cache and continue connecting.\n"
@@ -258,11 +257,10 @@ SeatPromptResult qt_confirm_ssh_host_key(Seat *seat, const char *host, int port,
     return {SPRK_OK};
 
   QString caption = QString(mbtitle).arg(appname);
-  FingerprintType fpType = ssh2_pick_default_fingerprint(key_fingerprints);
 
   if (ret == 2) {
     /* key was different */
-    QString text = QString(wrongmsg).arg(appname, keytype, key_fingerprints[fpType], appname);
+    QString text = QString(wrongmsg).arg(appname, keytype, keystr, appname);
     auto mbret = QMessageBox::warning(f, caption, text,
                                       QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
     assert(mbret == QMessageBox::Yes || mbret == QMessageBox::No || mbret == QMessageBox::Cancel);
@@ -273,7 +271,7 @@ SeatPromptResult qt_confirm_ssh_host_key(Seat *seat, const char *host, int port,
       return {SPRK_OK};
   } else if (ret == 1) {
     /* key was absent */
-    QString text = QString(absentmsg).arg(keytype, key_fingerprints[fpType], appname);
+    QString text = QString(absentmsg).arg(keytype, keystr, appname);
     auto mbret = QMessageBox::warning(f, caption, text,
                                       QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
     assert(mbret == QMessageBox::Yes || mbret == QMessageBox::No || mbret == QMessageBox::Cancel);
@@ -423,6 +421,16 @@ static void qt_notify_remote_exit(Seat *seat) {
  */
 void qt_notify_remote_disconnect(Seat *seat) { qDebug() << __FUNCTION__; }
 
+/*
+ * Some snippets of text describing the UI actions in host key
+ * prompts / dialog boxes, to be used in ssh/common.c when it
+ * assembles the full text of those prompts.
+ */
+const SeatDialogPromptDescriptions *qt_prompt_descriptions(Seat *seat) {
+  qDebug() << __FUNCTION__;
+  return nullseat_prompt_descriptions(seat);
+}
+
 char *qt_get_ttymode(Seat *seat, const char *mode) {
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   return term_get_ttymode(f->term, mode);
@@ -465,6 +473,7 @@ static const SeatVtable qtseat_vt = {
     qt_confirm_ssh_host_key,
     qt_confirm_weak_crypto_primitive,
     qt_confirm_weak_cached_hostkey,
+    qt_prompt_descriptions,
     qt_is_utf8,
     nullseat_echoedit_update,
     nullseat_get_x_display,

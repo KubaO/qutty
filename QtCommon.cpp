@@ -679,3 +679,15 @@ void unescape_registry_key(const char *in, strbuf *out) {
 }
 
 bool open_for_write_would_lose_data(const Filename *fn) { return false; }
+
+/*
+ * Facility provided by the platform to spawn a parallel subprocess
+ * and present its stdio via a Socket.
+ *
+ * 'prefix' indicates the prefix that should appear on messages passed
+ * to plug_log to provide stderr output from the process.
+ */
+Socket *platform_start_subprocess(const char *cmd, Plug *plug, const char *prefix) {
+  qDebug() << __FUNCTION__ << cmd << plug << prefix << "NOTIMPL";  // TODO
+  return nullptr;
+}
