@@ -104,12 +104,12 @@ static void qtwin_refresh(TermWin *win) {
 
 static void qtwin_request_resize(TermWin *, int w, int h) {}
 
-static void qtwin_set_title(TermWin *win, const char *title) {
+static void qtwin_set_title(TermWin *win, const char *title, int codepage) {
   GuiTerminalWindow *gw = container_of(win, GuiTerminalWindow, termwin);
   gw->setSessionTitle(QString::fromLatin1(title));  // FIXME TODO wrong encoding
 }
 
-void qtwin_set_icon_title(TermWin *, const char *icontitle) {}
+void qtwin_set_icon_title(TermWin *, const char *icontitle, int codepage) {}
 
 /* set_minimised and set_maximised are assumed to set two
  * independent settings, rather than a single three-way

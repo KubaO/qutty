@@ -5385,6 +5385,9 @@ static void term_out(Terminal *term, bool called_from_term_data)
 #ifdef IS_QUTTY
               case SEEN_DCS:
                 if (term->esc_buf_len<sizeof(term->esc_buf)) {
+                  #define TMUX_INLINE
+                  #include "tmux/tmux.h"
+                  int nchars = nchars_used - nchars_got;
                   term->esc_buf[term->esc_buf_len++] = c;
                   if (term->esc_buf_len == 5 && !strncmp("1000p", term->esc_buf, 5) &&
                       !tmux_init_tmux_mode(term->win, term->esc_buf)) {

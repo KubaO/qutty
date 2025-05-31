@@ -146,7 +146,7 @@ int TmuxWindowPane::resp_hdlr_dump_history(string &response, bool is_alt) {
       _termWnd->term->curs.x = 0;
       _termWnd->term->curs.y = 0;
     }
-    _termWnd->from_backend(0, response.c_str(), response.length() - 1);
+    _termWnd->from_backend(SEAT_OUTPUT_STDOUT, response.c_str(), response.length() - 1);
     if (is_alt) std::swap(term->screen, term->alt_screen);
   }
 

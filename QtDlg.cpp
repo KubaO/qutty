@@ -20,12 +20,14 @@ extern "C" {
 using namespace Qt::Literals::StringLiterals;
 
 /*
- * Ask whether the selected algorithm is acceptable (since it was
- * below the configured 'warn' threshold).
+ * Check with the seat whether it's OK to use a cryptographic
+ * primitive from below the 'warn below this line' threshold in
+ * the input Conf. Return values are the same as
+ * confirm_ssh_host_key above.
  */
-int qt_seat_confirm_weak_crypto_primitive(Seat *seat, const char *algtype, const char *algname,
-                                          void (* /*callback*/)(void *ctx, int result),
-                                          void * /*ctx*/) {
+SeatPromptResult qt_confirm_weak_crypto_primitive(
+    Seat *seat, const char *algtype, const char *algname,
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx) {
   assert(seat);
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   QString msg = QString("The first " + QString(algtype) +
@@ -38,11 +40,11 @@ int qt_seat_confirm_weak_crypto_primitive(Seat *seat, const char *algtype, const
   switch (QMessageBox::warning(f->getMainWindow(), QString(APPNAME " Security Alert"), msg,
                                QMessageBox::Yes | QMessageBox::No, QMessageBox::No)) {
     case QMessageBox::Yes:
-      return 2;
+      return {SPRK_OK};
     case QMessageBox::No:
-      return 1;
+      return {SPRK_USER_ABORT};
     default:
-      return 0;
+      return {SPRK_SW_ABORT};
   }
 }
 
@@ -74,12 +76,21 @@ int qt_askappend(LogPolicy * /*lp*/, Filename *filename,
   }
 }
 
-static int qt_get_userpass_input(Seat *seat, prompts_t *p, bufchain *input) {
+/*
+ * Try to get answers from a set of interactive login prompts. The
+ * prompts are provided in 'p'.
+ *  * (FIXME: it would be nice to distinguish two classes of user-
+ * abort action, so the user could specify 'I want to abandon this
+ * entire attempt to start a session' or the milder 'I want to
+ * abandon this particular form of authentication and fall back to
+ * a different one' - e.g. if you turn out not to be able to
+ * remember your private key passphrase then perhaps you'd rather
+ * fall back to password auth rather than aborting the whole
+ * session.)
+ */
+static SeatPromptResult qt_get_userpass_input(Seat *seat, prompts_t *p) {
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
-  int ret = -1;
-  // ret = cmdline_get_passwd_input(p, in, inlen);
-  if (ret == -1) ret = term_get_userpass_input(f->term, p, input);
-  return ret;
+  return term_get_userpass_input(f->term, p);
 }
 
 static void hostkey_regname(char *buffer, int buffer_sz, const char *hostname, int port,
@@ -172,10 +183,35 @@ void qt_eventlog(LogPolicy *lp, const char *event) { qDebug() << lp << event; }
 
 void qt_logging_error(LogPolicy *lp, const char *event) { qDebug() << lp << event; }
 
+/*
+ * Ask the seat whether a given SSH host key should be accepted.
+ * This is called after we've already checked it by any means we
+ * can do ourselves, such as checking against host key
+ * fingerprints in the Conf or the host key cache on disk: once we
+ * call this function, we've already decided there's nothing for
+ * it but to prompt the user.
+ *  * 'mismatch' reports the result of checking the host key cache:
+ * it is true if the server has presented a host key different
+ * from the one we expected, and false if we had no expectation in
+ * the first place.
+ *  * This call may prompt the user synchronously and not return
+ * until the answer is available, or it may present the prompt and
+ * return immediately, giving the answer later via the provided
+ * callback.
+ *  * Return values:
+ *  *  - +1 means `user approved the key, so continue with the
+ *    connection'
+ *  *  - 0 means `user rejected the key, abandon the connection'
+ *  *  - -1 means `I've initiated enquiries, please wait to be called
+ *    back via the provided function with a result that's either 0
+ *    or +1'.
+ */
 // from putty-0.69/windlg.c
-int qt_verify_ssh_host_key(Seat *seat, const char *host, int port, const char *keytype,
-                           char *keystr, const char *keydisp, char **key_fingerprints,
-                           void (*callback)(void *ctx, int result), void *ctx) {
+SeatPromptResult qt_confirm_ssh_host_key(Seat *seat, const char *host, int port,
+                                         const char *keytype, char *keystr, const char *keydisp,
+                                         char **key_fingerprints, bool mismatch,
+                                         void (*callback)(void *ctx, SeatPromptResult result),
+                                         void *ctx) {
   assert(seat);
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   int ret;
@@ -219,7 +255,7 @@ int qt_verify_ssh_host_key(Seat *seat, const char *host, int port, const char *k
   ret = verify_host_key(host, port, keytype, keystr);
 
   if (ret == 0) /* success - key matched OK */
-    return 1;
+    return {SPRK_OK};
 
   QString caption = QString(mbtitle).arg(appname);
   FingerprintType fpType = ssh2_pick_default_fingerprint(key_fingerprints);
@@ -232,9 +268,9 @@ int qt_verify_ssh_host_key(Seat *seat, const char *host, int port, const char *k
     assert(mbret == QMessageBox::Yes || mbret == QMessageBox::No || mbret == QMessageBox::Cancel);
     if (mbret == QMessageBox::Yes) {
       store_host_key(host, port, keytype, keystr);
-      return 1;
+      return {SPRK_OK};
     } else if (mbret == QMessageBox::No)
-      return 1;
+      return {SPRK_OK};
   } else if (ret == 1) {
     /* key was absent */
     QString text = QString(absentmsg).arg(keytype, key_fingerprints[fpType], appname);
@@ -243,16 +279,27 @@ int qt_verify_ssh_host_key(Seat *seat, const char *host, int port, const char *k
     assert(mbret == QMessageBox::Yes || mbret == QMessageBox::No || mbret == QMessageBox::Cancel);
     if (mbret == QMessageBox::Yes) {
       store_host_key(host, port, keytype, keystr);
-      return 1;
+      return {SPRK_OK};
     } else if (mbret == QMessageBox::No)
-      return 1;
+      return {SPRK_OK};
   }
-  return 0; /* abandon the connection */
+  return {SPRK_USER_ABORT}; /* abandon the connection */
 }
 
-// from putty-0.69/windlg.c
-int qt_seat_confirm_weak_cached_hostkey(Seat *seat, const char *algname, const char *betteralgs,
-                                        void (*callback)(void *ctx, int result), void *ctx) {
+/*
+ * Variant form of confirm_weak_crypto_primitive, which prints a
+ * slightly different message but otherwise has the same
+ * semantics.
+ *  * This form is used in the case where we're using a host key
+ * below the warning threshold because that's the best one we have
+ * cached, but at least one host key algorithm *above* the
+ * threshold is available that we don't have cached. 'betteralgs'
+ * lists the better algorithm(s).
+ */
+SeatPromptResult qt_confirm_weak_cached_hostkey(
+    Seat *seat, const char *algname, const char *betteralgs,
+    void (*callback)(void *ctx, SeatPromptResult result), void *ctx) {
+  // from putty-0.69/windlg.c
   assert(seat);
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   static const char mbtitle[] = "%s Security Alert";
@@ -274,10 +321,10 @@ int qt_seat_confirm_weak_cached_hostkey(Seat *seat, const char *algname, const c
 #endif
   sfree(message);
   sfree(title);
-  if (mbret == IDYES)
-    return 1;
+  if (mbret == QMessageBox::Yes)
+    return {SPRK_OK};
   else
-    return 0;
+    return {SPRK_USER_ABORT};
 }
 
 static void qt_set_busy_status(Seat * /*seat*/, BusyStatus /*status*/) {
@@ -286,8 +333,51 @@ static void qt_set_busy_status(Seat * /*seat*/, BusyStatus /*status*/) {
   // update_mouse_pointer();
 }
 
+/*
+ * Called when the back end wants to indicate that EOF has arrived
+ * on the server-to-client stream. Returns false to indicate that
+ * we intend to keep the session open in the other direction, or
+ * true to indicate that if they're closing so are we.
+ */
 static bool qt_eof(Seat *seat) { return true; /* do respond to incoming EOF with outgoing */ }
 
+/*
+ * Called by the back end to notify that the output backlog has
+ * changed size. A front end in control of the event loop won't
+ * necessarily need this (they can just keep checking it via
+ * backend_sendbuffer at every opportunity), but one buried in the
+ * depths of something else (like an SSH proxy) will need to be
+ * proactively notified that the amount of buffered data has
+ * become smaller.
+ */
+static void qt_sent(Seat *seat, size_t new_sendbuffer) {}
+
+/*
+ * Provide authentication-banner output from the session setup.
+ * End-user Seats can treat this as very similar to 'output', but
+ * intermediate Seats in complex proxying situations will want to
+ * implement this and 'output' differently.
+ */
+static size_t qt_banner(Seat *seat, const void *data, size_t len) {
+  qDebug() << __FUNCTION__ << len;
+  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  return f->from_backend(SEAT_OUTPUT_STDOUT, (const char *)data, len);
+}
+
+/*
+ * Notify the seat that the main session channel has been
+ * successfully set up.
+ *  * This is only used as part of the SSH proxying system, so it's
+ * not necessary to implement it in all backends. A backend must
+ * call this if it advertises the BACKEND_NOTIFIES_SESSION_START
+ * flag, and otherwise, doesn't have to.
+ */
+static void qt_notify_session_started(Seat *seat) { qDebug() << __FUNCTION__; }
+
+/*
+ * Notify the seat that the process running at the other end of
+ * the connection has finished.
+ */
 static void qt_notify_remote_exit(Seat *seat) {
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   int exitcode = backend_exitcode(f->backend);
@@ -312,6 +402,27 @@ static void qt_notify_remote_exit(Seat *seat) {
   }
 }
 
+/*
+ * Notify the seat that the whole connection has finished.
+ * (Distinct from notify_remote_exit, e.g. in the case where you
+ * have port forwardings still active when the main foreground
+ * session goes away: then you'd get notify_remote_exit when the
+ * foreground session dies, but notify_remote_disconnect when the
+ * last forwarding vanishes and the network connection actually
+ * closes.)
+ *  * This function might be called multiple times by accident; seats
+ * should be prepared to cope.
+ *  * More precisely: this function notifies the seat that
+ * backend_connected() might now return false where previously it
+ * returned true. (Note the 'might': an accidental duplicate call
+ * might happen when backend_connected() was already returning
+ * false. Or even, in weird situations, when it hadn't stopped
+ * returning true yet. The point is, when you get this
+ * notification, all it's really telling you is that it's worth
+ * _checking_ backend_connected, if you weren't already.)
+ */
+void qt_notify_remote_disconnect(Seat *seat) { qDebug() << __FUNCTION__; }
+
 char *qt_get_ttymode(Seat *seat, const char *mode) {
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   return term_get_ttymode(f->term, mode);
@@ -323,15 +434,16 @@ bool qt_is_utf8(Seat *seat) {
 }
 
 /*
- * Provide output from the remote session. 'is_stderr' indicates
- * that the output should be sent to a separate error message
- * channel, if the seat has one. But combining both channels into
- * one is OK too; that's what terminal-window based seats do.
+ * Provide output from the remote session. 'type' indicates the
+ * type of the output (stdout or stderr), which can be used to
+ * split the output into separate message channels, if the seat
+ * wants to handle them differently. But combining the channels
+ * into one is OK too; that's what terminal-window based seats do.
  *  * The return value is the current size of the output backlog.
  */
-size_t qt_output(Seat *seat, bool is_stderr, const void *data, size_t len) {
+size_t qt_output(Seat *seat, SeatOutputType type, const void *data, size_t len) {
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
-  return f->from_backend(is_stderr, (const char *)data, len);
+  return f->from_backend(type, (const char *)data, len);
 }
 
 static const LogPolicyVtable default_logpolicy_vt = {qt_eventlog, qt_askappend, qt_logging_error};
@@ -340,15 +452,19 @@ LogPolicy default_logpolicy[1] = {&default_logpolicy_vt};
 static const SeatVtable qtseat_vt = {
     qt_output,
     qt_eof,
+    qt_sent,
+    qt_banner,
     qt_get_userpass_input,
+    qt_notify_session_started,
     qt_notify_remote_exit,
+    qt_notify_remote_disconnect,
     qt_connection_fatal,
     qt_update_specials_menu,
     qt_get_ttymode,
     qt_set_busy_status,
-    qt_verify_ssh_host_key,
-    qt_seat_confirm_weak_crypto_primitive,
-    qt_seat_confirm_weak_cached_hostkey,
+    qt_confirm_ssh_host_key,
+    qt_confirm_weak_crypto_primitive,
+    qt_confirm_weak_cached_hostkey,
     qt_is_utf8,
     nullseat_echoedit_update,
     nullseat_get_x_display,
@@ -356,4 +472,9 @@ static const SeatVtable qtseat_vt = {
     nullseat_get_window_pixel_size,
     nullseat_stripctrl_new,
     nullseat_set_trust_status,
+    nullseat_can_set_trust_status_no,
+    nullseat_has_mixed_input_stream_yes,
+    nullseat_verbose_yes,
+    nullseat_interactive_yes,
+    nullseat_get_cursor_position,
 };

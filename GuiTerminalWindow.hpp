@@ -103,7 +103,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
 
   void keyPressEvent(QKeyEvent *e) override;
   void keyReleaseEvent(QKeyEvent *e) override;
-  int from_backend(int is_stderr, const char *data, size_t len);
+  int from_backend(SeatOutputType type, const char *data, size_t len);
   void preDrawTerm();
   void drawTerm();
   void drawText(int row, int col, wchar_t *ch, int len, unsigned long attr, int lattr);

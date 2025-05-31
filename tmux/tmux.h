@@ -5,9 +5,10 @@
 extern "C" {
 #endif
 
-#include "putty.h"
-#ifdef __cplusplus
-#undef debug  // clashes with debug in qlogging.h
+#ifndef TMUX_INLINE
+
+#include "defs.h"
+
 #endif
 
 extern BackendVtable tmux_client_backend;

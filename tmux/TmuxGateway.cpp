@@ -56,7 +56,7 @@ size_t TmuxGateway::fromBackend(int is_stderr, const char *data, size_t len) {
   size_t rem_len;
 
   qDebug() << "fromBackend " << len << " data " << QString::fromUtf8(data, len);
-  term_data(termGatewayWnd->term, is_stderr, data, (int)len);
+  term_data(termGatewayWnd->term, data, (int)len);
 
   for (i = 0; i < (size_t)len; i++) {
     if (data[i] == '\n') {
@@ -238,13 +238,13 @@ int TmuxGateway::cmd_hdlr_output(const char *command, size_t len) {
     data[datalen++] = c;
     if (datalen == sizeof(data)) {
       qDebug("TMUX output %d %.*s", datalen, datalen, data);
-      _mapPanes[paneid]->termWnd()->from_backend(0, data, datalen);
+      _mapPanes[paneid]->termWnd()->from_backend(SEAT_OUTPUT_STDOUT, data, datalen);
       datalen = 0;
     }
   }
   if (datalen > 0) {
     qDebug("TMUX output %d %.*s", datalen, datalen, data);
-    _mapPanes[paneid]->termWnd()->from_backend(0, data, datalen);
+    _mapPanes[paneid]->termWnd()->from_backend(SEAT_OUTPUT_STDOUT, data, datalen);
   }
   return 0;
 cu0:
