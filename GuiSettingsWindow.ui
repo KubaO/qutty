@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>575</width>
-    <height>508</height>
+    <width>562</width>
+    <height>536</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -23,27 +23,6 @@
    <bool>false</bool>
   </property>
   <layout class="QGridLayout" name="gridLayout_23">
-   <item row="1" column="2" colspan="2">
-    <layout class="QHBoxLayout" name="horizontalLayout_15">
-     <item>
-      <widget class="QPushButton" name="btn_about">
-       <property name="text">
-        <string>About</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QDialogButtonBox" name="buttonBox">
-       <property name="orientation">
-        <enum>Qt::Orientation::Horizontal</enum>
-       </property>
-       <property name="standardButtons">
-        <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Open</set>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </item>
    <item row="0" column="2">
     <widget class="QTreeWidget" name="treeWidget">
      <property name="sizePolicy">
@@ -254,6 +233,27 @@
      </item>
     </widget>
    </item>
+   <item row="1" column="2" colspan="2">
+    <layout class="QHBoxLayout" name="horizontalLayout_15">
+     <item>
+      <widget class="QPushButton" name="btn_about">
+       <property name="text">
+        <string>About</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDialogButtonBox" name="buttonBox">
+       <property name="orientation">
+        <enum>Qt::Orientation::Horizontal</enum>
+       </property>
+       <property name="standardButtons">
+        <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Open</set>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
    <item row="0" column="3">
     <widget class="QStackedWidget" name="stackedWidget">
      <property name="enabled">
@@ -269,7 +269,7 @@
       <enum>QFrame::Shape::NoFrame</enum>
      </property>
      <property name="currentIndex">
-      <number>20</number>
+      <number>25</number>
      </property>
      <widget class="QWidget" name="page_1">
       <layout class="QVBoxLayout" name="verticalLayout_25" stretch="0,1,0,0">
@@ -1557,69 +1557,15 @@
           <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_43">
-          <item row="1" column="1">
-           <layout class="QHBoxLayout" name="horizontalLayout_11">
-            <item>
-             <widget class="QRadioButton" name="rb_backspacekey_ctrlh">
-              <property name="text">
-               <string>Control-H</string>
-              </property>
-              <attribute name="buttonGroup">
-               <string notr="true">buttonGroup</string>
-              </attribute>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="rb_backspace_ctrl127">
-              <property name="text">
-               <string>Control-? (127)</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-              <attribute name="buttonGroup">
-               <string notr="true">buttonGroup</string>
-              </attribute>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item row="3" column="1">
-           <layout class="QHBoxLayout" name="horizontalLayout_14">
-            <item>
-             <widget class="QRadioButton" name="rb_homeendkeys_std">
-              <property name="text">
-               <string>Standard</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
-              </property>
-              <attribute name="buttonGroup">
-               <string notr="true">buttonGroup_3</string>
-              </attribute>
-             </widget>
-            </item>
-            <item>
-             <widget class="QRadioButton" name="rb_homeendkeys_rxvt">
-              <property name="text">
-               <string>rxvt</string>
-              </property>
-              <attribute name="buttonGroup">
-               <string notr="true">buttonGroup_3</string>
-              </attribute>
-             </widget>
-            </item>
-           </layout>
-          </item>
+          <property name="verticalSpacing">
+           <number>4</number>
+          </property>
           <item row="5" column="1">
            <layout class="QGridLayout" name="gridLayout">
-            <item row="0" column="0">
-             <widget class="QRadioButton" name="rb_fnkeys_esc">
+            <item row="0" column="2">
+             <widget class="QRadioButton" name="rb_fnkeys_xtermr6">
               <property name="text">
-               <string>ESC[n~</string>
-              </property>
-              <property name="checked">
-               <bool>true</bool>
+               <string>Xterm R6</string>
               </property>
               <attribute name="buttonGroup">
                <string notr="true">gp_fnkeys</string>
@@ -1636,37 +1582,20 @@
               </attribute>
              </widget>
             </item>
-            <item row="1" column="2">
-             <widget class="QRadioButton" name="rb_fnkeys_sco">
+            <item row="0" column="0">
+             <widget class="QRadioButton" name="rb_fnkeys_esc">
               <property name="text">
-               <string>SCO</string>
+               <string>ESC[n~</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
               </property>
               <attribute name="buttonGroup">
                <string notr="true">gp_fnkeys</string>
               </attribute>
              </widget>
             </item>
-            <item row="1" column="1">
-             <widget class="QRadioButton" name="rb_fnkeys_vt100">
-              <property name="text">
-               <string>VT100+</string>
-              </property>
-              <attribute name="buttonGroup">
-               <string notr="true">gp_fnkeys</string>
-              </attribute>
-             </widget>
-            </item>
-            <item row="0" column="2">
-             <widget class="QRadioButton" name="rb_fnkeys_xtermr6">
-              <property name="text">
-               <string>Xterm R6</string>
-              </property>
-              <attribute name="buttonGroup">
-               <string notr="true">gp_fnkeys</string>
-              </attribute>
-             </widget>
-            </item>
-            <item row="1" column="0">
+            <item row="0" column="3">
              <widget class="QRadioButton" name="rb_fnkeys_vt400">
               <property name="text">
                <string>VT400</string>
@@ -1676,15 +1605,42 @@
               </attribute>
              </widget>
             </item>
+            <item row="1" column="0">
+             <widget class="QRadioButton" name="rb_fnkeys_vt100">
+              <property name="text">
+               <string>VT100+</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">gp_fnkeys</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QRadioButton" name="rb_fnkeys_sco">
+              <property name="text">
+               <string>SCO</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">gp_fnkeys</string>
+              </attribute>
+             </widget>
+            </item>
+            <item row="1" column="2" colspan="2">
+             <widget class="QRadioButton" name="rb_fnkeys_xterm_216">
+              <property name="text">
+               <string>Xterm 216+</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </item>
-          <item row="0" column="0" colspan="2">
-           <widget class="QLabel" name="label_13">
+          <item row="6" column="0" colspan="2">
+           <widget class="QLabel" name="label_147">
             <property name="text">
-             <string>The &amp;Backspace key</string>
+             <string>Shift/Ctrl/Alt &amp;with the arrow keys</string>
             </property>
             <property name="buddy">
-             <cstring>rb_backspacekey_ctrlh</cstring>
+             <cstring>rb_sharrow_application</cstring>
             </property>
            </widget>
           </item>
@@ -1729,6 +1685,91 @@
              </size>
             </property>
            </widget>
+          </item>
+          <item row="1" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_11">
+            <item>
+             <widget class="QRadioButton" name="rb_backspacekey_ctrlh">
+              <property name="text">
+               <string>Control-H</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup</string>
+              </attribute>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rb_backspace_ctrl127">
+              <property name="text">
+               <string>Control-? (127)</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup</string>
+              </attribute>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="0" column="0" colspan="2">
+           <widget class="QLabel" name="label_13">
+            <property name="text">
+             <string>The &amp;Backspace key</string>
+            </property>
+            <property name="buddy">
+             <cstring>rb_backspacekey_ctrlh</cstring>
+            </property>
+           </widget>
+          </item>
+          <item row="3" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_14">
+            <item>
+             <widget class="QRadioButton" name="rb_homeendkeys_std">
+              <property name="text">
+               <string>Standard</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_3</string>
+              </attribute>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rb_homeendkeys_rxvt">
+              <property name="text">
+               <string>rxvt</string>
+              </property>
+              <attribute name="buttonGroup">
+               <string notr="true">buttonGroup_3</string>
+              </attribute>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item row="7" column="1">
+           <layout class="QHBoxLayout" name="horizontalLayout_21">
+            <item>
+             <widget class="QRadioButton" name="rb_sharrow_application">
+              <property name="text">
+               <string>Ctrl toggles app mode</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="rb_sharrow_bitmap">
+              <property name="text">
+               <string>xterm-style bitmap</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </widget>
@@ -5557,20 +5598,10 @@
           </item>
           <item row="1" column="1">
            <layout class="QGridLayout" name="gridLayout_14">
-            <item row="0" column="0">
-             <widget class="QRadioButton" name="rb_proxytype_none">
+            <item row="1" column="2">
+             <widget class="QRadioButton" name="rb_proxytype_local">
               <property name="text">
-               <string>None</string>
-              </property>
-              <property name="checked">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QRadioButton" name="rb_proxy_socks4">
-              <property name="text">
-               <string>SOCKS 4</string>
+               <string>Local</string>
               </property>
              </widget>
             </item>
@@ -5581,24 +5612,41 @@
               </property>
              </widget>
             </item>
-            <item row="1" column="0">
+            <item row="0" column="1">
+             <widget class="QRadioButton" name="rb_proxy_socks4">
+              <property name="text">
+               <string>SOCKS 4</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <widget class="QRadioButton" name="rb_proxytype_none">
+              <property name="text">
+               <string>None</string>
+              </property>
+              <property name="checked">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="3">
              <widget class="QRadioButton" name="rb_proxytype_http">
               <property name="text">
                <string>HTTP</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="1">
+            <item row="1" column="0">
              <widget class="QRadioButton" name="rb_proxytype_telnet">
               <property name="text">
                <string>Telnet</string>
               </property>
              </widget>
             </item>
-            <item row="1" column="2">
-             <widget class="QRadioButton" name="rb_proxytype_local">
+            <item row="1" column="1">
+             <widget class="QRadioButton" name="rb_proxytype_ssh">
               <property name="text">
-               <string>Local</string>
+               <string>SSH</string>
               </property>
              </widget>
             </item>
@@ -7533,16 +7581,7 @@
       </layout>
      </widget>
      <widget class="QWidget" name="page_26">
-      <layout class="QVBoxLayout" name="verticalLayout_70">
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
-        <number>0</number>
-       </property>
+      <layout class="QVBoxLayout" name="verticalLayout_12">
        <item>
         <widget class="QLabel" name="label_116">
          <property name="frameShape">
@@ -7593,7 +7632,7 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>347</width>
+               <width>328</width>
                <height>353</height>
               </rect>
              </property>
@@ -8051,6 +8090,64 @@
               </item>
              </layout>
             </widget>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox_61">
+         <property name="title">
+          <string>Manually Enabled Workarounds</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_68">
+          <item row="0" column="0">
+           <widget class="QWidget" name="widget_69" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>10</width>
+              <height>10</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLabel" name="label_146">
+            <property name="text">
+             <string>Discards data sent before its greeting</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QComboBox" name="cb_sshbug_dropstart">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <item>
+             <property name="text">
+              <string>On</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Off</string>
+             </property>
+            </item>
            </widget>
           </item>
          </layout>
@@ -8741,9 +8838,6 @@
   <tabstop>rb_fnkeys_esc</tabstop>
   <tabstop>rb_fnkeys_linux</tabstop>
   <tabstop>rb_fnkeys_xtermr6</tabstop>
-  <tabstop>rb_fnkeys_vt400</tabstop>
-  <tabstop>rb_fnkeys_vt100</tabstop>
-  <tabstop>rb_fnkeys_sco</tabstop>
   <tabstop>chb_altgrkey</tabstop>
   <tabstop>chb_no_applic_c</tabstop>
   <tabstop>chb_no_applic_k</tabstop>
@@ -8794,8 +8888,6 @@
   <tabstop>rb_proxytype_none</tabstop>
   <tabstop>rb_proxy_socks4</tabstop>
   <tabstop>rb_proxytype_socks5</tabstop>
-  <tabstop>rb_proxytype_http</tabstop>
-  <tabstop>rb_proxytype_telnet</tabstop>
   <tabstop>rb_proxytype_local</tabstop>
   <tabstop>le_proxy_host</tabstop>
   <tabstop>le_proxy_port</tabstop>
@@ -8861,33 +8953,33 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="gp_fontquality"/>
-  <buttongroup name="buttonGroup"/>
-  <buttongroup name="buttonGroup_8"/>
-  <buttongroup name="gp_exit_close"/>
-  <buttongroup name="gp_bold"/>
-  <buttongroup name="buttonGroup_7"/>
-  <buttongroup name="buttonGroup_4"/>
-  <buttongroup name="gp_termopt_edit"/>
-  <buttongroup name="buttonGroup_12"/>
-  <buttongroup name="buttonGroup_10"/>
-  <buttongroup name="gp_logfile"/>
-  <buttongroup name="buttonGroup_11"/>
-  <buttongroup name="buttonGroup_9"/>
-  <buttongroup name="gp_sshprotocol"/>
-  <buttongroup name="gp_addressfamily"/>
-  <buttongroup name="buttonGroup_13"/>
-  <buttongroup name="gp_curappear"/>
-  <buttongroup name="gp_remote_qtitle_action"/>
-  <buttongroup name="gp_seslog"/>
-  <buttongroup name="gp_termopt_echo"/>
   <buttongroup name="gp_contype"/>
-  <buttongroup name="buttonGroup_14"/>
-  <buttongroup name="buttonGroup_3"/>
-  <buttongroup name="buttonGroup_2"/>
   <buttongroup name="gp_resize_action"/>
-  <buttongroup name="buttonGroup_5"/>
+  <buttongroup name="gp_bold"/>
+  <buttongroup name="gp_seslog"/>
+  <buttongroup name="buttonGroup_8"/>
   <buttongroup name="buttonGroup_6"/>
+  <buttongroup name="gp_fontquality"/>
+  <buttongroup name="gp_remote_qtitle_action"/>
+  <buttongroup name="buttonGroup_3"/>
+  <buttongroup name="buttonGroup_10"/>
+  <buttongroup name="buttonGroup_9"/>
+  <buttongroup name="buttonGroup_13"/>
+  <buttongroup name="buttonGroup_11"/>
+  <buttongroup name="gp_sshprotocol"/>
+  <buttongroup name="gp_termopt_echo"/>
+  <buttongroup name="buttonGroup_5"/>
+  <buttongroup name="gp_logfile"/>
+  <buttongroup name="gp_termopt_edit"/>
+  <buttongroup name="buttonGroup"/>
+  <buttongroup name="gp_exit_close"/>
+  <buttongroup name="buttonGroup_14"/>
+  <buttongroup name="gp_curappear"/>
+  <buttongroup name="buttonGroup_4"/>
+  <buttongroup name="buttonGroup_7"/>
+  <buttongroup name="gp_addressfamily"/>
+  <buttongroup name="buttonGroup_2"/>
   <buttongroup name="gp_fnkeys"/>
+  <buttongroup name="buttonGroup_12"/>
  </buttongroups>
 </ui>
