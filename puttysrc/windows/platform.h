@@ -24,6 +24,8 @@ extern "C" {
 #endif
 
 #include "defs.h"
+#include "tree234.h"
+#include "help.h"
 
 #if defined _M_IX86 || defined _M_AMD64
 #define BUILDINFO_PLATFORM "x86 Windows"
@@ -171,6 +173,22 @@ static void clear_jumplist(void) {}
 #define CLIPUI_DEFAULT_AUTOCOPY true
 #define CLIPUI_DEFAULT_MOUSE CLIPUI_EXPLICIT
 #define CLIPUI_DEFAULT_INS CLIPUI_EXPLICIT
+
+/* In utils */
+HKEY open_regkey_fn(bool create, HKEY base, const char *path, ...);
+#define open_regkey(create, base, ...) \
+    open_regkey_fn(create, base, __VA_ARGS__, (const char *)NULL)
+void close_regkey(HKEY key);
+void del_regkey(HKEY key, const char *name);
+char *enum_regkey(HKEY key, int index);
+bool get_reg_dword(HKEY key, const char *name, DWORD *out);
+bool put_reg_dword(HKEY key, const char *name, DWORD value);
+char *get_reg_sz(HKEY key, const char *name);
+bool put_reg_sz(HKEY key, const char *name, const char *str);
+strbuf *get_reg_multi_sz(HKEY key, const char *name);
+bool put_reg_multi_sz(HKEY key, const char *name, strbuf *str);
+
+char *get_reg_sz_simple(HKEY key, const char *name, const char *leaf);
 
 static int has_embedded_chm(void) { return -1; } /* 1 = yes, 0 = no, -1 = N/A */
 

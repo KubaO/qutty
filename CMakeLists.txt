@@ -66,6 +66,12 @@ set(PROJECT_SOURCES
     QtSessionTreeModel.cpp
     QtCompleterWithAdvancedCompletion.cpp
 
+    puttysrc/crypto/aesgcm-clmul.c
+    puttysrc/crypto/aesgcm-common.c
+    #puttysrc/crypto/aesgcm-neon.c
+    puttysrc/crypto/aesgcm-ref-poly.c
+    puttysrc/crypto/aesgcm-select.c
+    puttysrc/crypto/aesgcm-sw.c
     puttysrc/crypto/aes-common.c
     #puttysrc/crypto/aes-neon.c
     puttysrc/crypto/aes-ni.c
@@ -88,6 +94,8 @@ set(PROJECT_SOURCES
     puttysrc/crypto/mac_simple.c
     puttysrc/crypto/md5.c
     puttysrc/crypto/mpint.c
+    puttysrc/crypto/ntru.c
+    puttysrc/crypto/openssh-certs.c
     puttysrc/crypto/prng.c
     puttysrc/crypto/pubkey-pem.c
     puttysrc/crypto/pubkey-ppk.c
@@ -111,9 +119,12 @@ set(PROJECT_SOURCES
     puttysrc/crypto/xdmauth.c
 
     puttysrc/crypto/aes.h
+    puttysrc/crypto/aesgcm.h
+    puttysrc/crypto/aesgcm-footer.h
     puttysrc/crypto/blowfish.h
     puttysrc/crypto/ecc.h
     puttysrc/crypto/mpint_i.h
+    puttysrc/crypto/ntru.h
     puttysrc/crypto/pubkey-ssh1.c
     puttysrc/crypto/sha1.h
     puttysrc/crypto/sha256.h
@@ -174,7 +185,12 @@ set(PROJECT_SOURCES
     puttysrc/ssh/ttymode-list.h
 
     puttysrc/stubs/noprint.c
-    puttysrc/stubs/nullplug.c
+    puttysrc/stubs/null-cipher.c
+    puttysrc/stubs/null-key.c
+    puttysrc/stubs/null-lp.c
+    puttysrc/stubs/null-mac.c
+    puttysrc/stubs/null-plug.c
+    puttysrc/stubs/null-seat.c
 
     puttysrc/terminal/bidi.c
     puttysrc/terminal/terminal.c
@@ -183,11 +199,14 @@ set(PROJECT_SOURCES
 
     puttysrc/utils/antispoof.c
     puttysrc/utils/backend_socket_log.c
+    puttysrc/utils/base64_decode.c
     puttysrc/utils/base64_decode_atom.c
+    puttysrc/utils/base64_encode.c
     puttysrc/utils/base64_encode_atom.c
     puttysrc/utils/bufchain.c
     #puttysrc/utils/buildinfo.c
     puttysrc/utils/burnstr.c
+    puttysrc/utils/cert-expr.c
     #puttysrc/utils/chomp.c
     puttysrc/utils/conf.c
     puttysrc/utils/conf_dest.c
@@ -201,25 +220,28 @@ set(PROJECT_SOURCES
     puttysrc/utils/dupstr.c
     puttysrc/utils/encode_utf8.c
     #puttysrc/utils/fgetline.c
+    puttysrc/utils/host_ca_new_free.c
     puttysrc/utils/host_strchr.c
     puttysrc/utils/host_strchr_internal.c
     puttysrc/utils/host_strcspn.c
     puttysrc/utils/host_strduptrim.c
     puttysrc/utils/host_strrchr.c
+    puttysrc/utils/key_components.c
     puttysrc/utils/log_proxy_stderr.c
     puttysrc/utils/make_spr_sw_abort_static.c
     puttysrc/utils/marshal.c
     puttysrc/utils/memory.c
     puttysrc/utils/memxor.c
-    puttysrc/utils/null_lp.c
-    puttysrc/utils/nullseat.c
     puttysrc/utils/nullstrcmp.c
     puttysrc/utils/out_of_memory.c
     puttysrc/utils/parse_blocksize.c
+    puttysrc/utils/percent_decode.c
+    puttysrc/utils/percent_encode.c
     puttysrc/utils/prompts.c
     puttysrc/utils/ptrlen.c
     #puttysrc/utils/read_file_into.c
     puttysrc/utils/seat_connection_fatal.c
+    puttysrc/utils/seat_dialog_text.c
     puttysrc/utils/sessprep.c
     puttysrc/utils/sk_free_peer_info.c
     #puttysrc/utils/smemclr.c
@@ -355,6 +377,7 @@ set_property(SOURCE
 )
 set_property(SOURCE
     puttysrc/crypto/aes-select.c
+    puttysrc/crypto/aesgcm-select.c
     puttysrc/crypto/arcfour.c
     puttysrc/crypto/blake2.c
     puttysrc/crypto/blowfish.c
@@ -362,6 +385,7 @@ set_property(SOURCE
     puttysrc/crypto/des.c
     puttysrc/crypto/hmac.c
     puttysrc/crypto/md5.c
+    puttysrc/crypto/ntru.c
     puttysrc/crypto/sha1-select.c
     puttysrc/crypto/sha256-select.c
     puttysrc/crypto/sha3.c
@@ -385,6 +409,7 @@ if (WIN32)
         puttysrc/windows/unicode.c
         puttysrc/windows/utils/defaults.c
         puttysrc/windows/utils/dputs.c
+        puttysrc/windows/utils/registry.c
 
         puttysrc/windows/platform.h
     )
