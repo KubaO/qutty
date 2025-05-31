@@ -81,6 +81,8 @@ GuiSettingsWindow::GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmod
   ui->treeWidget->topLevelItem(3)->child(2)->child(2)->setData(0, Qt::UserRole, GUI_PAGE_CIPHER);
   ui->treeWidget->topLevelItem(3)->child(2)->child(3)->setData(0, Qt::UserRole, GUI_PAGE_AUTH);
   ui->treeWidget->topLevelItem(3)->child(2)->child(3)->child(0)->setData(0, Qt::UserRole,
+                                                                         GUI_PAGE_CREDENTIALS);
+  ui->treeWidget->topLevelItem(3)->child(2)->child(3)->child(1)->setData(0, Qt::UserRole,
                                                                          GUI_PAGE_GSSAPI);
   ui->treeWidget->topLevelItem(3)->child(2)->child(4)->setData(0, Qt::UserRole, GUI_PAGE_TTY);
   ui->treeWidget->topLevelItem(3)->child(2)->child(5)->setData(0, Qt::UserRole, GUI_PAGE_X11);
@@ -233,8 +235,9 @@ struct DataList {
   }
 };
 
-// From putty-0.63/config.c
+// From putty-0.78/config.c
 static const DataItem ciphers[] = {{"ChaCha20 (SSH-2 only)", CIPHER_CHACHA20},
+                                   {"AES-GCM (SSH-2 only)", CIPHER_AESGCM},
                                    {"3DES", CIPHER_3DES},
                                    {"Blowfish", CIPHER_BLOWFISH},
                                    {"DES", CIPHER_DES},
@@ -242,11 +245,16 @@ static const DataItem ciphers[] = {{"ChaCha20 (SSH-2 only)", CIPHER_CHACHA20},
                                    {"Arcfour (SSH-2 only)", CIPHER_ARCFOUR},
                                    {"-- warn below here --", CIPHER_WARN}};
 
-static const DataItem kexes[] = {{"Diffie-Hellman group 1", KEX_DHGROUP1},
-                                 {"Diffie-Hellman group 14", KEX_DHGROUP14},
+static const DataItem kexes[] = {{"Diffie-Hellman group 1 (1024-bit)", KEX_DHGROUP1},
+                                 {"Diffie-Hellman group 14 (2048-bit)", KEX_DHGROUP14},
+                                 {"Diffie-Hellman group 15 (3072-bit)", KEX_DHGROUP15},
+                                 {"Diffie-Hellman group 16 (4096-bit)", KEX_DHGROUP16},
+                                 {"Diffie-Hellman group 17 (6144-bit)", KEX_DHGROUP17},
+                                 {"Diffie-Hellman group 18 (8192-bit)", KEX_DHGROUP18},
                                  {"Diffie-Hellman group exchange", KEX_DHGEX},
                                  {"RSA-based key exchange", KEX_RSA},
                                  {"ECDH key exchange", KEX_ECDH},
+                                 {"NTRU Prime / Curve25519 hybrid kex", KEX_NTRU_HYBRID},
                                  {"-- warn below here --", KEX_WARN}};
 
 // From putty-0.75/config.c
@@ -469,13 +477,7 @@ QString formatTTYMode(const QString &value);
   X("le_termspeed", termspeed)                                                 \
   X("tb_env_vars", environmt, UI::TwoColumnsEditable)                          \
   /* Proxy */                                                                  \
-  X("rb_proxytype_none", proxy_type, PROXY_NONE)                               \
-  X("rb_proxy_socks4", proxy_type, PROXY_SOCKS4)                               \
-  X("rb_proxytype_socks5", proxy_type, PROXY_SOCKS5)                           \
-  X("rb_proxytype_http", proxy_type, PROXY_HTTP)                               \
-  X("rb_proxytype_telnet", proxy_type, PROXY_TELNET)                           \
-  X("rb_proxytype_ssh", proxy_type, PROXY_SSH)                                 \
-  X("rb_proxytype_local", proxy_type, PROXY_CMD)                               \
+  X("cb_proxytype", proxy_type)                                                \
   X("le_proxy_host", proxy_host)                                               \
   X("le_proxy_port", proxy_port)                                               \
   X("le_proxy_exclude_list", proxy_exclude_list)                               \
@@ -529,7 +531,10 @@ QString formatTTYMode(const QString &value);
   X("chb_ssh_try_ki_auth", try_ki_auth)                                        \
   X("chb_ssh_agentfwd", agentfwd)                                              \
   X("chb_ssh_change_username", change_username)                                \
-  X("le_ssh_auth_keyfile", keyfile)                                            \
+  /* SSH Credentials */                                                        \
+  X("le_keyfile", keyfile)                                                     \
+  X("le_detached_cert", detached_cert)                                         \
+  X("le_auth_plugin", auth_plugin)                                             \
   /* GSSAPI Authentication */                                                  \
   X("chb_gssapi_authen", try_gssapi_auth)                                      \
   X("chb_try_gssapi_auth", try_gssapi_auth)                                    \
@@ -565,6 +570,7 @@ QString formatTTYMode(const QString &value);
   X("cb_sshbug_chanreq", sshbug_chanreq)                                       \
   X("cb_sshbug_oldgex2", sshbug_oldgex2)                                       \
   X("cb_sshbug_dropstart", sshbug_dropstart)                                   \
+  X("cb_sshbug_filter_kexinit", sshbug_filter_kexinit)                         \
   /* Serial Port  */                                                           \
   X("le_serial_line", serline)                                                 \
   X("le_config_speed", serspeed)                                               \
@@ -1437,8 +1443,8 @@ void GuiSettingsWindow::on_pb_ssh_gss_down_clicked() { listMoveDown(ui->l_ssh_gs
 #endif // NO_GSSAPI
 
 void GuiSettingsWindow::on_btn_ssh_auth_browse_keyfile_clicked() {
-  ui->le_ssh_auth_keyfile->setText(QFileDialog::getOpenFileName(
-      this, tr("Select private key file"), ui->le_ssh_auth_keyfile->text(), tr("*.ppk")));
+  ui->le_keyfile->setText(QFileDialog::getOpenFileName(this, tr("Select private key file"),
+                                                       ui->le_keyfile->text(), tr("*.ppk")));
 }
 
 void GuiSettingsWindow::on_btn_fontsel_clicked() {

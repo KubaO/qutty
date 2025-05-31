@@ -8,7 +8,10 @@
 
 #include "GuiTerminalWindow.hpp"
 #include "QtCommon.hpp"
+extern "C" {
+#include "putty.h"
 #include "terminal/terminal.h"
+}
 
 #if 0
 void get_clip(void *frontend, wchar_t **p, int *len) {
@@ -33,10 +36,8 @@ int mb_to_wc(int codepage, int /*flags*/, const char *mbstr, int mblen, wchar_t 
 }
 
 int wc_to_mb(int codepage, int /*flags*/, const wchar_t *wcstr, int wclen, char *mbstr, int mblen,
-             const char * /*defchr*/, struct unicode_data *ucsdata) {
-  QTextCodec *codec = nullptr;
-  if (ucsdata) getTextCodec(ucsdata->line_codepage);
-  if (!codec) codec = getTextCodec(codepage);
+             const char * /*defchr*/) {
+  QTextCodec *codec = getTextCodec(codepage);
   if (!codec) return 0;
   QByteArray mbarr = codec->fromUnicode(QString::fromWCharArray(wcstr, wclen));
   qstrncpy(mbstr, mbarr.constData(), mblen);
