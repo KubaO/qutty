@@ -556,6 +556,7 @@ QString formatTTYMode(const QString &value);
   X("chb_rport_acceptall", rport_acceptall)                                    \
   X("tb_portfwd", portfwd, UI::TwoColumns | UI::Col0IsSorted)                  \
   /* SSH Server Bug Workarounds */                                             \
+  X("cb_sshbug_rsa_sha2_cert_userauth", sshbug_rsa_sha2_cert_userauth)         \
   X("cb_sshbug_ignore1", sshbug_ignore1)                                       \
   X("cb_sshbug_plainpw1", sshbug_plainpw1)                                     \
   X("cb_sshbug_rsa1", sshbug_rsa1)                                             \

@@ -6800,6 +6800,9 @@
      </widget>
      <widget class="QWidget" name="page_22">
       <layout class="QVBoxLayout" name="verticalLayout_13">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_150">
          <property name="frameShape">
@@ -7717,6 +7720,9 @@
      </widget>
      <widget class="QWidget" name="page_27">
       <layout class="QVBoxLayout" name="verticalLayout_12">
+       <property name="topMargin">
+        <number>0</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_116">
          <property name="frameShape">
@@ -7767,8 +7773,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>328</width>
-               <height>353</height>
+               <width>318</width>
+               <height>379</height>
               </rect>
              </property>
              <property name="sizePolicy">
@@ -7778,10 +7784,31 @@
               </sizepolicy>
              </property>
              <layout class="QGridLayout" name="gridLayout_36">
-              <item row="19" column="1">
+              <item row="4" column="1">
+               <widget class="QLabel" name="label_125">
+                <property name="text">
+                 <string>Handles SSH-2 key re-exchange badly</string>
+                </property>
+               </widget>
+              </item>
+              <item row="24" column="1">
+               <widget class="QLabel" name="label_119">
+                <property name="text">
+                 <string>Chokes on SSH-1 RSA authentication</string>
+                </property>
+               </widget>
+              </item>
+              <item row="20" column="1">
                <widget class="QLabel" name="label_124">
                 <property name="text">
                  <string>Misuses the session ID in SSH-2 PK auth</string>
+                </property>
+               </widget>
+              </item>
+              <item row="21" column="1">
+               <widget class="QLabel" name="label_122">
+                <property name="text">
+                 <string>Miscomputes SSH-2 encryption keys</string>
                 </property>
                </widget>
               </item>
@@ -7810,8 +7837,15 @@
                 </item>
                </widget>
               </item>
-              <item row="8" column="2">
-               <widget class="QComboBox" name="cb_sshbug_maxpkt2">
+              <item row="11" column="1" colspan="2">
+               <widget class="Line" name="line">
+                <property name="orientation">
+                 <enum>Qt::Orientation::Horizontal</enum>
+                </property>
+               </widget>
+              </item>
+              <item row="19" column="2">
+               <widget class="QComboBox" name="cb_sshbug_hmac2">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -7835,40 +7869,44 @@
                 </item>
                </widget>
               </item>
-              <item row="18" column="1">
-               <widget class="QLabel" name="label_121">
+              <item row="3" column="0">
+               <widget class="QWidget" name="widget_60" native="true">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>10</width>
+                  <height>10</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>10</width>
+                  <height>10</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item row="6" column="1">
+               <widget class="QLabel" name="label_41">
                 <property name="text">
-                 <string>Miscomputes SSH-2 HMAC keys</string>
+                 <string>Replies to requests on closed channels</string>
                 </property>
                </widget>
               </item>
-              <item row="5" column="2">
-               <widget class="QComboBox" name="cb_sshbug_winadj">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
+              <item row="3" column="1">
+               <widget class="QLabel" name="label_120">
+                <property name="text">
+                 <string>Chokes on SSH-2 ignore messages</string>
                 </property>
-                <item>
-                 <property name="text">
-                  <string>On</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Off</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Auto</string>
-                 </property>
-                </item>
                </widget>
               </item>
-              <item row="6" column="2">
-               <widget class="QComboBox" name="cb_sshbug_chanreq">
+              <item row="17" column="2">
+               <widget class="QComboBox" name="cb_sshbug_oldgex2">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -7899,15 +7937,8 @@
                 </property>
                </widget>
               </item>
-              <item row="6" column="1">
-               <widget class="QLabel" name="label_41">
-                <property name="text">
-                 <string>Replies to requests on closed channels</string>
-                </property>
-               </widget>
-              </item>
-              <item row="22" column="2">
-               <widget class="QComboBox" name="cb_sshbug_plainpw1">
+              <item row="6" column="2">
+               <widget class="QComboBox" name="cb_sshbug_chanreq">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -7931,14 +7962,53 @@
                 </item>
                </widget>
               </item>
-              <item row="22" column="1">
-               <widget class="QLabel" name="label_118">
+              <item row="13" column="2">
+               <widget class="QComboBox" name="cb_sshbug_rsapad2">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>On</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Off</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Auto</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="13" column="1">
+               <widget class="QLabel" name="label_123">
                 <property name="text">
-                 <string>Refuses all SSH-1 password camouflage</string>
+                 <string>Requires padding on SSH-2 RSA signatures</string>
                 </property>
                </widget>
               </item>
-              <item row="21" column="2">
+              <item row="17" column="1">
+               <widget class="QLabel" name="label_55">
+                <property name="text">
+                 <string>Only supports pre-RFC4419 SSH-2 DH GEX</string>
+                </property>
+               </widget>
+              </item>
+              <item row="8" column="1">
+               <widget class="QLabel" name="label_126">
+                <property name="text">
+                 <string>Ignores SSH-2 maximum packet size</string>
+                </property>
+               </widget>
+              </item>
+              <item row="22" column="2">
                <widget class="QComboBox" name="cb_sshbug_ignore1">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -7988,156 +8058,7 @@
                 </item>
                </widget>
               </item>
-              <item row="18" column="2">
-               <widget class="QComboBox" name="cb_sshbug_hmac2">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <item>
-                 <property name="text">
-                  <string>On</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Off</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Auto</string>
-                 </property>
-                </item>
-               </widget>
-              </item>
-              <item row="12" column="2">
-               <widget class="QComboBox" name="cb_sshbug_rsapad2">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <item>
-                 <property name="text">
-                  <string>On</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Off</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Auto</string>
-                 </property>
-                </item>
-               </widget>
-              </item>
-              <item row="11" column="1" colspan="2">
-               <widget class="Line" name="line">
-                <property name="orientation">
-                 <enum>Qt::Orientation::Horizontal</enum>
-                </property>
-               </widget>
-              </item>
-              <item row="23" column="2">
-               <widget class="QComboBox" name="cb_sshbug_rsa1">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <item>
-                 <property name="text">
-                  <string>On</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Off</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Auto</string>
-                 </property>
-                </item>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <widget class="QLabel" name="label_120">
-                <property name="text">
-                 <string>Chokes on SSH-2 ignore messages</string>
-                </property>
-               </widget>
-              </item>
-              <item row="8" column="1">
-               <widget class="QLabel" name="label_126">
-                <property name="text">
-                 <string>Ignores SSH-2 maximum packet size</string>
-                </property>
-               </widget>
-              </item>
-              <item row="16" column="2">
-               <widget class="QComboBox" name="cb_sshbug_oldgex2">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <item>
-                 <property name="text">
-                  <string>On</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Off</string>
-                 </property>
-                </item>
-                <item>
-                 <property name="text">
-                  <string>Auto</string>
-                 </property>
-                </item>
-               </widget>
-              </item>
-              <item row="12" column="1">
-               <widget class="QLabel" name="label_123">
-                <property name="text">
-                 <string>Requires padding on SSH-2 RSA signatures</string>
-                </property>
-               </widget>
-              </item>
-              <item row="4" column="1">
-               <widget class="QLabel" name="label_125">
-                <property name="text">
-                 <string>Handles SSH-2 key re-exchange badly</string>
-                </property>
-               </widget>
-              </item>
-              <item row="16" column="1">
-               <widget class="QLabel" name="label_55">
-                <property name="text">
-                 <string>Only supports pre-RFC4419 SSH-2 DH GEX</string>
-                </property>
-               </widget>
-              </item>
-              <item row="23" column="1">
-               <widget class="QLabel" name="label_119">
-                <property name="text">
-                 <string>Chokes on SSH-1 RSA authentication</string>
-                </property>
-               </widget>
-              </item>
-              <item row="19" column="2">
+              <item row="20" column="2">
                <widget class="QComboBox" name="cb_sshbug_pksessid2">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -8162,7 +8083,71 @@
                 </item>
                </widget>
               </item>
-              <item row="20" column="2">
+              <item row="5" column="2">
+               <widget class="QComboBox" name="cb_sshbug_winadj">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>On</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Off</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Auto</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="22" column="1">
+               <widget class="QLabel" name="label_117">
+                <property name="text">
+                 <string>Chokes on SSH-1 ignore messages</string>
+                </property>
+               </widget>
+              </item>
+              <item row="19" column="1">
+               <widget class="QLabel" name="label_121">
+                <property name="text">
+                 <string>Miscomputes SSH-2 HMAC keys</string>
+                </property>
+               </widget>
+              </item>
+              <item row="24" column="2">
+               <widget class="QComboBox" name="cb_sshbug_rsa1">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>On</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Off</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Auto</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="21" column="2">
                <widget class="QComboBox" name="cb_sshbug_derivekey2">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
@@ -8187,40 +8172,93 @@
                 </item>
                </widget>
               </item>
-              <item row="20" column="1">
-               <widget class="QLabel" name="label_122">
+              <item row="23" column="1">
+               <widget class="QLabel" name="label_118">
                 <property name="text">
-                 <string>Miscomputes SSH-2 encryption keys</string>
+                 <string>Refuses all SSH-1 password camouflage</string>
                 </property>
                </widget>
               </item>
-              <item row="21" column="1">
-               <widget class="QLabel" name="label_117">
-                <property name="text">
-                 <string>Chokes on SSH-1 ignore messages</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="0">
-               <widget class="QWidget" name="widget_60" native="true">
+              <item row="8" column="2">
+               <widget class="QComboBox" name="cb_sshbug_maxpkt2">
                 <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>10</width>
-                  <height>10</height>
-                 </size>
+                <item>
+                 <property name="text">
+                  <string>On</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Off</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Auto</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="23" column="2">
+               <widget class="QComboBox" name="cb_sshbug_plainpw1">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
                 </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>10</width>
-                  <height>10</height>
-                 </size>
+                <item>
+                 <property name="text">
+                  <string>On</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Off</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Auto</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="12" column="1">
+               <widget class="QLabel" name="label_153">
+                <property name="text">
+                 <string>Old RSA/SHA2 cert algorithm naming</string>
                 </property>
+               </widget>
+              </item>
+              <item row="12" column="2">
+               <widget class="QComboBox" name="cb_sshbug_rsa_sha2_cert_userauth">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>On</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Off</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>Auto</string>
+                 </property>
+                </item>
                </widget>
               </item>
              </layout>
@@ -8234,6 +8272,9 @@
         <widget class="QGroupBox" name="groupBox_61">
          <property name="title">
           <string>Manually Enabled Workarounds</string>
+         </property>
+         <property name="flat">
+          <bool>true</bool>
          </property>
          <layout class="QGridLayout" name="gridLayout_68">
           <item row="0" column="1">
@@ -9114,33 +9155,33 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="gp_contype"/>
   <buttongroup name="gp_resize_action"/>
-  <buttongroup name="gp_bold"/>
-  <buttongroup name="gp_seslog"/>
-  <buttongroup name="buttonGroup_8"/>
-  <buttongroup name="buttonGroup_6"/>
-  <buttongroup name="gp_fontquality"/>
-  <buttongroup name="gp_remote_qtitle_action"/>
-  <buttongroup name="buttonGroup_3"/>
-  <buttongroup name="buttonGroup_10"/>
-  <buttongroup name="buttonGroup_9"/>
-  <buttongroup name="buttonGroup_13"/>
-  <buttongroup name="buttonGroup_11"/>
-  <buttongroup name="gp_sshprotocol"/>
-  <buttongroup name="gp_termopt_echo"/>
-  <buttongroup name="buttonGroup_5"/>
-  <buttongroup name="gp_logfile"/>
-  <buttongroup name="gp_termopt_edit"/>
-  <buttongroup name="buttonGroup"/>
-  <buttongroup name="gp_exit_close"/>
-  <buttongroup name="buttonGroup_14"/>
-  <buttongroup name="gp_curappear"/>
   <buttongroup name="buttonGroup_4"/>
   <buttongroup name="buttonGroup_7"/>
-  <buttongroup name="gp_addressfamily"/>
+  <buttongroup name="buttonGroup_13"/>
   <buttongroup name="buttonGroup_2"/>
-  <buttongroup name="gp_fnkeys"/>
+  <buttongroup name="gp_exit_close"/>
+  <buttongroup name="buttonGroup_14"/>
+  <buttongroup name="buttonGroup_6"/>
+  <buttongroup name="buttonGroup_8"/>
+  <buttongroup name="gp_logfile"/>
   <buttongroup name="buttonGroup_12"/>
+  <buttongroup name="gp_termopt_edit"/>
+  <buttongroup name="buttonGroup_10"/>
+  <buttongroup name="gp_fontquality"/>
+  <buttongroup name="buttonGroup_11"/>
+  <buttongroup name="buttonGroup"/>
+  <buttongroup name="gp_termopt_echo"/>
+  <buttongroup name="buttonGroup_5"/>
+  <buttongroup name="gp_curappear"/>
+  <buttongroup name="gp_seslog"/>
+  <buttongroup name="buttonGroup_3"/>
+  <buttongroup name="gp_addressfamily"/>
+  <buttongroup name="gp_contype"/>
+  <buttongroup name="gp_sshprotocol"/>
+  <buttongroup name="gp_remote_qtitle_action"/>
+  <buttongroup name="gp_bold"/>
+  <buttongroup name="gp_fnkeys"/>
+  <buttongroup name="buttonGroup_9"/>
  </buttongroups>
 </ui>
