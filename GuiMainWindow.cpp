@@ -13,6 +13,7 @@
 #include <QLabel>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPainter>
 #include <QSettings>
 #include <QTabBar>
 #include <QTabWidget>

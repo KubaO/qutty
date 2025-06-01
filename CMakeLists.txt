@@ -321,8 +321,8 @@ set(PROJECT_SOURCES
     GuiCompactSettingsWindow.hpp
     QtSessionTreeModel.hpp
     QtSessionTreeItem.hpp
-    QtComboBoxWithTreeView.hpp
-    QtCompleterWithAdvancedCompletion.hpp
+    #QtComboBoxWithTreeView.hpp
+    #QtCompleterWithAdvancedCompletion.hpp
 
     tmux/tmux.h
     tmux/TmuxGateway.hpp
@@ -331,6 +331,7 @@ set(PROJECT_SOURCES
     serialize/QtMRUSessionList.hpp
     serialize/QtWebPluginMap.hpp
 
+    GuiCompactSettingsWindow.ui
     GuiSettingsWindow.ui
     GuiPreferencesWindow.ui
 
