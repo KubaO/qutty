@@ -147,7 +147,6 @@ struct terminal_tag {
     long vbell_end;
     bool app_cursor_keys, app_keypad_keys, vt52_mode;
     bool repeat_off, srm_echo, cr_lf_return;
-    bool seen_disp_event;
     bool big_cursor;
 
     bool xterm_mouse_forbidden;
@@ -184,6 +183,7 @@ struct terminal_tag {
 #define ANSI_QUE(x)     ANSI(x,1)
 
 #define OSC_STR_MAX 2048
+    bool osc_is_apc;
     int osc_strlen;
     char osc_string[OSC_STR_MAX + 1];
     bool osc_w;
@@ -438,24 +438,6 @@ struct terminal_tag {
         WIN_RESIZE_NO, WIN_RESIZE_NEED_SEND, WIN_RESIZE_AWAIT_REPLY
     } win_resize_pending;
     int win_resize_pending_w, win_resize_pending_h;
-
-    /*
-     * Not every frontend / TermWin implementation can be relied on
-     * 100% to reply to a resize request in a timely manner. (In X11
-     * it's all asynchronous and goes via the window manager, and if
-     * your window manager is seriously unwell, you'd rather not have
-     * terminal windows start becoming unusable as a knock-on effect,
-     * since those are just the thing you might need to use for
-     * emergency WM maintenance!) So when we enter AWAIT_REPLY status,
-     * we also set a 5-second timer, after which we'll regretfully
-     * conclude that a resize is probably not going to happen after
-     * all.
-     *
-     * However, in non-emergency cases, the plan is that this
-     * shouldn't be needed, for one reason or another.
-     */
-    long win_resize_timeout;
-    #define WIN_RESIZE_TIMEOUT (TICKSPERSEC*5)
 
 #ifdef IS_QUTTY
     wchar_t *dispstr;
