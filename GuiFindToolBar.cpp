@@ -108,7 +108,7 @@ typedef struct compressed_scrollback_line {
   size_t len;
 } compressed_scrollback_line;
 
-extern "C" termline *decompressline(compressed_scrollback_line *line);
+extern "C" termline *decompressline_no_free(compressed_scrollback_line *line);
 
 void GuiFindToolBar::on_findUp() {
   termline *line;
@@ -158,7 +158,7 @@ void GuiFindToolBar::on_findUp() {
       // TODO FIXME this may be a wee bit optimistic
       compressed_scrollback_line *cline =
           (compressed_scrollback_line *)index234(whichtree, currentRow);
-      line = (termline *)decompressline(cline);
+      line = decompressline_no_free(cline);
     } else {
       whichtree = term->screen;
       line = (termline *)index234(whichtree, currentRow - count234(term->scrollback));
@@ -251,7 +251,7 @@ void GuiFindToolBar::on_findDown() {
       // TODO FIXME this may be a wee bit optimistic
       compressed_scrollback_line *cline =
           (compressed_scrollback_line *)index234(whichtree, currentRow);
-      line = (termline *)decompressline(cline);
+      line = decompressline_no_free(cline);
     } else {
       whichtree = term->screen;
       line = (termline *)index234(whichtree, abs(currentRow - count234(term->scrollback)));
