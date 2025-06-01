@@ -1126,16 +1126,10 @@ static void ecdsa_sign(ssh_key *key, ptrlen data,
 
     mp_int *z = ecdsa_signing_exponent_from_data(ek->curve, extra, data);
 
-    /* Generate k between 1 and curve->n, using the same deterministic
-     * k generation system we use for conventional DSA. */
-    mp_int *k;
-    {
-        unsigned char digest[20];
-        hash_simple(&ssh_sha1, data, digest);
-        k = dsa_gen_k(
-            "ECDSA deterministic k generator", ek->curve->w.G_order,
-            ek->privateKey, digest, sizeof(digest));
-    }
+    /* Generate any valid exponent k, using the RFC 6979 deterministic
+     * procedure. */
+    mp_int *k = rfc6979(
+        extra->hash, ek->curve->w.G_order, ek->privateKey, data);
 
     WeierstrassPoint *kG = ecc_weierstrass_multiply(ek->curve->w.G, k);
     mp_int *x;
@@ -1623,7 +1617,7 @@ static char *ssh_ecdhkex_description(const ssh_kex *kex)
 static const struct eckex_extra kex_extra_curve25519 = { ec_curve25519 };
 
 static const ecdh_keyalg ssh_ecdhkex_m_alg = {
-    ._new = ssh_ecdhkex_m_new,
+    .new = ssh_ecdhkex_m_new,
     .free = ssh_ecdhkex_m_free,
     .getpublic = ssh_ecdhkex_m_getpublic,
     .getkey = ssh_ecdhkex_m_getkey,
@@ -1663,7 +1657,7 @@ const ssh_kex ssh_ec_kex_curve448 = {
 };
 
 static const ecdh_keyalg ssh_ecdhkex_w_alg = {
-    ._new = ssh_ecdhkex_w_new,
+    .new = ssh_ecdhkex_w_new,
     .free = ssh_ecdhkex_w_free,
     .getpublic = ssh_ecdhkex_w_getpublic,
     .getkey = ssh_ecdhkex_w_getkey,
