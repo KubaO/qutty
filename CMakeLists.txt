@@ -100,6 +100,7 @@ set(PROJECT_SOURCES
     puttysrc/crypto/pubkey-pem.c
     puttysrc/crypto/pubkey-ppk.c
     puttysrc/crypto/pubkey-ssh1.c
+    puttysrc/crypto/rfc6979.c
     puttysrc/crypto/rsa.c
     puttysrc/crypto/sha1-common.c
     #puttysrc/crypto/sha1-neon.c
@@ -184,7 +185,7 @@ set(PROJECT_SOURCES
     puttysrc/ssh/transport2.h
     puttysrc/ssh/ttymode-list.h
 
-    puttysrc/stubs/noprint.c
+    puttysrc/stubs/no-print.c
     puttysrc/stubs/null-cipher.c
     puttysrc/stubs/null-key.c
     puttysrc/stubs/null-lp.c
@@ -383,6 +384,7 @@ set_property(SOURCE
     puttysrc/crypto/blowfish.c
     puttysrc/crypto/chacha20-poly1305.c
     puttysrc/crypto/des.c
+    puttysrc/crypto/ecc-ssh.c
     puttysrc/crypto/hmac.c
     puttysrc/crypto/md5.c
     puttysrc/crypto/ntru.c
