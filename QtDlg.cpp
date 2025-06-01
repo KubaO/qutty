@@ -19,24 +19,55 @@ extern "C" {
 
 using namespace Qt::Literals::StringLiterals;
 
+// from putty-0.80/windows/dialog.c
+static const char *process_seatdialogtext(strbuf *dlg_text, const char **scary_heading,
+                                          SeatDialogText *text) {
+  const char *dlg_title = "";
+
+  for (SeatDialogTextItem *item = text->items, *end = item + text->nitems; item < end; item++) {
+    switch (item->type) {
+      case SDT_PARA:
+        put_fmt(dlg_text, "%s\r\n\r\n", item->text);
+        break;
+      case SDT_DISPLAY:
+        put_fmt(dlg_text, "%s\r\n\r\n", item->text);
+        break;
+      case SDT_SCARY_HEADING:
+        assert(scary_heading != NULL &&
+               "only expect a scary heading if "
+               "the dialog has somewhere to put it");
+        *scary_heading = item->text;
+        break;
+      case SDT_TITLE:
+        dlg_title = item->text;
+        break;
+      default:
+        break;
+    }
+  }
+
+  /* Trim any trailing newlines */
+  while (strbuf_chomp(dlg_text, '\r') || strbuf_chomp(dlg_text, '\n'));
+
+  return dlg_title;
+}
+
 /*
  * Check with the seat whether it's OK to use a cryptographic
  * primitive from below the 'warn below this line' threshold in
  * the input Conf. Return values are the same as
  * confirm_ssh_host_key above.
  */
-SeatPromptResult qt_confirm_weak_crypto_primitive(
-    Seat *seat, const char *algtype, const char *algname,
-    void (*callback)(void *ctx, SeatPromptResult result), void *ctx) {
-  assert(seat);
+SeatPromptResult qt_confirm_weak_crypto_primitive(Seat *seat, SeatDialogText *text,
+                                                  void (*callback)(void *ctx,
+                                                                   SeatPromptResult result),
+                                                  void *ctx) {
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
-  QString msg = QString("The first " + QString(algtype) +
-                        " supported by the server\n"
-                        "is " +
-                        QString(algname) +
-                        ", which is below the configured\n"
-                        "warning threshold.\n"
-                        "Do you want to continue with this connection?\n");
+  strbuf *dlg_text = strbuf_new();
+  const char *dlg_title = process_seatdialogtext(dlg_text, NULL, text);
+  QString msg = dlg_text->s;
+  strbuf_free(dlg_text);
+
   switch (QMessageBox::warning(f->getMainWindow(), QString(APPNAME " Security Alert"), msg,
                                QMessageBox::Yes | QMessageBox::No, QMessageBox::No)) {
     case QMessageBox::Yes:
@@ -211,6 +242,7 @@ SeatPromptResult qt_confirm_ssh_host_key(Seat *seat, const char *host, int port,
                                          HelpCtx helpctx,
                                          void (*callback)(void *ctx, SeatPromptResult result),
                                          void *ctx) {
+  // TODO: c.f. HostKeyDialogProc in puttysrc/windows/dialog.c
   assert(seat);
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
   int ret;
@@ -291,34 +323,26 @@ SeatPromptResult qt_confirm_ssh_host_key(Seat *seat, const char *host, int port,
  *  * This form is used in the case where we're using a host key
  * below the warning threshold because that's the best one we have
  * cached, but at least one host key algorithm *above* the
- * threshold is available that we don't have cached. 'betteralgs'
- * lists the better algorithm(s).
+ * threshold is available that we don't have cached.
  */
-SeatPromptResult qt_confirm_weak_cached_hostkey(
-    Seat *seat, const char *algname, const char *betteralgs,
-    void (*callback)(void *ctx, SeatPromptResult result), void *ctx) {
-  // from putty-0.69/windlg.c
-  assert(seat);
+SeatPromptResult qt_confirm_weak_cached_hostkey(Seat *seat, SeatDialogText *text,
+                                                void (*callback)(void *ctx,
+                                                                 SeatPromptResult result),
+                                                void *ctx) {
+  strbuf *dlg_text = strbuf_new();
+  const char *dlg_title = process_seatdialogtext(dlg_text, NULL, text);
+  QString msg = dlg_text->s;
+  strbuf_free(dlg_text);
+
   GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
-  static const char mbtitle[] = "%s Security Alert";
-  static const char msg[] =
-      "The first host key type we have stored for this server\n"
-      "is %s, which is below the configured warning threshold.\n"
-      "The server also provides the following types of host key\n"
-      "above the threshold, which we do not have stored:\n"
-      "%s\n"
-      "Do you want to continue with this connection?\n";
-  char *message, *title;
+  static auto const mbtitle = "%s Security Alert"_L1;
   int mbret;
 
-  message = dupprintf(msg, algname, betteralgs);
-  title = dupprintf(mbtitle, appname);
-  mbret = QMessageBox::warning(f, title, message, QMessageBox::Yes | QMessageBox::No);
+  QString title = QString(mbtitle).arg(appname);
+  mbret = QMessageBox::warning(f, title, msg, QMessageBox::Yes | QMessageBox::No);
 #if 0
   socket_reselect_all();
 #endif
-  sfree(message);
-  sfree(title);
   if (mbret == QMessageBox::Yes)
     return {SPRK_OK};
   else
