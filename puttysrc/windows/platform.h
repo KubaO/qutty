@@ -19,12 +19,10 @@
 #include <stdint.h>
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "defs.h"
+
 #include "tree234.h"
+
 #include "help.h"
 
 #if defined _M_IX86 || defined _M_AMD64
@@ -35,23 +33,30 @@ extern "C" {
 #define BUILDINFO_PLATFORM "Windows"
 #endif
 
-#ifdef _MSC_VER
-#define stricmp _stricmp
-#define strnicmp _strnicmp
-#endif
-
 #define APPNAME "QuTTY"
 
 struct Filename {
-    char path[FILENAME_MAX];
+    /*
+     * A Windows Filename stores a path in three formats:
+     *
+     *  - wchar_t (in Windows UTF-16 encoding). The best format to use
+     *    for actual file API functions, because all legal Windows
+     *    file names are representable.
+     *
+     *  - char, in the system default codepage. A fallback to use if
+     *    necessary, e.g. in diagnostics written to somewhere that is
+     *    unavoidably encoded _in_ the system codepage.
+     *
+     *  - char, in UTF-8. An equally general representation to wpath,
+     *    but suitable for keeping in char-typed strings.
+     */
+    wchar_t *wpath;
+    char *cpath, *utf8path;
 };
+Filename *filename_from_wstr(const wchar_t *str);
+FILE *f_open(const Filename *filename, const char *mode, bool isprivate);
 
-static inline FILE *f_open(const Filename *filename, const char *mode,
-                           bool isprivate)
-{
-    return fopen(filename->path, mode);
-}
-
+#ifndef SUPERSEDE_FONTSPEC_FOR_TESTING
 struct FontSpec {
     char name[64];
     bool isbold;
@@ -60,9 +65,9 @@ struct FontSpec {
 };
 struct FontSpec *fontspec_new(
     const char *name, bool bold, int height, int charset);
+#endif
 
 typedef struct unicode_data unicode_data_t;
-void init_ucs(Conf *, unicode_data_t *);
     
 #define PLATFORM_IS_UTF16 /* enable UTF-16 processing when exchanging
                            * wchar_t strings with environment */
@@ -70,6 +75,11 @@ void init_ucs(Conf *, unicode_data_t *);
 #define PLATFORM_CLIPBOARDS(X)                      \
     X(CLIP_SYSTEM, "system clipboard")              \
     /* end of list */
+
+#ifdef _WIN32
+#define stricmp _stricmp
+#define strnicmp _strnicmp
+#endif
 
 void qtc_assert(const char *assertion, const char *file, int line);
 
@@ -130,6 +140,15 @@ void qtc_assert(const char *assertion, const char *file, int line);
 #define TICKSPERSEC 1000               /* GetTickCount returns milliseconds */
 
 #define DEFAULT_CODEPAGE CP_ACP
+#define USES_VTLINE_HACK
+#define CP_UTF8 65001
+#define CP_437 437                     /* used for test suites */
+#define CP_ISO8859_1 0x10001           /* used for test suites */
+
+/*
+ * Help file stuff in help.c.
+ */
+static int has_embedded_chm(void) { return 0; } /* 1 = yes, 0 = no, -1 = N/A */
 
 /*
  * On Windows, copying to the clipboard terminates lines with CRLF.
@@ -157,6 +176,11 @@ void socket_reselect_all(void);
 HMODULE load_system32_dll(const char *libname);
 void escape_registry_key(const char *in, strbuf *out);
 void unescape_registry_key(const char *in, strbuf *out);
+
+/*
+ * Exports from unicode.c.
+ */
+void init_ucs(Conf *, struct unicode_data *);
 
 /*
  * Exports from jump-list.c.
@@ -193,11 +217,5 @@ strbuf *get_reg_multi_sz(HKEY key, const char *name);
 bool put_reg_multi_sz(HKEY key, const char *name, strbuf *str);
 
 char *get_reg_sz_simple(HKEY key, const char *name, const char *leaf);
-
-static int has_embedded_chm(void) { return -1; } /* 1 = yes, 0 = no, -1 = N/A */
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* PUTTY_WINDOWS_PLATFORM_H */
