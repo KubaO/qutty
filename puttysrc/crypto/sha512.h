@@ -50,7 +50,7 @@ static inline bool check_availability(const struct sha512_extra *extra)
         .mut = &sha512_ ## impl_c ## _extra_mut,                        \
     };                                                                  \
     const ssh_hashalg ssh_sha384_ ## impl_c = {                         \
-        ._new = sha512_ ## impl_c ## _new,                              \
+        .new = sha512_ ## impl_c ## _new,                               \
         .reset = sha512_ ## impl_c ## _reset,                           \
         .copyfrom = sha512_ ## impl_c ## _copyfrom,                     \
         .digest = sha384_ ## impl_c ## _digest,                         \
@@ -61,7 +61,7 @@ static inline bool check_availability(const struct sha512_extra *extra)
         .extra = &sha384_ ## impl_c ## _extra,                          \
     };                                                                  \
     const ssh_hashalg ssh_sha512_ ## impl_c = {                         \
-        ._new = sha512_ ## impl_c ## _new,                              \
+        .new = sha512_ ## impl_c ## _new,                               \
         .reset = sha512_ ## impl_c ## _reset,                           \
         .copyfrom = sha512_ ## impl_c ## _copyfrom,                     \
         .digest = sha512_ ## impl_c ## _digest,                         \

@@ -23,10 +23,9 @@
 #include "GuiTabWidget.hpp"
 #include "GuiTerminalWindow.hpp"
 #include "serialize/QtMRUSessionList.hpp"
-//#include "windows.h"
+
 extern "C" {
 #include "putty.h"
-#include "ssh.h"
 }
 
 using std::list;

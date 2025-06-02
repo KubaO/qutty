@@ -6,7 +6,6 @@
 
 extern "C" {
 #include "putty.h"
-#include "ssh.h"
 #include "storage.h"
 }
 #undef debug  // clashes with debug in qlogging.h
@@ -144,7 +143,7 @@ int verify_host_key(const char *hostname, int port, const char *keytype, const c
   return 0;
 }
 
-void old_keyfile_warning(void) {
+extern "C" void old_keyfile_warning(void) {
   QMessageBox::warning(NULL, QString(APPNAME "%s Key File Warning"),
                        QString(
                            "You are loading an SSH-2 private key which has an\n"

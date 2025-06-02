@@ -8,7 +8,6 @@
 extern "C" {
 #include "network.h"
 #include "putty.h"
-#include "ssh.h"
 }
 #include <QHostAddress>
 #include <QHostInfo>
@@ -310,7 +309,7 @@ Socket *sk_register(void * /*sock*/, Plug * /*plug*/) {
   return NULL;
 }
 
-SockAddr *platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*/) {
+extern "C" SockAddr *platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*/) {
   /*
   SockAddr *ret = snew(struct SockAddr_tag);
   memset(ret, 0, sizeof(struct SockAddr_tag));
@@ -351,12 +350,6 @@ Socket *platform_new_connection(SockAddr * /*addr*/, const char * /*hostname*/, 
                                 Interactor * /*itr*/) {
   qDebug() << __FUNCTION__ << "NOTIMPL";  // TODO
   return nullptr;
-}
-
-int platform_ssh_share(const char *name, Conf *conf, Plug *downplug, Plug *upplug, Socket **sock,
-                       char **logtext, char **ds_err, char **us_err, int can_upstream,
-                       int can_downstream) {
-  return SHARE_NONE;
 }
 
 /*
