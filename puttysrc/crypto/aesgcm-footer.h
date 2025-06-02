@@ -353,7 +353,7 @@ static const struct aesgcm_extra PREFIX(extra) = {
 };
 
 const ssh2_macalg CAT(ssh2_aesgcm_mac_, AESGCM_FLAVOUR) = {
-    ._new = PREFIX(mac_new),
+    .new = PREFIX(mac_new),
     .free = PREFIX(mac_free),
     .setkey = PREFIX(mac_setkey),
     .start = PREFIX(mac_start),

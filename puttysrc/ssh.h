@@ -647,7 +647,7 @@ struct ssh_cipher {
 };
 
 struct ssh_cipheralg {
-    ssh_cipher *(*_new)(const ssh_cipheralg *alg);
+    ssh_cipher *(*new)(const ssh_cipheralg *alg);
     void (*free)(ssh_cipher *);
     void (*setiv)(ssh_cipher *, const void *iv);
     void (*setkey)(ssh_cipher *, const void *key);
@@ -688,7 +688,7 @@ struct ssh_cipheralg {
 };
 
 static inline ssh_cipher *ssh_cipher_new(const ssh_cipheralg *alg)
-{ return alg->_new(alg); }
+{ return alg->new(alg); }
 static inline void ssh_cipher_free(ssh_cipher *c)
 { c->vt->free(c); }
 static inline void ssh_cipher_setiv(ssh_cipher *c, const void *iv)
@@ -724,7 +724,7 @@ struct ssh2_mac {
 
 struct ssh2_macalg {
     /* Passes in the cipher context */
-    ssh2_mac *(*_new)(const ssh2_macalg *alg, ssh_cipher *cipher);
+    ssh2_mac *(*new)(const ssh2_macalg *alg, ssh_cipher *cipher);
     void (*free)(ssh2_mac *);
     void (*setkey)(ssh2_mac *, ptrlen key);
     void (*start)(ssh2_mac *);
@@ -740,7 +740,7 @@ struct ssh2_macalg {
 
 static inline ssh2_mac *ssh2_mac_new(
     const ssh2_macalg *alg, ssh_cipher *cipher)
-{ return alg->_new(alg, cipher); }
+{ return alg->new(alg, cipher); }
 static inline void ssh2_mac_free(ssh2_mac *m)
 { m->vt->free(m); }
 static inline void ssh2_mac_setkey(ssh2_mac *m, ptrlen key)
@@ -780,7 +780,7 @@ struct ssh_hash {
 };
 
 struct ssh_hashalg {
-    ssh_hash *(*_new)(const ssh_hashalg *alg);
+    ssh_hash *(*new)(const ssh_hashalg *alg);
     void (*reset)(ssh_hash *);
     void (*copyfrom)(ssh_hash *dest, ssh_hash *src);
     void (*digest)(ssh_hash *, unsigned char *);
@@ -794,9 +794,9 @@ struct ssh_hashalg {
 };
 
 static inline ssh_hash *ssh_hash_new(const ssh_hashalg *alg)
-{ ssh_hash *h = alg->_new(alg); if (h) h->vt->reset(h); return h; }
+{ ssh_hash *h = alg->new(alg); if (h) h->vt->reset(h); return h; }
 static inline ssh_hash *ssh_hash_copy(ssh_hash *orig)
-{ ssh_hash *h = orig->vt->_new(orig->vt); h->vt->copyfrom(h, orig); return h; }
+{ ssh_hash *h = orig->vt->new(orig->vt); h->vt->copyfrom(h, orig); return h; }
 static inline void ssh_hash_digest(ssh_hash *h, unsigned char *out)
 { h->vt->digest(h, out); }
 static inline void ssh_hash_free(ssh_hash *h)
@@ -841,12 +841,10 @@ struct ssh_kex {
     const void *extra;                 /* private to the kex methods */
 };
 
-#if !defined(IS_QUTTY) || !defined(__cplusplus)
 static inline bool kex_is_gss(const struct ssh_kex *kex)
 {
     return kex->main_type == KEXTYPE_GSS || kex->main_type == KEXTYPE_GSS_ECDH;
 }
-#endif
 
 struct ssh_kexes {
     int nkexes;
@@ -989,14 +987,14 @@ struct ecdh_keyalg {
      * pointer, because it will also need the containing ssh_kex
      * structure for top-level parameters, and since that contains a
      * vt pointer anyway, we might as well _only_ pass that. */
-    ecdh_key *(*_new)(const ssh_kex *kex, bool is_server);
+    ecdh_key *(*new)(const ssh_kex *kex, bool is_server);
     void (*free)(ecdh_key *key);
     void (*getpublic)(ecdh_key *key, BinarySink *bs);
     bool (*getkey)(ecdh_key *key, ptrlen remoteKey, BinarySink *bs);
     char *(*description)(const ssh_kex *kex);
 };
 static inline ecdh_key *ecdh_key_new(const ssh_kex *kex, bool is_server)
-{ return kex->ecdh_vt->_new(kex, is_server); }
+{ return kex->ecdh_vt->new(kex, is_server); }
 static inline void ecdh_key_free(ecdh_key *key)
 { key->vt->free(key); }
 static inline void ecdh_key_getpublic(ecdh_key *key, BinarySink *bs)
@@ -1550,7 +1548,6 @@ static inline bool ssh_fptype_is_cert(FingerprintType fptype)
 {
     return fptype >= SSH_FPTYPE_MD5_CERT;
 }
-#if !defined(IS_QUTTY) || !defined(__cplusplus)
 static inline FingerprintType ssh_fptype_from_cert(FingerprintType fptype)
 {
     if (ssh_fptype_is_cert(fptype))
@@ -1563,7 +1560,6 @@ static inline FingerprintType ssh_fptype_to_cert(FingerprintType fptype)
         fptype += (SSH_FPTYPE_MD5_CERT - SSH_FPTYPE_MD5);
     return fptype;
 }
-#endif
 
 #define SSH_N_FPTYPES (SSH_FPTYPE_SHA256_CERT + 1)
 #define SSH_FPTYPE_DEFAULT SSH_FPTYPE_SHA256

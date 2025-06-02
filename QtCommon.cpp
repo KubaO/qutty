@@ -8,10 +8,6 @@
 #include "QtCommon.hpp"
 #define SECURITY_WIN32
 
-extern "C" {
-#include "ssh.h"
-}
-
 #include <QKeyEvent>
 #include <cstring>
 
@@ -428,7 +424,7 @@ struct tm ltime(void) {
   return *timeinfo;
 }
 
-char *platform_get_x_display(void) {
+extern "C" char *platform_get_x_display(void) {
   /* We may as well check for DISPLAY in case it's useful. */
   return dupstr(getenv("DISPLAY"));
 }

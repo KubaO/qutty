@@ -68,7 +68,7 @@ static inline void aes_encrypt_ecb_block(ssh_cipher *ciph, void *blk)
 
 #define AES_CBC_VTABLE(impl_c, impl_display, bits)                      \
     const ssh_cipheralg ssh_aes ## bits ## _cbc ## impl_c = {           \
-        ._new = aes ## impl_c ## _new,                                  \
+        .new = aes ## impl_c ## _new,                                   \
         .free = aes ## impl_c ## _free,                                 \
         .setiv = aes ## impl_c ## _setiv_cbc,                           \
         .setkey = aes ## impl_c ## _setkey,                             \
@@ -86,7 +86,7 @@ static inline void aes_encrypt_ecb_block(ssh_cipher *ciph, void *blk)
 
 #define AES_SDCTR_VTABLE(impl_c, impl_display, bits)                    \
     const ssh_cipheralg ssh_aes ## bits ## _sdctr ## impl_c = {         \
-        ._new = aes ## impl_c ## _new,                                  \
+        .new = aes ## impl_c ## _new,                                   \
         .free = aes ## impl_c ## _free,                                 \
         .setiv = aes ## impl_c ## _setiv_sdctr,                         \
         .setkey = aes ## impl_c ## _setkey,                             \
@@ -104,7 +104,7 @@ static inline void aes_encrypt_ecb_block(ssh_cipher *ciph, void *blk)
 
 #define AES_GCM_VTABLE(impl_c, impl_display, bits)                      \
     const ssh_cipheralg ssh_aes ## bits ## _gcm ## impl_c = {           \
-        ._new = aes ## impl_c ## _new,                                  \
+        .new = aes ## impl_c ## _new,                                   \
         .free = aes ## impl_c ## _free,                                 \
         .setiv = aes ## impl_c ## _setiv_gcm,                           \
         .setkey = aes ## impl_c ## _setkey,                             \

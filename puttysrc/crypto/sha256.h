@@ -41,7 +41,7 @@ static inline bool check_availability(const struct sha256_extra *extra)
         .mut = &sha256_ ## impl_c ## _extra_mut,                        \
     };                                                                  \
     const ssh_hashalg ssh_sha256_ ## impl_c = {                         \
-        ._new = sha256_ ## impl_c ## _new,                              \
+        .new = sha256_ ## impl_c ## _new,                               \
         .reset = sha256_ ## impl_c ## _reset,                           \
         .copyfrom = sha256_ ## impl_c ## _copyfrom,                     \
         .digest = sha256_ ## impl_c ## _digest,                         \
