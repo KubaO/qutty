@@ -36,24 +36,14 @@
 #define APPNAME "QuTTY"
 
 struct Filename {
-    /*
-     * A Windows Filename stores a path in three formats:
-     *
-     *  - wchar_t (in Windows UTF-16 encoding). The best format to use
-     *    for actual file API functions, because all legal Windows
-     *    file names are representable.
-     *
-     *  - char, in the system default codepage. A fallback to use if
-     *    necessary, e.g. in diagnostics written to somewhere that is
-     *    unavoidably encoded _in_ the system codepage.
-     *
-     *  - char, in UTF-8. An equally general representation to wpath,
-     *    but suitable for keeping in char-typed strings.
-     */
-    wchar_t *wpath;
-    char *cpath, *utf8path;
+#ifdef _WIN32
+  const wchar_t *wpath;
+#endif
+  const char *cpath;
 };
-Filename *filename_from_wstr(const wchar_t *str);
+void filename_free(Filename *);
+Filename *filename_from_utf8(const char *utf8);
+const char *filename_to_utf8(const Filename *fn);
 FILE *f_open(const Filename *filename, const char *mode, bool isprivate);
 
 #ifndef SUPERSEDE_FONTSPEC_FOR_TESTING

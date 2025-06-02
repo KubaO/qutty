@@ -15,13 +15,14 @@ struct TmuxBackend {
   size_t sendbufferLength = 0;
 };
 
-void tmux_log(Plug * /*plug*/, PlugLogType /*type*/, SockAddr * /*addr*/, int /*port*/,
-              const char * /*error_msg*/, int /*error_code*/) {
-  qDebug() << __FUNCTION__;
+void tmux_log(Plug * /*plug*/, Socket * /*socket*/, PlugLogType /*type*/, SockAddr * /*addr*/,
+              int /*port*/, const char *error_msg, int /*error_code*/) {
+  qDebug() << __FUNCTION__ << error_msg;
+  ;
 }
 
-void tmux_closing(Plug * /*plug*/, PlugCloseType /* type */, const char * /*error_msg*/) {
-  qDebug() << __FUNCTION__;
+void tmux_closing(Plug * /*plug*/, PlugCloseType /* type */, const char *error_msg) {
+  qDebug() << __FUNCTION__ << error_msg;
 }
 
 void tmux_receive(Plug * /*plug*/, int /*urgent*/, const char * /*data*/, size_t /*len*/) {

@@ -80,6 +80,10 @@ QTextCodec *getTextCodec(int codepage) {
   return nullptr;
 }
 
+/* TODO
+ * This one is meant to use platform-independent QTextCodec.
+ * For now we can use the platform-specific implementation.
+ * */
 void init_ucs(Conf *cfg, struct unicode_data *ucsdata) {
   int i;
 

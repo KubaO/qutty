@@ -23,6 +23,7 @@ void get_clip(void *frontend, wchar_t **p, int *len) {
 // int mk_wcwidth(wchar_t ucs){qDebug()<<"NOT_IMPL"<<__FUNCTION__;return 0;}
 // int mk_wcwidth_cjk(wchar_t ucs){qDebug()<<"NOT_IMPL"<<__FUNCTION__;return 0;}
 
+#if 0
 bool is_dbcs_leadbyte(int /*codepage*/, char /*byte*/) {
   qDebug() << "NOT_IMPL" << __FUNCTION__;
   return 0;
@@ -43,6 +44,7 @@ int wc_to_mb(int codepage, int /*flags*/, const wchar_t *wcstr, int wclen, char 
   qstrncpy(mbstr, mbarr.constData(), mblen);
   return mbarr.length();
 }
+#endif
 
 static bool qtwin_setup_draw_ctx(TermWin *win) {
   GuiTerminalWindow *gw = container_of(win, GuiTerminalWindow, termwin);

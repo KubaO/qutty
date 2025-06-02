@@ -47,7 +47,7 @@ set(PROJECT_SOURCES
     terminalmisc.cpp
     QtCommon.cpp
     QtNet.cpp
-    QtUnicode.cpp
+    #QtUnicode.cpp
     QtPageant.cpp
     QtDlg.cpp
     QtX11.c
@@ -385,17 +385,19 @@ set(BREAKPAD_SOURCES
     third-party/google-breakpad/google_breakpad/common/minidump_format.h
 )
 
-# windows/unicode.c must disable functions we implement via Qt
-set(UCS_OVERRIDES
-    init_ucs=_init_ucs
-    is_dbcs_leadbyte=_is_dbcs_leadbyte
-    mb_to_wc=_mb_to_wc
-    wc_to_mb=_wc_to_mb
-)
-set_property(SOURCE
-    puttysrc/windows/unicode.c
-    PROPERTY COMPILE_DEFINITIONS "${UCS_OVERRIDES}"
-)
+if (0)
+    # windows/unicode.c must disable functions we implement via Qt
+    set(UCS_OVERRIDES
+        init_ucs=_init_ucs
+        is_dbcs_leadbyte=_is_dbcs_leadbyte
+        mb_to_wc=_mb_to_wc
+        wc_to_mb=_wc_to_mb
+    )
+    set_property(SOURCE
+        puttysrc/windows/unicode.c
+        PROPERTY COMPILE_DEFINITIONS "${UCS_OVERRIDES}"
+    )
+endif()
 
 if (WIN32)
     # winnoise.c and winstore.c must be built without UNICODE nor _UNICODE
