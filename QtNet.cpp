@@ -12,6 +12,7 @@ extern "C" {
 #include <QHostAddress>
 #include <QHostInfo>
 #include <QNetworkInterface>
+#include <QPointer>
 
 struct SockAddr {
   QHostAddress *qtaddr;
@@ -21,7 +22,9 @@ struct SockAddr {
 static void on_connected(QtSocket *s) {
   QTcpSocket *qtsock = s->qtsock;
   s->connected = true;
+  s->writable = true;
   if (s->nodelay) qtsock->setSocketOption(QAbstractSocket::LowDelayOption, true);
+  plug_log(s->plug, &s->sock, PLUGLOG_CONNECT_SUCCESS, s->addr, s->port, nullptr, 0);
 }
 
 static void on_readyRead(QtSocket *s) {
@@ -41,19 +44,39 @@ static void on_readyRead(QtSocket *s) {
   } while (qtsock->bytesAvailable());
 }
 
+static void invokePlugClosing(QtSocket *s, PlugCloseType type, QByteArray errStr) {
+  QMetaObject::invokeMethod(
+      qApp,
+      [type](QPointer<QObject> qtsocket, QByteArray error, Plug *plug) {
+        if (qtsocket) plug_closing(plug, type, error);
+      },
+      Qt::QueuedConnection, s->qtsock, errStr, s->plug);
+}
+
 static void on_error(QtSocket *s, QTcpSocket::SocketError err) {
-  QByteArray errStr = s->qtsock->errorString().toLocal8Bit();
-  plug_closing(s->plug, PLUGCLOSE_ERROR, errStr);
+  s->error = s->qtsock->errorString().toLocal8Bit();
+  if (!s->connected)
+    // invokePlugClosing(s, PLUGCLOSE_ERROR, s->error);
+    plug_log(s->plug, &s->sock, PLUGLOG_CONNECT_FAILED, s->addr, s->port, nullptr, 0);
 }
 
 static void on_disconnected(QtSocket *s) {
+  s->connected = false;
+  s->writable = false;
   QByteArray errStr = s->qtsock->errorString().toLocal8Bit();
-  plug_closing(s->plug, PLUGCLOSE_BROKEN_PIPE, errStr);
+  if (!errStr.isEmpty()) {
+    invokePlugClosing(s, PLUGCLOSE_ERROR, std::move(errStr));
+  } else
+    invokePlugClosing(s, PLUGCLOSE_NORMAL, {});
 }
 
 static const char *sk_tcp_socket_error(Socket *sock) {
   QtSocket *s = container_of(sock, QtSocket, sock);
-  return s->error;
+  qDebug() << s->error << s->error.isEmpty();
+  if (s->error.isEmpty())
+    return nullptr;
+  else
+    return s->error.data();
 }
 
 static size_t sk_tcp_write(Socket *sock, const void *data, size_t len) {
@@ -63,7 +86,8 @@ static size_t sk_tcp_write(Socket *sock, const void *data, size_t len) {
   // and this hack won't be necessary anymore. If nothing changes up to and including PuTTY-0.83,
   // then I'll have to submit a patch.
   // TODO
-  while (!s->connected && !s->error && !s->pending_error) QCoreApplication::processEvents();
+  while (!s->connected && s->error.isEmpty() && !s->pending_error)
+    QCoreApplication::processEvents();
   assert(s->connected);
   int i, j;
   char pr[10000];
@@ -84,6 +108,8 @@ static size_t sk_tcp_write_oob(Socket *sock, const void *data, size_t len) {
   return ret;
 }
 
+static void sk_tcp_write_eof(Socket *sock) { qDebug() << __FUNCTION__; }
+
 static void sk_tcp_close(Socket *sock) {
   QtSocket *s = container_of(sock, QtSocket, sock);
 
@@ -97,6 +123,7 @@ static void sk_tcp_close(Socket *sock) {
   s->qtsock = nullptr;
 
   sk_addr_free(s->addr);
+  s->~QtSocket();
   sfree(s);
 }
 
@@ -117,14 +144,9 @@ static Plug *sk_tcp_plug(Socket *sock, Plug *p) {
   return ret;
 }
 
-static const struct SocketVtable QtSocket_sockvt = {sk_tcp_plug,
-                                                    sk_tcp_close,
-                                                    sk_tcp_write,
-                                                    sk_tcp_write_oob,
-                                                    nullptr /* TODO write_eof */,
-                                                    sk_tcp_set_frozen,
-                                                    sk_tcp_socket_error,
-                                                    nullptr /* TODO peer_info */};
+static const struct SocketVtable QtSocket_sockvt = {
+    sk_tcp_plug,      sk_tcp_close,      sk_tcp_write,        sk_tcp_write_oob,
+    sk_tcp_write_eof, sk_tcp_set_frozen, sk_tcp_socket_error, nullsock_endpoint_info};
 
 bool sk_addr_needs_port(SockAddr *addr) { return true; }
 
@@ -253,6 +275,7 @@ Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline, bool nod
   QTcpSocket *qtsock = nullptr;
   QtSocket *ret = snew(QtSocket);
   memset(ret, 0, sizeof(QtSocket));
+  new (ret) QtSocket();
 
   ret->sock.vt = &QtSocket_sockvt;
   ret->plug = plug;
@@ -278,6 +301,7 @@ Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline, bool nod
                    [ret](QTcpSocket::SocketError err) { on_error(ret, err); });
   QObject::connect(qtsock, &QTcpSocket::connected, qApp, [ret] { on_connected(ret); });
 
+  plug_log(ret->plug, &ret->sock, PLUGLOG_CONNECT_TRYING, ret->addr, ret->port, nullptr, 0);
   qtsock->connectToHost(*addr->qtaddr, port);
 
 cu0:

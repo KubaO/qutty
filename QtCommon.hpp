@@ -34,7 +34,7 @@ extern long timing_next_time;
 typedef struct QtSocket QtSocket;
 
 struct QtSocket {
-  const char *error;
+  QByteArray error;
   QTcpSocket *qtsock;
   Plug *plug;
   void *private_ptr;
