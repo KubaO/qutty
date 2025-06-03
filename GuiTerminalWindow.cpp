@@ -74,7 +74,6 @@ extern "C" Socket *get_ssh_socket(void *handle);
 extern "C" Socket *get_telnet_socket(void *handle);
 
 int GuiTerminalWindow::initTerminal() {
-  Socket *sock = nullptr;
   char *realhost = NULL;
   char *ip_addr = conf_get_str(cfg, CONF_host);
 
@@ -117,17 +116,15 @@ int GuiTerminalWindow::initTerminal() {
 
   switch (conf_get_int(cfg, CONF_protocol)) {
     case PROT_TELNET:
-      sock = get_telnet_socket(backend);
-      as = container_of(sock, QtSocket, sock);
+      as = get_telnet_socket(backend);
       break;
     case PROT_SSH:
-      sock = get_ssh_socket(backend);
-      as = container_of(sock, QtSocket, sock);
+      as = get_ssh_socket(backend);
       break;
     default:
       assert(0);
   }
-  qtsock = as->qtsock;
+  qtsock = sk_getqtsock(as);
 
   /*
    * Connect the terminal to the backend for resize purposes.

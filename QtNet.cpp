@@ -4,45 +4,58 @@
  * See COPYING for distribution information.
  */
 
-#include "QtCommon.hpp"
-extern "C" {
-#include "network.h"
-#include "putty.h"
-}
 #include <QHostAddress>
 #include <QHostInfo>
 #include <QNetworkInterface>
 #include <QPointer>
+#include <QTcpSocket>
+
+#include "QtCommon.hpp"
+#include "QtSsh.hpp"
+
+extern "C" {
+#include "network.h"
+#include "putty.h"
+}
+#undef debug  // clashes with debug in qlogging.h
+
+extern const struct SocketVtable QtSocket_sockvt;
+
+static void sk_tcp_close(Socket *);
+static SockAddr *sk_addr_new();
 
 struct SockAddr {
-  QHostAddress *qtaddr;
-  const char *error;
+  struct Deleter {
+    void operator()(SockAddr *addr) { sk_addr_free(addr); }
+  };
+
+  QHostAddress qtaddr;
+  QByteArray error;
 };
 
-static void on_connected(QtSocket *s) {
-  QTcpSocket *qtsock = s->qtsock;
-  s->connected = true;
-  s->writable = true;
-  if (s->nodelay) qtsock->setSocketOption(QAbstractSocket::LowDelayOption, true);
-  plug_log(s->plug, &s->sock, PLUGLOG_CONNECT_SUCCESS, s->addr, s->port, nullptr, 0);
-}
+struct QtSocket : Socket {
+  struct Deleter {
+    void operator()(QtSocket *sock) { sk_close(sock); }
+  };
 
-static void on_readyRead(QtSocket *s) {
-  QTcpSocket *qtsock = s->qtsock;
+  QTcpSocket qtsock;
+  QByteArray error;
+  QByteArray outputData;
+  std::unique_ptr<SockAddr, SockAddr::Deleter> addr;
+  Plug *plug = nullptr;
 
-  if (s->frozen) {
-    s->frozen_readable = true;
-    return;
-  }
+  int port = -1;
 
-  do {
-    char buf[20480];
-    int len = qtsock->read(buf, sizeof(buf));
-    noise_ultralight(NOISE_SOURCE_IOLEN, len);
+  bool oobinline = false, nodelay = false, keepalive = false, privport = false;
 
-    plug_receive(s->plug, 0, buf, len);
-  } while (qtsock->bytesAvailable());
-}
+  bool connected = false;
+  bool writable = false;
+  bool frozen = false;          /* this causes readability notifications to be ignored */
+  bool frozen_readable = false; /* this means we missed at least one readability
+                                 * notification while we were frozen */
+  bool pending_error = false;   /* in case send() returns error */
+  bool localhost_only = false;  /* for listening sockets */
+};
 
 static void invokePlugClosing(QtSocket *s, PlugCloseType type, QByteArray errStr) {
   QMetaObject::invokeMethod(
@@ -50,28 +63,107 @@ static void invokePlugClosing(QtSocket *s, PlugCloseType type, QByteArray errStr
       [type](QPointer<QObject> qtsocket, QByteArray error, Plug *plug) {
         if (qtsocket) plug_closing(plug, type, error);
       },
-      Qt::QueuedConnection, s->qtsock, errStr, s->plug);
+      Qt::QueuedConnection, QPointer<QObject>(&s->qtsock), errStr, s->plug);
 }
 
+static void on_connected(QtSocket *s) {
+  s->connected = true;
+  s->writable = true;
+  s->qtsock.setSocketOption(QAbstractSocket::LowDelayOption, s->nodelay);
+  s->qtsock.setSocketOption(QAbstractSocket::KeepAliveOption, s->keepalive);
+
+  plug_log(s->plug, s, PLUGLOG_CONNECT_SUCCESS, s->addr.get(), s->port, nullptr, 0);
+
+  // write out any waiting data
+  auto sent = s->qtsock.write(s->outputData);
+  assert(sent == s->outputData.size());
+  s->outputData.clear();
+}
+
+static void on_readyRead(QtSocket *s) {
+  if (s->frozen) {
+    s->frozen_readable = true;
+    return;
+  }
+  char buf[20480];
+  do {
+    auto len = s->qtsock.read(buf, sizeof(buf));
+    noise_ultralight(NOISE_SOURCE_IOLEN, len);
+    plug_receive(s->plug, 0, buf, len);
+  } while (s->qtsock.bytesAvailable());
+}
+
+static void on_bytesWritten(size_t bytes) { noise_ultralight(NOISE_SOURCE_IOLEN, bytes); }
+
 static void on_error(QtSocket *s, QTcpSocket::SocketError err) {
-  s->error = s->qtsock->errorString().toLocal8Bit();
-  if (!s->connected)
+  s->error = s->qtsock.errorString().toLocal8Bit();
+  s->writable = false;
+  if (!s->connected) {
+    /* We have been connecting, but it failed */
     // invokePlugClosing(s, PLUGCLOSE_ERROR, s->error);
-    plug_log(s->plug, &s->sock, PLUGLOG_CONNECT_FAILED, s->addr, s->port, nullptr, 0);
+    plug_log(s->plug, s, PLUGLOG_CONNECT_FAILED, s->addr.get(), s->port, nullptr, 0);
+  }
+  s->connected = false;
+  s->outputData.clear();
 }
 
 static void on_disconnected(QtSocket *s) {
   s->connected = false;
   s->writable = false;
-  QByteArray errStr = s->qtsock->errorString().toLocal8Bit();
+  QByteArray errStr = s->qtsock.errorString().toLocal8Bit();
   if (!errStr.isEmpty()) {
     invokePlugClosing(s, PLUGCLOSE_ERROR, std::move(errStr));
   } else
     invokePlugClosing(s, PLUGCLOSE_NORMAL, {});
 }
 
+Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline, bool nodelay,
+               bool keepalive, Plug *plug) {
+  QtSocket *ret = snew(QtSocket);
+  new (ret) QtSocket();
+
+  ret->vt = &QtSocket_sockvt;
+  ret->plug = plug;
+  ret->oobinline = oobinline;
+  ret->nodelay = nodelay;
+  ret->keepalive = keepalive;
+  ret->privport = privport;
+  ret->port = port;
+  ret->addr.reset(addr);
+
+  if (!addr) {
+    ret->error = "Cannot create socket";
+    goto cu0;
+  }
+
+  QObject::connect(&ret->qtsock, &QTcpSocket::readyRead, qApp, [ret] { on_readyRead(ret); });
+  QObject::connect(&ret->qtsock, &QTcpSocket::bytesWritten, qApp, on_bytesWritten);
+  QObject::connect(&ret->qtsock, &QTcpSocket::disconnected, qApp, [ret] { on_disconnected(ret); });
+  QObject::connect(&ret->qtsock, &QTcpSocket::errorOccurred, qApp,
+                   [ret](QTcpSocket::SocketError err) { on_error(ret, err); });
+  QObject::connect(&ret->qtsock, &QTcpSocket::connected, qApp, [ret] { on_connected(ret); });
+
+  plug_log(ret->plug, ret, PLUGLOG_CONNECT_TRYING, ret->addr.get(), ret->port, nullptr, 0);
+  ret->qtsock.connectToHost(addr->qtaddr, port);
+
+cu0:
+  return ret;
+}
+
+Socket *sk_newlistener(const char * /*srcaddr*/, int /*port*/, Plug * /*plug*/,
+                       bool /*local_host_only*/, int /*orig_address_family*/) {
+  // TODO not implemented
+  qDebug() << __FUNCTION__ << "NOT IMPL";
+  return NULL;
+}
+
+QAbstractSocket *sk_getqtsock(Socket *socket) {
+  QtSocket *s = static_cast<QtSocket *>(socket);
+  return &s->qtsock;
+}
+
 static const char *sk_tcp_socket_error(Socket *sock) {
-  QtSocket *s = container_of(sock, QtSocket, sock);
+  QtSocket *s = static_cast<QtSocket *>(sock);
   qDebug() << s->error << s->error.isEmpty();
   if (s->error.isEmpty())
     return nullptr;
@@ -80,30 +172,21 @@ static const char *sk_tcp_socket_error(Socket *sock) {
 }
 
 static size_t sk_tcp_write(Socket *sock, const void *data, size_t len) {
-  QtSocket *s = container_of(sock, QtSocket, sock);
-  // This is a hack, since connections are made asynchronously.
-  // I assume that some time post-0.71, the connection code in PuTTY becomes asynchornous,
-  // and this hack won't be necessary anymore. If nothing changes up to and including PuTTY-0.83,
-  // then I'll have to submit a patch.
-  // TODO
-  while (!s->connected && s->error.isEmpty() && !s->pending_error)
-    QCoreApplication::processEvents();
-  assert(s->connected);
-  int i, j;
-  char pr[10000];
-  for (i = 0, j = 0; i < len; i++)
-    j += sprintf(pr + j, "%u ", (unsigned char)((const char *)data)[i]);
-  // qDebug()<<"sk_tcp_write"<<len<<pr;
-  int ret = s->qtsock->write((const char *)data, len);
-  noise_ultralight(NOISE_SOURCE_IOLEN, len);
-  if (ret <= 0) qDebug() << "tcp_write ret " << ret;
-  return ret;
+  QtSocket *s = static_cast<QtSocket *>(sock);
+  if (0) qDebug() << __FUNCTION__ << len;
+
+  if (s->writable) {
+    auto sent = s->qtsock.write((const char *)data, len);
+  } else {
+    s->outputData.append((const char *)data, len);
+  }
+  return s->qtsock.bytesToWrite();
 }
 
 static size_t sk_tcp_write_oob(Socket *sock, const void *data, size_t len) {
-  QtSocket *s = container_of(sock, QtSocket, sock);
+  QtSocket *s = static_cast<QtSocket *>(sock);
   assert(s->connected);
-  int ret = s->qtsock->write((const char *)data, len);
+  int ret = s->qtsock.write((const char *)data, len);
   qDebug() << "tcp_write_oob ret " << ret << "\n";
   return ret;
 }
@@ -111,24 +194,15 @@ static size_t sk_tcp_write_oob(Socket *sock, const void *data, size_t len) {
 static void sk_tcp_write_eof(Socket *sock) { qDebug() << __FUNCTION__; }
 
 static void sk_tcp_close(Socket *sock) {
-  QtSocket *s = container_of(sock, QtSocket, sock);
-
-  s->parent = nullptr;
-  if (s->child) sk_tcp_close(&s->child->sock);
-
-  bufchain_clear(&s->output_data);
-
-  s->qtsock->disconnect();
-  s->qtsock->deleteLater();
-  s->qtsock = nullptr;
-
-  sk_addr_free(s->addr);
-  s->~QtSocket();
-  sfree(s);
+  if (sock) {
+    QtSocket *s = static_cast<QtSocket *>(sock);
+    s->~QtSocket();
+    sfree(s);
+  }
 }
 
 static void sk_tcp_set_frozen(Socket *sock, bool is_frozen) {
-  QtSocket *s = container_of(sock, QtSocket, sock);
+  QtSocket *s = static_cast<QtSocket *>(sock);
 
   if (s->frozen == is_frozen) return;
   qDebug() << __FUNCTION__ << s << is_frozen;
@@ -138,7 +212,7 @@ static void sk_tcp_set_frozen(Socket *sock, bool is_frozen) {
 }
 
 static Plug *sk_tcp_plug(Socket *sock, Plug *p) {
-  QtSocket *s = container_of(sock, QtSocket, sock);
+  QtSocket *s = static_cast<QtSocket *>(sock);
   Plug *ret = s->plug;
   if (p) s->plug = p;
   return ret;
@@ -151,8 +225,8 @@ static const struct SocketVtable QtSocket_sockvt = {
 bool sk_addr_needs_port(SockAddr *addr) { return true; }
 
 int sk_addrtype(SockAddr *addr) {
-  const QHostAddress *a = addr->qtaddr;
-  switch (a->protocol()) {
+  const QHostAddress &a = addr->qtaddr;
+  switch (a.protocol()) {
     case QAbstractSocket::IPv4Protocol:
       return ADDRTYPE_IPV4;
     case QAbstractSocket::IPv6Protocol:
@@ -163,31 +237,44 @@ int sk_addrtype(SockAddr *addr) {
 }
 
 void sk_addrcopy(SockAddr *addr, char *buf) {
-  QHostAddress *a = addr->qtaddr;
-  QString str = a->toString();
-  QByteArray bstr = str.toUtf8();
-  const char *cstr = bstr.constData();
-  memcpy(buf, cstr, bstr.length());
+  const QByteArray str = addr->qtaddr.toString().toUtf8();
+  memcpy(buf, str.data(), str.length() + 1);
+}
+
+static SockAddr *sk_addr_new() {
+  SockAddr *ret = snew(SockAddr);
+  new (ret) SockAddr();
+  return ret;
 }
 
 SockAddr *sk_addr_dup(SockAddr *addr) {
-  if (!addr) return NULL;
-  SockAddr *ret = new SockAddr;
-  ret->qtaddr = new QHostAddress(*addr->qtaddr);
+  if (!addr) return nullptr;
+  SockAddr *ret = sk_addr_new();
+  ret->qtaddr = addr->qtaddr;
   ret->error = addr->error;
   return ret;
 }
 
 void sk_addr_free(SockAddr *addr) {
-  if (!addr) return;
-  if (addr->qtaddr) delete addr->qtaddr;
-  addr->qtaddr = NULL;
-  addr->error = NULL;
+  if (addr) {
+    addr->~SockAddr();
+    sfree(addr);
+  }
 }
 
 SockAddr *sk_namelookup(const char *host, char **canonicalname, int address_family) {
+  /*
+   * DNS lookups only have a synchronous API in PuTTY:
+   *
+   *     https://www.chiark.greenend.org.uk/~sgtatham/putty/wishlist/async-dns.html
+   *     https://web.archive.org/web/20070726170416/http://dillgroup.ucsf.edu/~justin/putty/adns/
+   *
+   * A workaround would be to wrap the backend in a QObject, and move it to a thread worker pool
+   * for initialization - since that's when a name lookup happens. After the initialization has
+   * returned, the backend can be moved back to the main thread.
+   */
   SockAddr *ret = new SockAddr;
-  ret->error = NULL;
+
   QHostInfo info = QHostInfo::fromName(host);
   if (info.error() == QHostInfo::NoError) {
     foreach (const QHostAddress &address, info.addresses()) {
@@ -197,20 +284,19 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname, int address_fami
                                     ? ADDRTYPE_IPV6
                                     : ADDRTYPE_UNSPEC;
       if (this_addrtype == address_family) {
-        QHostAddress *a = new QHostAddress(address);
         QString str = info.hostName();
         QByteArray bstr = str.toUtf8();
         const char *cstr = bstr.constData();
         size_t size = 1 + strlen(cstr);
         *canonicalname = snewn(size, char);
         memcpy(*canonicalname, cstr, size);
-        ret->qtaddr = a;
+        ret->qtaddr = address;
         return ret;
       }
     }
   }
   if (info.addresses().size() > 0) {
-    QHostAddress *a = new QHostAddress(info.addresses().at(0));
+    QHostAddress a = QHostAddress(info.addresses().at(0));
     QString str = info.hostName();
     QByteArray bstr = str.toUtf8();
     const char *cstr = bstr.constData();
@@ -222,25 +308,23 @@ SockAddr *sk_namelookup(const char *host, char **canonicalname, int address_fami
   }
   *canonicalname = snewn(1, char);
   *canonicalname[0] = '\0';
-  ret->qtaddr = new QHostAddress();
-  ret->error =
-      info.error() == QHostInfo::HostNotFound
-          ? "Host not found"
-          : info.error() == QHostInfo::UnknownError ? "Unknown error" : "No IP address found";
+  ret->error = info.errorString().toLocal8Bit();
   return ret;
 }
 
 SockAddr *sk_nonamelookup(const char * /*host*/) {
+  qDebug() << __FUNCTION__ << "NOT IMPL";
   // TODO not supported for now
-  SockAddr *ret = new SockAddr;
-  ret->qtaddr = new QHostAddress();
+  SockAddr *ret = sk_addr_new();
   ret->error = "Not supported";
   return ret;
 }
 
 const char *sk_addr_error(SockAddr *addr) {
-  if (!addr) return NULL;
-  return addr->error;
+  if (addr && !addr->error.isEmpty())
+    return addr->error;
+  else
+    return nullptr;
 }
 
 bool sk_hostname_is_local(const char *name) {
@@ -248,70 +332,26 @@ bool sk_hostname_is_local(const char *name) {
 }
 
 void sk_getaddr(SockAddr *addr, char *buf, int buflen) {
-  QHostAddress *a = addr->qtaddr;
-  QString str = a->toString();
-  QByteArray bstr = str.toUtf8();
-  const char *cstr = bstr.constData();
-  if (buflen > bstr.length()) buflen = bstr.length();
-  strncpy(buf, cstr, buflen);
-  buf[buflen - 1] = '\0';
+  QByteArray const str = addr->qtaddr.toString().toUtf8();
+  if (buflen > str.length())
+    buflen = str.length();
+  else
+    buflen--;
+  memcpy(buf, str.data(), buflen);
+  buf[buflen] = '\0';
 }
 
 bool sk_address_is_local(SockAddr *addr) {
-  const QHostAddress *a = addr->qtaddr;
-  if (*a == QHostAddress::LocalHost || *a == QHostAddress::LocalHostIPv6) return true;
+  const QHostAddress &a = addr->qtaddr;
+  if (a == QHostAddress::LocalHost || a == QHostAddress::LocalHostIPv6) return true;
   foreach (const QHostAddress &locaddr, QNetworkInterface::allAddresses()) {
-    if (*a == locaddr) return true;
+    if (a == locaddr) return true;
   }
   return false;
 }
 
 bool sk_address_is_special_local(SockAddr *addr) {
   return false; /* no Unix-domain socket analogue here */
-}
-
-Socket *sk_new(SockAddr *addr, int port, bool privport, bool oobinline, bool nodelay,
-               bool keepalive, Plug *plug) {
-  QTcpSocket *qtsock = nullptr;
-  QtSocket *ret = snew(QtSocket);
-  memset(ret, 0, sizeof(QtSocket));
-  new (ret) QtSocket();
-
-  ret->sock.vt = &QtSocket_sockvt;
-  ret->plug = plug;
-  bufchain_init(&ret->output_data);
-  ret->oobinline = oobinline;
-  ret->nodelay = nodelay;
-  ret->keepalive = keepalive;
-  ret->privport = privport;
-  ret->port = port;
-  ret->addr = addr;
-
-  if (!addr || !addr->qtaddr) {
-    ret->error = "Cannot create socket";
-    goto cu0;
-  }
-
-  qtsock = new QTcpSocket();
-  ret->qtsock = qtsock;
-
-  QObject::connect(qtsock, &QTcpSocket::readyRead, qApp, [ret] { on_readyRead(ret); });
-  QObject::connect(qtsock, &QTcpSocket::disconnected, qApp, [ret] { on_disconnected(ret); });
-  QObject::connect(qtsock, &QTcpSocket::errorOccurred, qApp,
-                   [ret](QTcpSocket::SocketError err) { on_error(ret, err); });
-  QObject::connect(qtsock, &QTcpSocket::connected, qApp, [ret] { on_connected(ret); });
-
-  plug_log(ret->plug, &ret->sock, PLUGLOG_CONNECT_TRYING, ret->addr, ret->port, nullptr, 0);
-  qtsock->connectToHost(*addr->qtaddr, port);
-
-cu0:
-  return &ret->sock;
-}
-
-Socket *sk_newlistener(const char * /*srcaddr*/, int /*port*/, Plug * /*plug*/,
-                       bool /*local_host_only*/, int /*orig_address_family*/) {
-  // TODO not implemented
-  return NULL;
 }
 
 char *get_hostname(void) {
@@ -328,20 +368,10 @@ int net_service_lookup(char * /*service*/) {
   return 0;
 }
 
-Socket *sk_register(void * /*sock*/, Plug * /*plug*/) {
-  // TODO not implemented
-  return NULL;
-}
-
-extern "C" SockAddr *platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*/) {
-  /*
-  SockAddr *ret = snew(struct SockAddr_tag);
-  memset(ret, 0, sizeof(struct SockAddr_tag));
+SockAddr *platform_get_x11_unix_address(const char * /*path*/, int /*displaynum*/) {
+  SockAddr *ret = new SockAddr;
   ret->error = "unix sockets not supported on this platform";
-  ret->refcount = 1;
   return ret;
-  */
-  return NULL;
 }
 
 /* Proxy indirection layer.
