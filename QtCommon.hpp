@@ -69,6 +69,9 @@ class QTextCodec;
 QTextCodec *getTextCodec(int line_codepage);
 bool qtwin_is_utf8(TermWin *win);
 
+QString filename_to_qstring(const Filename *fn);
+Filename *filename_from_qstring(const QString &str);
+
 class GuiTerminalWindow;
 void qt_message_box(GuiTerminalWindow *frontend, const char *title, const char *fmt, ...);
 

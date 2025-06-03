@@ -49,6 +49,9 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   QRegion termrgn;
   std::array<QColor, OSC4_NCOLOURS> colours;
 
+  /* Painter that's active during window repaint */
+  QPainter *painter = nullptr;
+
   // to detect mouse double/triple clicks
   Mouse_Action mouseButtonAction;
   QElapsedTimer mouseClickTimer;
@@ -104,9 +107,18 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void keyPressEvent(QKeyEvent *e) override;
   void keyReleaseEvent(QKeyEvent *e) override;
   int from_backend(SeatOutputType type, const char *data, size_t len);
-  void preDrawTerm();
-  void drawTerm();
-  void drawText(int row, int col, wchar_t *ch, int len, unsigned long attr, int lattr);
+
+  bool setupContext();
+  void drawText(int x, int y, const wchar_t *text, int len, unsigned long attrs, int lineAttrs,
+                truecolour tc);
+  void drawText(int x, int y, const QString &str, unsigned long attrs, int lineAttrs,
+                truecolour tc);
+  void drawText(int x, int y, const QString &str, QPen pen, QBrush brush);
+  void drawCursor(int x, int y, const wchar_t *text, int len, unsigned long attrs, int lineAttrs,
+                  truecolour tc);
+  void drawTrustSigil(int x, int y);
+  int charWidth(int uc);
+  void freeContext();
 
   void setTermFont(Conf *cfg);
   void setPalette(unsigned start, unsigned ncolours, const rgb *colours);
@@ -115,8 +127,6 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
 
   void writeClip(int clipboard, wchar_t *data, int *attr, truecolour *colours, int len,
                  int must_deselect);
-  void paintText(QPainter &painter, int row, int col, const QString &str, unsigned long attr);
-  void paintCursor(QPainter &painter, int row, int col, const QString &str, unsigned long attr);
 
   void setScrollBar(int total, int start, int page);
   int TranslateKey(QKeyEvent *keyevent, char *output);
@@ -128,7 +138,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
 
   void closeTerminal();
   void reqCloseTerminal(bool userConfirm) override;
-  void highlightSearchedText(QPainter &painter);
+  void highlightSearchedText();
   int getFontWidth() { return fontWidth; };
   int getFontHeight() { return fontHeight; };
 

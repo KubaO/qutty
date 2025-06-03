@@ -85,7 +85,7 @@ SeatPromptResult qt_confirm_weak_crypto_primitive(Seat *seat, SeatDialogText *te
 int qt_askappend(LogPolicy * /*lp*/, Filename *filename,
                  void (* /*callback*/)(void *ctx, int result), void * /*ctx*/) {
   // assert(frontend);
-  QString msg = QString("The session log file \"") + QString(filename->path) +
+  QString msg = QString("The session log file \"") + filename_to_qstring(filename) +
                 QString(
                     "\" already exists.\n"
                     "You can overwrite it with a new session log,\n"
@@ -128,7 +128,8 @@ static void hostkey_regname(char *buffer, int buffer_sz, const char *hostname, i
   snprintf(buffer, buffer_sz, "%s@%d:%s", keytype, port, hostname);
 }
 
-void store_host_key(const char *hostname, int port, const char *keytype, const char *key) {
+void store_host_key(Seat *seat, const char *hostname, int port, const char *keytype,
+                    const char *key) {
   char buf[200];
   hostkey_regname(buf, sizeof(buf), hostname, port, keytype);
   qutty_config.ssh_host_keys[buf] = key;
@@ -296,7 +297,7 @@ SeatPromptResult qt_confirm_ssh_host_key(Seat *seat, const char *host, int port,
                                       QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
     assert(mbret == QMessageBox::Yes || mbret == QMessageBox::No || mbret == QMessageBox::Cancel);
     if (mbret == QMessageBox::Yes) {
-      store_host_key(host, port, keytype, keystr);
+      store_host_key(seat, host, port, keytype, keystr);
       return {SPRK_OK};
     } else if (mbret == QMessageBox::No)
       return {SPRK_OK};
@@ -307,7 +308,7 @@ SeatPromptResult qt_confirm_ssh_host_key(Seat *seat, const char *host, int port,
                                       QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel);
     assert(mbret == QMessageBox::Yes || mbret == QMessageBox::No || mbret == QMessageBox::Cancel);
     if (mbret == QMessageBox::Yes) {
-      store_host_key(host, port, keytype, keystr);
+      store_host_key(seat, host, port, keytype, keystr);
       return {SPRK_OK};
     } else if (mbret == QMessageBox::No)
       return {SPRK_OK};
@@ -490,6 +491,7 @@ static const SeatVtable qtseat_vt = {
     qt_notify_remote_exit,
     qt_notify_remote_disconnect,
     qt_connection_fatal,
+    nullseat_nonfatal,
     qt_update_specials_menu,
     qt_get_ttymode,
     qt_set_busy_status,

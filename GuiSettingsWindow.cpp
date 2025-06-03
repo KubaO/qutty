@@ -620,21 +620,18 @@ enum class UI_MAPPING_TODO_VALID { UI_MAPPING_TODO(CONF_VALIDATOR) };
 enum Type : uint8_t {
   TYPE_NONE,
   TYPE_STR,
-  TYPE_STR_NONE = TYPE_STR,
+  TYPE_STR_AMBI,
+  TYPE_UTF8,
   TYPE_INT,
-  TYPE_INT_NONE = TYPE_INT,
   TYPE_BOOL,
-  TYPE_BOOL_NONE = TYPE_BOOL,
   TYPE_FILENAME,
-  TYPE_FILENAME_NONE = TYPE_FILENAME,
   TYPE_FONT,
-  TYPE_FONT_NONE = TYPE_FONT,
-  TYPE_INT_INT,
-  TYPE_STR_STR,
+  TYPE_INT_sINT,
+  TYPE_STR_sSTR,
 };
 
-static const char *typeName[] = {"None",     "str",  "int",     "bool",
-                                 "filename", "font", "int/int", "str/str"};
+static const char *typeName[] = {"None", "str",      "str_ambi", "utf8",    "int",
+                                 "bool", "filename", "font",     "int/int", "str/str"};
 
 extern const std::unordered_map<config_primary_key, Type> KEY_TO_TYPE;
 
@@ -668,6 +665,7 @@ struct KeyValue {
   T value() const {
     return std::get<T>(_value);
   }
+  bool isString() const { return type == TYPE_STR || type == TYPE_STR_AMBI || type == TYPE_UTF8; }
 };
 
 const KeyValue *kvForWidget(QWidget *w) {
@@ -754,35 +752,55 @@ static bool setW(QRadioButton *rb, Conf *conf, const KeyValue &kv) {
   return false;
 }
 
-static bool setW(QLineEdit *le, Conf *conf, const KeyValue &kv) {
+static QString textFrom(Conf *conf, const KeyValue &kv) {
   if (kv.type == TYPE_STR) {
-    le->setText(conf_get_str(conf, kv.key));
+    return QString::fromLocal8Bit(conf_get_str(conf, kv.key));
+  }
+  if (kv.type == TYPE_UTF8) {
+    return QString::fromUtf8(conf_get_utf8(conf, kv.key));
+  }
+  if (kv.type == TYPE_STR_AMBI) {
+    bool utf8;
+    const char *value = conf_get_str_ambi(conf, kv.key, &utf8);
+    return utf8 ? QString::fromUtf8(value) : QString::fromLocal8Bit(value);
+  }
+  return {};
+}
+
+static bool setW(QLineEdit *le, Conf *conf, const KeyValue &kv) {
+  if (kv.isString()) {
+    le->setText(textFrom(conf, kv));
     return true;
-  } else if (kv.type == TYPE_INT) {
+  }
+  if (kv.type == TYPE_INT) {
     le->setText(QString::number(conf_get_int(conf, kv.key)));
     return true;
-  } else if (kv.type == TYPE_FILENAME) {
-    le->setText(conf_get_filename(conf, kv.key)->path);
+  }
+  if (kv.type == TYPE_FILENAME) {
+    const Filename *fn = conf_get_filename(conf, kv.key);
+    le->setText(filename_to_qstring(fn));
     return true;
   }
   return false;
 }
 
 static bool setW(QComboBox *cb, Conf *conf, const KeyValue &kv) {
-  if (kv.type == TYPE_INT) {
-    cb->setCurrentIndex(conf_get_int(conf, kv.key));
-    return true;
-  } else if (kv.type == TYPE_STR) {
-    int ind = cb->findText(conf_get_str(conf, kv.key));
+  if (kv.isString()) {
+    QString text = textFrom(conf, kv);
+    int ind = cb->findText(text);
     if (ind == -1) ind = 0;
     cb->setCurrentIndex(ind);
+    return true;
+  }
+  if (kv.type == TYPE_INT) {
+    cb->setCurrentIndex(conf_get_int(conf, kv.key));
     return true;
   }
   return false;
 }
 
 static bool setW(QListWidget *lw, Conf *conf, const KeyValue &kv) {
-  if (kv.type == TYPE_INT_INT && kv.holds<const DataList *>()) {
+  if (kv.type == TYPE_INT_sINT && kv.holds<const DataList *>()) {
     auto &dataList = *kv.value<const DataList *>();
     if (kv.options & UI::UserRole0) {
       // priority ordered lists
@@ -804,7 +822,7 @@ static bool setW(QListWidget *lw, Conf *conf, const KeyValue &kv) {
       for (int i = 0; i < dataList.count; i++) lw->addItem(dataList.items[i].text);
     }
     return true;
-  } else if (kv.type == TYPE_STR_STR) {
+  } else if (kv.type == TYPE_STR_sSTR) {
     lw->clear();
     char *subkey = nullptr;
     while (conf_get_str_strs(conf, kv.key, subkey, &subkey)) lw->addItem(subkey);
@@ -830,7 +848,7 @@ static int conf_get_str_count(Conf *conf, config_primary_key key) {
 }
 
 static bool setW(QTableWidget *tw, Conf *conf, const KeyValue &kv) {
-  if (kv.type == TYPE_STR_STR && kv.options & UI::TwoColumns) {
+  if (kv.type == TYPE_STR_sSTR && kv.options & UI::TwoColumns) {
     tw->setRowCount(0);  // tw->clear() would retain dimensions
     tw->verticalHeader()->hide();
     tw->horizontalHeader()->hide();
@@ -841,10 +859,11 @@ static bool setW(QTableWidget *tw, Conf *conf, const KeyValue &kv) {
     UIFormatter formatter = kv.holds<UIFormatter>() ? kv.value<UIFormatter>() : nullptr;
     while ((value = conf_get_str_strs(conf, kv.key, subkey, &subkey))) {
       tw->insertRow(row);
+      QString text = QString::fromLocal8Bit(value);
       if (kv.options & UI::Col1IsFormatted)
-        setTableRow(tw, row, subkey, formatter(value).toLatin1());
+        setTableRow(tw, row, subkey, formatter(text));
       else
-        setTableRow(tw, row, subkey, value);
+        setTableRow(tw, row, subkey, text);
       row++;
     }
     if (kv.options & UI::Col0IsSorted) tw->sortItems(0);
@@ -853,9 +872,21 @@ static bool setW(QTableWidget *tw, Conf *conf, const KeyValue &kv) {
   return false;
 }
 
-#define KEY_TO_TYPE_ENTRY(value, subkey, key) {CONF_##key, TYPE_##value##_##subkey},
+#define VALUE_TYPE(x) _##x
+#define SUBKEY_TYPE(x) _s##x
+#define DEFAULT_INT(x)
+#define DEFAULT_STR(x)
+#define DEFAULT_BOOL(x)
+#define SAVE_KEYWORD(x)
+#define STORAGE_ENUM(x)
+#define LOAD_CUSTOM
+#define SAVE_CUSTOM
+#define NOT_SAVED
+#define KEY_TO_TYPE_ENTRY(key, type1, type2, ...) {CONF_##key, TYPE##type2##type1},
+#define CONF_OPTION(...) KEY_TO_TYPE_ENTRY(__VA_ARGS__)
 static const std::unordered_map<config_primary_key, Type> KEY_TO_TYPE = {
-    CONFIG_OPTIONS(KEY_TO_TYPE_ENTRY)};
+#include "conf.h"
+};
 
 void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
   this->cfg = std::move(_cfg);
@@ -894,6 +925,18 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
           .arg(font.name, font.isbold ? "Bold, " : "", QString::number(font.height)));
 }
 
+static bool get(const QString &str, Conf *conf, const KeyValue &kv) {
+  if (kv.type == TYPE_STR) {
+    conf_set_str(conf, kv.key, str.toLocal8Bit());
+    return true;
+  }
+  if (kv.type == TYPE_STR_AMBI || kv.type == TYPE_UTF8) {
+    conf_set_utf8(conf, kv.key, str.toUtf8());
+    return true;
+  }
+  return false;
+}
+
 template <typename T>
 static bool get(QWidget *w, Conf *conf, const KeyValue &kv) {
   T *concrete = qobject_cast<T *>(w);
@@ -922,9 +965,8 @@ static bool getW(QRadioButton *rb, Conf *conf, const KeyValue &kv) {
 }
 
 static bool getW(QLineEdit *le, Conf *conf, const KeyValue &kv) {
-  if (kv.type == TYPE_STR) {
-    QByteArray text = le->text().toUtf8();
-    conf_set_str(conf, kv.key, text.data());
+  if (kv.isString()) {
+    get(le->text(), conf, kv);
     return true;
   }
   if (kv.type == TYPE_INT) {
@@ -934,18 +976,17 @@ static bool getW(QLineEdit *le, Conf *conf, const KeyValue &kv) {
     return true;
   }
   if (kv.type == TYPE_FILENAME) {
-    Filename *fn = conf_get_filename(conf, kv.key);
-    qstring_to_char(fn->path, le->text(), sizeof(fn->path));
+    Filename *fn = filename_from_qstring(le->text());
     conf_set_filename(conf, kv.key, fn);
+    filename_free(fn);
     return true;
   }
   return false;
 }
 
 static bool getW(QComboBox *cb, Conf *conf, const KeyValue &kv) {
-  if (kv.type == TYPE_STR && (kv.options & UI::CurrentText)) {
-    QByteArray text = cb->currentText().toUtf8();
-    conf_set_str(conf, kv.key, text.data());
+  if (kv.isString() && (kv.options & UI::CurrentText)) {
+    get(cb->currentText(), conf, kv);
     return true;
   }
   if (kv.type == TYPE_INT) {
@@ -957,20 +998,19 @@ static bool getW(QComboBox *cb, Conf *conf, const KeyValue &kv) {
 }
 
 static bool getW(QTreeWidget *tw, Conf *conf, const KeyValue &kv) {
-  if (kv.type == TYPE_STR && (kv.options & UI::CurrentUserRole3)) {
-    QByteArray text = tw->currentItem()->data(0, 3).toString().toUtf8();
-    conf_set_str(conf, kv.key, text);
+  if (kv.isString() && (kv.options & UI::CurrentUserRole3)) {
+    get(tw->currentItem()->data(0, 3).toString(), conf, kv);
     return true;
   }
   return false;
 }
 
 static bool getW(QListWidget *lw, Conf *conf, const KeyValue &kv) {
-  if (kv.type == TYPE_STR) {
-    QByteArray text = lw->currentItem()->text().toUtf8();
-    conf_set_str(conf, kv.key, text.data());
+  if (kv.isString()) {
+    get(lw->currentItem()->text(), conf, kv);
     return true;
-  } else if (kv.type == TYPE_INT_INT && (kv.options & UI::UserRole0)) {
+  }
+  if (kv.type == TYPE_INT_sINT && (kv.options & UI::UserRole0)) {
     for (int i = 0; i < lw->count(); i++) {
       bool ok;
       int value = lw->item(i)->data(Qt::UserRole).toInt(&ok);
@@ -982,7 +1022,7 @@ static bool getW(QListWidget *lw, Conf *conf, const KeyValue &kv) {
 }
 
 static bool getW(QTableWidget *tw, Conf *conf, const KeyValue &kv) {
-  if (kv.type == TYPE_STR_STR && kv.options & UI::TwoColumns) {
+  if (kv.type == TYPE_STR_sSTR && kv.options & UI::TwoColumns) {
     if (kv.options & UI::DontWrite) return true;
     std::unordered_set<QString> confVars;
     char *varName = nullptr;
@@ -991,8 +1031,8 @@ static bool getW(QTableWidget *tw, Conf *conf, const KeyValue &kv) {
     }
     int rows = conf_get_str_count(conf, kv.key);
     for (int i = 0; i < tw->rowCount(); i++) {
-      auto col0 = tw->item(i, 0)->text().toLatin1();
-      auto col1 = tw->item(i, 1)->text().toLatin1();
+      auto col0 = tw->item(i, 0)->text().toLocal8Bit();
+      auto col1 = tw->item(i, 1)->text().toLocal8Bit();
       conf_set_str_str(conf, kv.key, col0, col1);
       confVars.erase(col0);
     }

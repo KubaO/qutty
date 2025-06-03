@@ -96,13 +96,11 @@ int GuiTerminalWindow::initTerminal() {
   if (realhost) sfree(realhost);
 
   if (error) {
-    char msg[512];
-    _snprintf(msg, sizeof(msg),
-              "Unable to open connection to\n"
-              "%.800s\n"
-              "%s",
-              conf_dest(cfg), error);
-    qt_message_box(this, APPNAME " Error", msg);
+    qt_message_box(this, APPNAME " Error",
+                   "Unable to open connection to\n"
+                   "%.800s\n"
+                   "%s",
+                   conf_dest(cfg), error);
     backend = NULL;
     term = NULL;
     ldisc = NULL;
@@ -356,125 +354,163 @@ void GuiTerminalWindow::keyReleaseEvent(QKeyEvent *e) {
   noise_ultralight(NOISE_SOURCE_KEY, e->key());
 }
 
-void GuiTerminalWindow::highlightSearchedText(QPainter &painter) {
+void GuiTerminalWindow::highlightSearchedText() {
+  /* The highlighting should trigger a repaint, and should be handled then and there.
+   */
   if (mainWindow->getCurrentTerminal() != this) return;
+  GuiFindToolBar *findToolBar = mainWindow->findToolBar;
+  assert(findToolBar);
 
-  assert(mainWindow->findToolBar);
-  QString text = mainWindow->findToolBar->currentSearchedText;
+  const QString &text = findToolBar->currentSearchedText;
   unsigned long attr = 0;
   QString str = "";
-  for (int row = 0; row < term->rows; row++) {
-    str = QString::fromWCharArray(&term->dispstr[row * term->cols], term->cols);
+  for (int y = 0; y < term->rows; y++) {
+    str = QString::fromWCharArray(&term->dispstr[y * term->cols], term->cols);
     int index = 0;
     while ((index = str.indexOf(text, index, Qt::CaseInsensitive)) >= 0) {
       attr |= (8 << ATTR_FGSHIFT | (3 << ATTR_BGSHIFT));
-      paintText(painter, row, index, str.mid(index, text.length()), attr);
+      drawText(index, y, str.mid(index, text.length()), attr, 0, {});
       index = index + (text.length());
     }
   }
   str = QString::fromWCharArray(
-      &term->dispstr[(mainWindow->findToolBar->currentRow - verticalScrollBar()->value()) *
-                     term->cols],
+      &term->dispstr[(findToolBar->currentRow - verticalScrollBar()->value()) * term->cols],
       term->cols);
-  if (str.indexOf(text, mainWindow->findToolBar->currentCol, Qt::CaseInsensitive) >= 0) {
-    paintText(painter, (mainWindow->findToolBar->currentRow - verticalScrollBar()->value()),
-              mainWindow->findToolBar->currentCol, mainWindow->findToolBar->currentSearchedText,
-              ((5 << ATTR_FGSHIFT) | (7 << ATTR_BGSHIFT)));
+  if (str.indexOf(text, findToolBar->currentCol, Qt::CaseInsensitive) >= 0) {
+    int x = findToolBar->currentCol;
+    int y = findToolBar->currentRow - verticalScrollBar()->value();
+    drawText(x, y, findToolBar->currentSearchedText, ((5 << ATTR_FGSHIFT) | (7 << ATTR_BGSHIFT)), 0,
+             {});
   }
 }
 
 void GuiTerminalWindow::paintEvent(QPaintEvent *e) {
-  QPainter painter(viewport());
-
   if (!term) return;
-
-  painter.fillRect(e->rect(), colours[258]);
-
-  for (int i = 0; i < e->region().rects().size(); i++) {
-    const QRect &r = e->region().rects()[i];
-    int row = r.top() / fontHeight;
-    int colstart = r.left() / fontWidth;
-    int rowend = (r.bottom() + 1) / fontHeight;
-    int colend = (r.right() + 1) / fontWidth;
-    for (; row < rowend && row < term->rows; row++) {
-      for (int col = colstart; col < colend && col < term->cols;) {
-        uint attr = term->dispstr_attr[row * term->cols + col];
-        int coldiff = col + 1;
-        for (; attr == term->dispstr_attr[row * term->cols + coldiff]; coldiff++)
-          ;
-        if (coldiff >= term->cols) coldiff = term->cols;
-        QString str =
-            QString::fromWCharArray(&term->dispstr[row * term->cols + col], coldiff - col);
-        paintText(painter, row, col, str, attr);
-
-        // paint cursor
-        if (attr & (TATTR_ACTCURS | TATTR_PASCURS)) paintCursor(painter, row, col, str, attr);
-        col = coldiff;
-      }
-    }
-    if (mainWindow->findToolBar && mainWindow->findToolBar->findTextFlag) {
-      highlightSearchedText(painter);
-    }
-  }
+  qDebug() << __FUNCTION__;
+  QPainter painter(viewport());
+  this->painter = &painter;
+  painter.fillRect(viewport()->rect(), colours[OSC4_COLOUR_bg]);
+  term_paint(term, 0, 0, term->cols, term->rows, true);
+  this->painter = nullptr;
 }
 
-void GuiTerminalWindow::paintText(QPainter &painter, int row, int col, const QString &str,
-                                  unsigned long attr) {
-  if ((attr & TATTR_ACTCURS) && (conf_get_int(cfg, CONF_cursor_type) == 0 || term->big_cursor)) {
-    attr &= ~(ATTR_REVERSE | ATTR_BLINK | ATTR_COLOURS);
-    if (bold_mode == BOLD_COLOURS) attr &= ~ATTR_BOLD;
+bool GuiTerminalWindow::setupContext() {
+  if (painter) {
+    qDebug() << "painting";
+    return true;
+  }
+  viewport()->update();
+  qDebug() << "scheduled painting";
+  return false;
+}
+
+QString decode(Terminal *term, const wchar_t *text, int len) {
+  static QStringDecoder sd = QStringDecoder(QStringDecoder::System);
+  QString str = QString(QStringView(text, len));
+  QByteArray bytes;
+  if (str.isEmpty()) return str;
+
+  char16_t *start = nullptr;
+  char16_t *end = nullptr;
+  char16_t encoding = text[0] & CSET_MASK;
+
+  switch (encoding) {
+    case CSET_ASCII:
+      for (int i = 0; i < len; i++) str[i] = QChar(text[i] & 0xFF);
+      break;
+    case CSET_OEMCP:
+      for (int i = 0; i < len; i++) str[i] = QChar(term->ucsdata->unitab_oemcp[text[i] & 0xFF]);
+      break;
+    case CSET_LINEDRW:
+      for (int i = 0; i < len; i++) str[i] = QChar(term->ucsdata->unitab_line[text[i] & 0xFF]);
+      break;
+    case CSET_SCOACS:
+      for (int i = 0; i < len; i++) str[i] = QChar(term->ucsdata->unitab_scoacs[text[i] & 0xFF]);
+      break;
+    case CSET_ACP:
+      bytes.resize(len);
+      for (int i = 0; i < len; i++) bytes[i] = text[i] & 0xFF;
+      str.resize(sd.requiredSpace(len));
+      start = str.data_ptr().data();
+      end = sd.appendToBuffer(start, bytes);
+      str.resize(end - start);
+      break;
+  }
+  return str;
+}
+
+void GuiTerminalWindow::drawText(int x, int y, const wchar_t *text, int len, unsigned long attrs,
+                                 int lineAttrs, truecolour tc) {
+  assert(painter);
+  assert(!tc.fg.enabled && !tc.bg.enabled);
+  drawText(x, y, decode(term, text, len), attrs, lineAttrs, tc);
+}
+
+void GuiTerminalWindow::drawText(int x, int y, const QString &text, unsigned long attrs,
+                                 int lineAttrs, truecolour tc) {
+  if ((attrs & TATTR_ACTCURS) && (conf_get_int(cfg, CONF_cursor_type) == 0 || term->big_cursor)) {
+    attrs &= ~(ATTR_REVERSE | ATTR_BLINK | ATTR_COLOURS);
+    if (bold_mode == BOLD_COLOURS) attrs &= ~ATTR_BOLD;
 
     /* cursor fg and bg */
-    attr |= (260 << ATTR_FGSHIFT) | (261 << ATTR_BGSHIFT);
+    attrs |= (260 << ATTR_FGSHIFT) | (261 << ATTR_BGSHIFT);
   }
 
-  int nfg = ((attr & ATTR_FGMASK) >> ATTR_FGSHIFT);
-  int nbg = ((attr & ATTR_BGMASK) >> ATTR_BGSHIFT);
-  if (attr & ATTR_REVERSE) {
-    int t = nfg;
-    nfg = nbg;
-    nbg = t;
+  int nfg = ((attrs & ATTR_FGMASK) >> ATTR_FGSHIFT);
+  int nbg = ((attrs & ATTR_BGMASK) >> ATTR_BGSHIFT);
+  if (attrs & ATTR_REVERSE) {
+    std::swap(nfg, nbg);
   }
-  if (bold_mode == BOLD_COLOURS && (attr & ATTR_BOLD)) {
+  if (bold_mode == BOLD_COLOURS && (attrs & ATTR_BOLD)) {
     if (nfg < 16)
       nfg |= 8;
     else if (nfg >= 256)
       nfg |= 1;
   }
-  if (bold_mode == BOLD_COLOURS && (attr & ATTR_BLINK)) {
+  if (bold_mode == BOLD_COLOURS && (attrs & ATTR_BLINK)) {
     if (nbg < 16)
       nbg |= 8;
     else if (nbg >= 256)
       nbg |= 1;
   }
-  painter.fillRect(QRect(col * fontWidth, row * fontHeight, fontWidth * str.length(), fontHeight),
-                   colours[nbg]);
-  painter.setPen(colours[nfg]);
-  painter.drawText(col * fontWidth, row * fontHeight + fontAscent, str);
+
+  QPen pen = QPen(colours[nfg]);
+  QBrush brush = QBrush(colours[nbg]);
+  drawText(x, y, text, pen, brush);
 }
 
-void GuiTerminalWindow::paintCursor(QPainter &painter, int row, int col, const QString &str,
-                                    unsigned long attr) {
+void GuiTerminalWindow::drawText(int x, int y, const QString &str, QPen pen, QBrush brush) {
+  qDebug() << __FUNCTION__ << x << y << str;
+  painter->fillRect(QRect(x * fontWidth, y * fontHeight, fontWidth * str.length(), fontHeight),
+                    brush);
+  painter->setPen(pen);
+  painter->drawText(x * fontWidth, y * fontHeight + fontAscent, str);
+}
+
+void GuiTerminalWindow::drawCursor(int x, int y, const wchar_t *text, int len, unsigned long attrs,
+                                   int lineAttrs, truecolour tc) {
   int fnt_width;
   int char_width;
   int ctype = conf_get_int(cfg, CONF_cursor_type);
 
-  if ((attr & TATTR_ACTCURS) && (ctype == 0 || term->big_cursor)) {
-    return paintText(painter, row, col, str, attr);
+  QString str = decode(term, text, len);
+
+  if ((attrs & TATTR_ACTCURS) && (ctype == 0 || term->big_cursor)) {
+    return drawText(x, y, str, attrs, lineAttrs, tc);
   }
 
   fnt_width = char_width = fontWidth;
-  if (attr & ATTR_WIDE) char_width *= 2;
-  int x = col * fnt_width;
-  int y = row * fontHeight;
+  if (attrs & ATTR_WIDE) char_width *= 2;
+  x = x * fnt_width;
+  y = x * fontHeight;
 
-  if ((attr & TATTR_PASCURS) && (ctype == 0 || term->big_cursor)) {
+  if ((attrs & TATTR_PASCURS) && (ctype == 0 || term->big_cursor)) {
     QPoint points[] = {QPoint(x, y), QPoint(x, y + fontHeight - 1),
                        QPoint(x + char_width - 1, y + fontHeight - 1),
                        QPoint(x + char_width - 1, y)};
-    painter.setPen(colours[261]);
-    painter.drawPolygon(points, 4);
-  } else if ((attr & (TATTR_ACTCURS | TATTR_PASCURS)) && ctype != 0) {
+    painter->setPen(colours[OSC4_COLOUR_cursor_fg]);
+    painter->drawPolygon(points, 4);
+  } else if ((attrs & (TATTR_ACTCURS | TATTR_PASCURS)) && ctype != 0) {
     int startx, starty, dx, dy, length, i;
     if (ctype == 1) {
       startx = x;
@@ -484,23 +520,23 @@ void GuiTerminalWindow::paintCursor(QPainter &painter, int row, int col, const Q
       length = char_width;
     } else {
       int xadjust = 0;
-      if (attr & TATTR_RIGHTCURS) xadjust = char_width - 1;
+      if (attrs & TATTR_RIGHTCURS) xadjust = char_width - 1;
       startx = x + xadjust;
       starty = y;
       dx = 0;
       dy = 1;
       length = fontHeight;
     }
-    if (attr & TATTR_ACTCURS) {
+    if (attrs & TATTR_ACTCURS) {
       // To draw the vertical and underline active cursors
-      painter.setPen(colours[261]);
-      painter.drawLine(startx, starty + length * dx, startx + length * dx, starty + length);
+      painter->setPen(colours[OSC4_COLOUR_cursor_fg]);
+      painter->drawLine(startx, starty + length * dx, startx + length * dx, starty + length);
     } else {
       // To draw the vertical and underline passive cursors
-      painter.setPen(colours[261]);
+      painter->setPen(colours[OSC4_COLOUR_cursor_fg]);
       for (i = 0; i < length; i++) {
         if (i % 2 == 0) {
-          painter.drawPoint(startx, starty + length * dx);
+          painter->drawPoint(startx, starty + length * dx);
         }
         startx += dx;
         starty += dy;
@@ -508,6 +544,12 @@ void GuiTerminalWindow::paintCursor(QPainter &painter, int row, int col, const Q
     }
   }
 }
+
+void GuiTerminalWindow::drawTrustSigil(int x, int y) {}
+
+int GuiTerminalWindow::charWidth(int uc) { return 1; }
+
+void GuiTerminalWindow::freeContext() { assert(painter); }
 
 int GuiTerminalWindow::from_backend(SeatOutputType type, const char *data, size_t len) {
   if (_tmuxMode == TMUX_MODE_GATEWAY && _tmuxGateway) {
@@ -518,19 +560,6 @@ int GuiTerminalWindow::from_backend(SeatOutputType type, const char *data, size_
     }
   }
   return term_data(term, data, (int)len);
-}
-
-void GuiTerminalWindow::preDrawTerm() { termrgn = QRegion(); }
-
-void GuiTerminalWindow::drawTerm() { this->viewport()->update(termrgn); }
-
-void GuiTerminalWindow::drawText(int row, int col, wchar_t * /*ch*/, int len, unsigned long attr,
-                                 int /*lattr*/) {
-  if (attr & TATTR_COMBINING) {
-    // TODO NOT_YET_IMPLEMENTED
-    return;
-  }
-  termrgn |= QRect(col * fontWidth, row * fontHeight, fontWidth * len, fontHeight);
 }
 
 void GuiTerminalWindow::setTermFont(Conf *cfg) {
@@ -782,14 +811,14 @@ void GuiTerminalWindow::focusInEvent(QFocusEvent *) {
   this->mru_count = ++mainWindow->mru_count_last;
   if (!term) return;
   term_set_focus(term, TRUE);
-  term_update(term);
+  viewport()->update();
   if (parentSplit) mainWindow->tabArea->setTabText(mainWindow->tabArea->currentIndex(), temp_title);
 }
 
 void GuiTerminalWindow::focusOutEvent(QFocusEvent *) {
   if (!term) return;
   term_set_focus(term, FALSE);
-  term_update(term);
+  viewport()->update();
 }
 
 void GuiTerminalWindow::setScrollBar(int total, int start, int page) {

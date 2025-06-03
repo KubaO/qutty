@@ -47,7 +47,7 @@ set(PROJECT_SOURCES
     terminalmisc.cpp
     QtCommon.cpp
     QtNet.cpp
-    QtUnicode.cpp
+    #QtUnicode.cpp
     QtPageant.cpp
     QtDlg.cpp
     QtX11.c
@@ -192,11 +192,20 @@ set(PROJECT_SOURCES
     puttysrc/stubs/null-mac.c
     puttysrc/stubs/null-plug.c
     puttysrc/stubs/null-seat.c
+    puttysrc/stubs/null-socket.c
 
     puttysrc/terminal/bidi.c
+    puttysrc/terminal/lineedit.c
     puttysrc/terminal/terminal.c
 
     puttysrc/terminal/terminal.h
+
+    puttysrc/unicode/ambiguous_wide_chars.h
+    puttysrc/unicode/bidi_brackets.h
+    puttysrc/unicode/bidi_mirror.h
+    puttysrc/unicode/bidi_type.h
+    puttysrc/unicode/nonspacing_chars.h
+    puttysrc/unicode/wide_chars.h
 
     puttysrc/utils/antispoof.c
     puttysrc/utils/backend_socket_log.c
@@ -207,15 +216,20 @@ set(PROJECT_SOURCES
     puttysrc/utils/bufchain.c
     #puttysrc/utils/buildinfo.c
     puttysrc/utils/burnstr.c
+    puttysrc/utils/burnwcs.c
     puttysrc/utils/cert-expr.c
     #puttysrc/utils/chomp.c
     puttysrc/utils/conf.c
+    puttysrc/utils/conf_data.c
+    puttysrc/utils/conf_debug.c
     puttysrc/utils/conf_dest.c
     puttysrc/utils/conf_launchable.c
     puttysrc/utils/ctrlparse.c
     #puttysrc/utils/debug.c
+    puttysrc/utils/decode_utf8.c
     puttysrc/utils/default_description.c
     puttysrc/utils/dup_mb_to_wc.c
+    puttysrc/utils/dup_wc_to_mb.c
     puttysrc/utils/dupcat.c
     puttysrc/utils/dupprintf.c
     puttysrc/utils/dupstr.c
@@ -229,6 +243,7 @@ set(PROJECT_SOURCES
     puttysrc/utils/host_strrchr.c
     puttysrc/utils/key_components.c
     puttysrc/utils/log_proxy_stderr.c
+    puttysrc/utils/logeventf.c
     puttysrc/utils/make_spr_sw_abort_static.c
     puttysrc/utils/marshal.c
     puttysrc/utils/memory.c
@@ -243,6 +258,7 @@ set(PROJECT_SOURCES
     #puttysrc/utils/read_file_into.c
     puttysrc/utils/seat_connection_fatal.c
     puttysrc/utils/seat_dialog_text.c
+    puttysrc/utils/seat_nonfatal.c
     puttysrc/utils/sessprep.c
     puttysrc/utils/sk_free_peer_info.c
     #puttysrc/utils/smemclr.c
@@ -278,6 +294,8 @@ set(PROJECT_SOURCES
     puttysrc/sshrand.c
     puttysrc/timing.c
 
+    puttysrc/conf-enums.h
+    puttysrc/conf.h
     puttysrc/defs.h
     puttysrc/marshal.h
     puttysrc/misc.h
@@ -286,6 +304,7 @@ set(PROJECT_SOURCES
     puttysrc/pageant.h
     puttysrc/putty.h
     puttysrc/puttymem.h
+    puttysrc/specials.h
     puttysrc/ssh.h
     puttysrc/sshcr.h
     puttysrc/storage.h
@@ -366,17 +385,19 @@ set(BREAKPAD_SOURCES
     third-party/google-breakpad/google_breakpad/common/minidump_format.h
 )
 
-# windows/unicode.c must disable functions we implement via Qt
-set(UCS_OVERRIDES
-    init_ucs=_init_ucs
-    is_dbcs_leadbyte=_is_dbcs_leadbyte
-    mb_to_wc=_mb_to_wc
-    wc_to_mb=_wc_to_mb
-)
-set_property(SOURCE
-    puttysrc/windows/unicode.c
-    PROPERTY COMPILE_DEFINITIONS "${UCS_OVERRIDES}"
-)
+if (0)
+    # windows/unicode.c must disable functions we implement via Qt
+    set(UCS_OVERRIDES
+        init_ucs=_init_ucs
+        is_dbcs_leadbyte=_is_dbcs_leadbyte
+        mb_to_wc=_mb_to_wc
+        wc_to_mb=_wc_to_mb
+    )
+    set_property(SOURCE
+        puttysrc/windows/unicode.c
+        PROPERTY COMPILE_DEFINITIONS "${UCS_OVERRIDES}"
+    )
+endif()
 
 if (WIN32)
     # winnoise.c and winstore.c must be built without UNICODE nor _UNICODE

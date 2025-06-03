@@ -20,24 +20,18 @@ extern "C" {
 
 static const int keyFor(const char *keyName) {
   static const std::unordered_map<std::string, config_primary_key> KEYS = {
-#define A_KEY(t1, t2, key) {#key, CONF_##key},
-      CONFIG_OPTIONS(A_KEY)
-#undef A_KEY
+#define CONF_OPTION(key, type, ...) {#key, CONF_##key},
+#include "conf.h"
+#undef CONF_OPTION
   };
   auto pk = KEYS.find(keyName);
   if (pk != KEYS.end()) return pk->second;
   return -1;
 }
 
-static const char *nameFor(config_primary_key key) {
-  static const char *const names[] = {
-#define NAME(t1, t2, key) #key,
-      CONFIG_OPTIONS(NAME)
-#undef NAME
-  };
-  if (key <= sizeof(names) / sizeof(names[0])) return names[key];
-  return nullptr;
-}
+extern "C" const char *conf_id(int key);
+
+static const char *nameFor(config_primary_key key) { return conf_id(key); /* in conf_debug.c */ }
 
 struct KeyOption {
   config_primary_key key;
@@ -142,10 +136,9 @@ static void read_STR(QXmlStreamReader &xml, Conf *conf) {
 static void read_FILENAME(QXmlStreamReader &xml, Conf *conf) {
   auto r = Read(xml);
   if (r.validKey()) {
-    Filename fn;
-    strncpy(fn.path, r.value, sizeof(fn.path));
-    fn.path[sizeof(fn.path) - 1] = '\0';
-    conf_set_filename(conf, r.key(), &fn);
+    Filename *fn = filename_from_utf8(r.value);
+    conf_set_filename(conf, r.key(), fn);
+    filename_free(fn);
   }
   xml.skipCurrentElement();
 }
@@ -296,15 +289,15 @@ static void write(QXmlStreamWriter &xml, const char *type, const char *keyName,
   xml.writeEndElement();
 }
 
-static void write_INT_NONE(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
-                           const char *keyName /*nullable*/, int i = -1) {
+static void write_INT(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
+                      const char *keyName /*nullable*/, int i = -1) {
   if (!confKeyExists(conf, key, std::min(0, i))) return;
   int value = (i < 0) ? conf_get_int(conf, key) : conf_get_int_int(conf, key, i);
   write(xml, "int", keyName, QString::number(value));
 }
 
-static void write_BOOL_NONE(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
-                            const char *keyName /*nullable*/, int i = -1) {
+static void write_BOOL(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
+                       const char *keyName /*nullable*/, int i = -1) {
   if (!confKeyExists(conf, key, 0)) return;
   bool value = conf_get_bool(conf, key);
   write(xml, "bool", keyName, QString::number(value));
@@ -321,22 +314,29 @@ static void write_COLOUR(QXmlStreamWriter &xml, Conf *conf, config_primary_key p
   write(xml, "colour", nullptr, QString::asprintf("%02X%02X%02X", r, g, b));
 }
 
-static void write_STR_NONE(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
-                           const char *keyName) {
+static void write_STR(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
+                      const char *keyName) {
   if (!confKeyExists(conf, key, 0)) return;
   const char *value = conf_get_str(conf, key);
   write(xml, "str", keyName, value);
 }
 
-static void write_FILENAME_NONE(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
-                                const char *keyName) {
-  if (!confKeyExists(conf, key, 0)) return;
-  const Filename *value = conf_get_filename(conf, key);
-  write(xml, "Filename", keyName, value->path);
+static void write_STR_AMBI(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
+                           const char *keyName) {
+  write_STR(xml, conf, key, keyName);
 }
 
-static void write_FONT_NONE(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
-                            const char *keyName) {
+static void write_FILENAME(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
+                           const char *keyName) {
+  if (!confKeyExists(conf, key, 0)) return;
+  const Filename *fn = conf_get_filename(conf, key);
+  const char *utf8 = filename_to_utf8(fn);
+  write(xml, "Filename", keyName, utf8);
+  sfree((void *)utf8);
+}
+
+static void write_FONT(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
+                       const char *keyName) {
   if (!confKeyExists(conf, key, 0)) return;
   const FontSpec *font = conf_get_fontspec(conf, key);
   xml.writeStartElement("FontSpec");
@@ -348,8 +348,8 @@ static void write_FONT_NONE(QXmlStreamWriter &xml, Conf *conf, config_primary_ke
   xml.writeEndElement();
 }
 
-static void write_INT_INT(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
-                          const char *keyName) {
+static void write_INT_sINT(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
+                           const char *keyName) {
   xml.writeStartElement("list");
   xml.writeAttribute("key", keyName);
   const KeyOption &opt = optionFor(key);
@@ -357,13 +357,13 @@ static void write_INT_INT(QXmlStreamWriter &xml, Conf *conf, config_primary_key 
     if (key == CONF_colours)
       write_COLOUR(xml, conf, key, i);
     else
-      write_INT_NONE(xml, conf, key, nullptr, i);
+      write_INT(xml, conf, key, nullptr, i);
   }
   xml.writeEndElement();
 }
 
-static void write_STR_STR(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
-                          const char *keyName) {
+static void write_STR_sSTR(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
+                           const char *keyName) {
   xml.writeStartElement("dict");
   xml.writeAttribute("key", keyName);
   char *subkey = nullptr;
@@ -374,7 +374,7 @@ static void write_STR_STR(QXmlStreamWriter &xml, Conf *conf, config_primary_key 
   xml.writeEndElement();
 }
 
-static void write_STR_STR(QXmlStreamWriter &xml, const std::map<std::string, std::string> &map) {
+static void write_STR_sSTR(QXmlStreamWriter &xml, const std::map<std::string, std::string> &map) {
   xml.writeStartElement("dict");
   for (auto &it : map) {
     write(xml, "str", it.first.c_str(), it.second);
@@ -418,15 +418,26 @@ int QtConfig::writeToXML(QIODevice *device) {
     Conf *conf = it->second.get();
     xml.writeStartElement("config");
     xml.writeAttribute("version", "2.0");
-#define XML_WRITE(type, subkeytype, key) write_##type##_##subkeytype(xml, conf, CONF_##key, #key);
-    CONFIG_OPTIONS(XML_WRITE)
-#undef XML_WRITE
+
+#define VALUE_TYPE(x) _##x
+#define SUBKEY_TYPE(x) _s##x
+#define DEFAULT_INT(x)
+#define DEFAULT_STR(x)
+#define DEFAULT_BOOL(x)
+#define SAVE_KEYWORD(x)
+#define STORAGE_ENUM(x)
+#define LOAD_CUSTOM
+#define SAVE_CUSTOM
+#define NOT_SAVED
+#define CONF_OPTION2(key, type1, type2, ...) write##type2##type1(xml, conf, CONF_##key, #key);
+#define CONF_OPTION(...) CONF_OPTION2(__VA_ARGS__)
+#include "conf.h"
     xml.writeEndElement();
   }
 
   xml.writeStartElement("sshhostkeys");
   xml.writeAttribute("version", "2.0");
-  write_STR_STR(xml, ssh_host_keys);
+  write_STR_sSTR(xml, ssh_host_keys);
   xml.writeEndElement();
 
   xml.writeEndDocument();

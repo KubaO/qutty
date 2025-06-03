@@ -9,6 +9,7 @@
 #define SECURITY_WIN32
 
 #include <QKeyEvent>
+#include <cstdio>
 #include <cstring>
 
 #include "GuiTerminalWindow.hpp"
@@ -391,28 +392,153 @@ int GuiTerminalWindow::TranslateKey(QKeyEvent *keyevent, char *output) {
   return -1;
 }
 
-Filename *filename_copy(const Filename *fn) { return filename_from_str(fn->path); }
-
-Filename *filename_from_str(const char *str) {
+Filename *filename_new() {
   Filename *ret = snew(Filename);
-  strncpy(ret->path, str, sizeof(ret->path));
-  ret->path[sizeof(ret->path) - 1] = '\0';
+  memset(ret, 0, sizeof(Filename));
   return ret;
 }
 
-const char *filename_to_str(const Filename *fn) { return fn->path; }
-
-bool filename_equal(const Filename *f1, const Filename *f2) { return !strcmp(f1->path, f2->path); }
-
-bool filename_is_null(const Filename *fn) { return !fn || fn->path[0] == '\0'; }
-
-void filename_free(Filename *fn) {
-  sfree(fn);
+Filename *filename_copy(const Filename *src) {
+  Filename *ret = filename_new();
+#if _WIN32
+  size_t length = wcslen(src->wpath) + 1;
+  size_t byteSize = length * sizeof(wchar_t);
+  wchar_t *copy = snewn(length, wchar_t);
+  memcpy(copy, src->wpath, byteSize);
+  ret->wpath = copy;
+#else
+  size_t length = strlen(src->cpath) + 1;
+  char *copy = snewn(length, char);
+  memcpy(copy, src->cpath, length);
+  ret->cpath = copy;
+#endif
+  return ret;
 }
 
-void filename_serialise(BinarySink *bs, const Filename *f) { put_asciz(bs, f->path); }
+/* The str is in the system 8 bit encoding */
+Filename *filename_from_str(const char *str) {
+  Filename *ret = filename_new();
+#if _WIN32
+  QString name = QString::fromLocal8Bit(str);
+  size_t length = name.length();
+  size_t byteSize = length * sizeof(wchar_t);
+  wchar_t *copy = snewn(length + 1, wchar_t);
+  memcpy(copy, name.data(), byteSize);
+  copy[length] = '\0';
+  ret->wpath = copy;
+#else
+  size_t length = strlen(str) + 1;
+  char *copy = snewn(length, char);
+  memcpy(copy, str, length);
+  ret->cpath = copy;
+#endif
+  return ret;
+}
 
-Filename *filename_deserialise(BinarySource *src) { return filename_from_str(get_asciz(src)); }
+const char *filename_to_str(const Filename *cfn) {
+  Filename *fn = const_cast<Filename *>(cfn);
+#ifdef _WIN32
+  if (!fn->cpath) {
+    QStringView sv = QStringView(fn->wpath);
+    QByteArray ba = sv.toLocal8Bit();
+    size_t length = ba.size() + 1;
+    char *copy = snewn(length, char);
+    memcpy(copy, ba.constData(), length);
+    fn->cpath = copy;
+  }
+#endif
+  return fn->cpath;
+}
+
+bool filename_equal(const Filename *f1, const Filename *f2) {
+#ifdef _WIN32
+  return !wcscmp((const wchar_t *)f1->wpath, (const wchar_t *)f2->wpath);
+#else
+  return !strcmp(f1->cpath, f2->cpath);
+#endif
+}
+
+bool filename_is_null(const Filename *fn) {
+#ifdef _WIN32
+  return !fn || !fn->wpath[0];
+#else
+  return !fn || !fn->cpath[0];
+#endif
+}
+
+void filename_free(Filename *fn) {
+  if (fn) {
+    sfree((void *)fn->wpath);
+    sfree((void *)fn->cpath);
+    sfree(fn);
+  }
+}
+
+FILE *f_open(const Filename *fn, const char *mode, bool isprivate) {
+#ifdef _WIN32
+  wchar_t *wmode = dup_mb_to_wc(DEFAULT_CODEPAGE, mode);
+  FILE *fp = _wfopen((const wchar_t *)fn->wpath, wmode);
+  sfree(wmode);
+  return fp;
+#else
+  return fopen(fn->cpath, mode);
+#endif
+}
+
+Filename *filename_from_utf8(const char *utf8) {
+  QString name = QString::fromUtf8(utf8);
+  return filename_from_qstring(name);
+}
+
+const char *filename_to_utf8(const Filename *fn) {
+#ifdef _WIN32
+  QByteArray utf8 = QStringView(fn->wpath).toUtf8();
+#else
+  QByteArray utf8 = QString::fromLocal8Bit(fn->cpath).toUtf8();
+#endif
+  size_t length = utf8.size() + 1;
+  char *copy = snewn(length, char);
+  memcpy(copy, utf8.constData(), length);
+  return copy;
+}
+
+QString filename_to_qstring(const Filename *fn) {
+#ifdef _WIN32
+  return QString(fn->wpath);
+#else
+  return QString::fromLocal8Bit(fn->cpath);
+#endif
+}
+
+Filename *filename_from_qstring(const QString &str) {
+  Filename *fn = filename_new();
+#ifdef _WIN32
+  size_t length = str.size();
+  size_t byteSize = length * sizeof(wchar_t);
+  wchar_t *copy = snewn(length + 1, wchar_t);
+  memcpy(copy, str.constData(), byteSize);
+  copy[length] = 0;
+  fn->wpath = copy;
+#else
+  QByteArray local = str.toLocal8Bit();
+  size_t length = local.size() + 1;
+  char *copy = snewn(length, char);
+  memcpy(copy, local.constData(), length);
+  fn->cpath = copy;
+#endif
+  return fn;
+}
+
+void filename_serialise(BinarySink *bs, const Filename *f) {
+  const char *utf8 = filename_to_utf8(f);
+  put_asciz(bs, utf8);
+  sfree((void *)utf8);
+}
+
+Filename *filename_deserialise(BinarySource *src) {
+  const char *utf8 = get_asciz(src);
+  return filename_from_utf8(utf8);
+}
 
 struct tm ltime(void) {
   time_t rawtime;
@@ -456,6 +582,8 @@ FontSpec *fontspec_new(const char *name, bool bold, int height, int charset) {
   f->charset = charset;
   return f;
 }
+
+FontSpec *fontspec_new_default(void) { return fontspec_new("", false, 0, 0); }
 
 FontSpec *fontspec_copy(const FontSpec *f) {
   FontSpec *n = snew(FontSpec);
