@@ -364,6 +364,13 @@ set(PROJECT_SOURCES
     QuTTY.qrc
 )
 
+# see https://johnfarrier.com/standardizing-the-handling-of-non-source-files-in-cmake-projects-the-config-target/
+add_custom_target(config.QuTTY SOURCES
+    LICENSE
+    README.md
+    documentation/Wiki.md
+)
+
 set(BREAKPAD_SOURCES
     third-party/google-breakpad/client/windows/handler/exception_handler.cc
     third-party/google-breakpad/client/windows/crash_generation/crash_generation_client.cc
