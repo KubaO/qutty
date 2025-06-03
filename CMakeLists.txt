@@ -21,6 +21,7 @@ add_compile_definitions(
     QUTTY_RELEASE_VERSION="${PROJECT_VERSION}"
     HAVE_AES_NI=1
     HAVE_SHA_NI=1
+    HAVE_WMEMCHR=1
 )
 
 if(NOT HAS_GSSAPI)
@@ -90,9 +91,11 @@ set(PROJECT_SOURCES
     puttysrc/crypto/ecc-ssh.c
     puttysrc/crypto/hash_simple.c
     puttysrc/crypto/hmac.c
+    puttysrc/crypto/kex-hybrid.c
     puttysrc/crypto/mac.c
     puttysrc/crypto/mac_simple.c
     puttysrc/crypto/md5.c
+    puttysrc/crypto/mlkem.c
     puttysrc/crypto/mpint.c
     puttysrc/crypto/ntru.c
     puttysrc/crypto/openssh-certs.c
@@ -124,12 +127,14 @@ set(PROJECT_SOURCES
     puttysrc/crypto/aesgcm-footer.h
     puttysrc/crypto/blowfish.h
     puttysrc/crypto/ecc.h
+    puttysrc/crypto/mlkem.h
     puttysrc/crypto/mpint_i.h
     puttysrc/crypto/ntru.h
     puttysrc/crypto/pubkey-ssh1.c
     puttysrc/crypto/sha1.h
     puttysrc/crypto/sha256.h
     puttysrc/crypto/sha512.h
+    puttysrc/crypto/smallmoduli.h
 
     puttysrc/otherbackends/telnet.c
 
