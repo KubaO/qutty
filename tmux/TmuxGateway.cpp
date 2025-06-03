@@ -430,7 +430,7 @@ int TmuxGateway::createNewWindowPane(int id, const char *name, const TmuxLayout 
       if (_mapPanes.find(layout.paneid) == _mapPanes.end()) {
         GuiTerminalWindow *newtermwnd =
             new GuiTerminalWindow(termGatewayWnd->getMainWindow()->tabArea,
-                                  termGatewayWnd->getMainWindow(), termGatewayWnd->getCfg());
+                                  termGatewayWnd->getMainWindow(), termGatewayWnd->config().copy());
         TmuxWindowPane *tmuxPane =
             newtermwnd->initTmuxClientTerminal(this, layout.paneid, layout.width, layout.height);
         termGatewayWnd->getMainWindow()->setupLayout(newtermwnd, splitter);

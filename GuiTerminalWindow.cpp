@@ -24,8 +24,8 @@ extern "C" {
 #include "terminal/terminal.h"
 }
 
-GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, Conf *cfg)
-    : QAbstractScrollArea(parent), cfgOwner(QtConfig::copy(cfg)), cfg(cfgOwner.get()) {
+GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, PuttyConfig &&cfg)
+    : QAbstractScrollArea(parent), cfgOwner(std::move(cfg)), cfg(cfgOwner.get()) {
   this->mainWindow = mainWindow;
 
   setFrameShape(QFrame::NoFrame);
@@ -211,9 +211,9 @@ int GuiTerminalWindow::restartTerminal() {
   return initTerminal();
 }
 
-int GuiTerminalWindow::reconfigureTerminal(Conf *new_cfg) {
-  QtConfig::Pointer prev_cfg = std::move(this->cfgOwner);
-  this->cfgOwner = QtConfig::copy(new_cfg);
+int GuiTerminalWindow::reconfigureTerminal(const PuttyConfig &new_cfg) {
+  PuttyConfig prev_cfg = std::move(this->cfgOwner);
+  this->cfgOwner = new_cfg.copy();
   this->cfg = cfgOwner.get();
 
   /* Pass new config data to the logging module */

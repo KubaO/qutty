@@ -62,7 +62,7 @@ bool confKeyExists(Conf *conf, config_primary_key pri, int sec) {
     int pri;
     union {
       int i;
-      char *s;
+      const char *s;
     } sec;
   } akey = {pri, sec};
   auto *entry = find234(conf->tree, &akey, NULL);
@@ -238,7 +238,8 @@ int QtConfig::readFromXML(QIODevice *device) {
   }
   while (xml.readNextStartElement()) {
     if (xml.name() == "config" && xml.attributes().value("version") == "2.0") {
-      Pointer cfg(conf_new());
+      QString configName = xml.attributes().value("name").toString();
+      PuttyConfig cfg = PuttyConfig::make(configName);
       load_open_settings(nullptr, cfg.get());  // pre-populate with defaults
       while (xml.readNextStartElement()) {
         if (xml.name() == "bool")
@@ -258,8 +259,7 @@ int QtConfig::readFromXML(QIODevice *device) {
         else
           xml.skipCurrentElement();
       }
-      const char *config_name = conf_get_str(cfg.get(), CONF_config_name);
-      config_list[config_name] = std::move(cfg);
+      config_list[configName] = std::move(cfg);
     } else if (xml.name() == "sshhostkeys" && xml.attributes().value("version") == "2.0") {
       while (xml.readNextStartElement()) {
         if (xml.name() == "dict")
@@ -318,12 +318,27 @@ static void write_STR(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
                       const char *keyName) {
   if (!confKeyExists(conf, key, 0)) return;
   const char *value = conf_get_str(conf, key);
-  write(xml, "str", keyName, value);
+  write(xml, "str", keyName, QString::fromLocal8Bit(value));
 }
 
 static void write_STR_AMBI(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
                            const char *keyName) {
-  write_STR(xml, conf, key, keyName);
+  if (!confKeyExists(conf, key, 0)) return;
+  bool utf8;
+  const char *value = conf_get_str_ambi(conf, key, &utf8);
+  if (utf8)
+    write(xml, "str", keyName, value);
+  else {
+    QString text = QString::fromLocal8Bit(value);
+    write(xml, "str", keyName, text);  // will be encoded in utf8 by the writer
+  }
+}
+
+static void write_UTF8(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
+                       const char *keyName) {
+  if (!confKeyExists(conf, key, 0)) return;
+  const char *value = conf_get_utf8(conf, key);
+  write(xml, "str", keyName, value);  // will be encoded in utf8 by the writer
 }
 
 static void write_FILENAME(QXmlStreamWriter &xml, Conf *conf, config_primary_key key,
@@ -416,8 +431,10 @@ int QtConfig::writeToXML(QIODevice *device) {
 
   for (auto it = config_list.cbegin(); it != config_list.cend(); it++) {
     Conf *conf = it->second.get();
+    qDebug() << conf;
     xml.writeStartElement("config");
     xml.writeAttribute("version", "2.0");
+    xml.writeAttribute("name", it->first);
 
 #define VALUE_TYPE(x) _##x
 #define SUBKEY_TYPE(x) _s##x
@@ -466,10 +483,9 @@ bool QtConfig::restoreConfig() {
   }
 
   if (!file.exists()) {
-    Pointer cfg(conf_new());
+    PuttyConfig cfg = PuttyConfig::make(QUTTY_DEFAULT_CONFIG_SETTINGS);
     load_open_settings(nullptr, cfg.get());
-    conf_set_str(cfg.get(), CONF_config_name, QUTTY_DEFAULT_CONFIG_SETTINGS);
-    qutty_config.config_list[QUTTY_DEFAULT_CONFIG_SETTINGS] = std::move(cfg);
+    qutty_config.config_list[cfg.name()] = std::move(cfg);
     saveConfig();
   }
   if (!file.open(QFile::ReadOnly | QFile::Text)) {
@@ -545,19 +561,17 @@ bool QtConfig::restoreFromPuttyWinRegistry() {
   get_sesslist(&savedSess, TRUE);
   qDebug() << "putty nsessions " << savedSess.nsessions;
   for (int i = 0; i < savedSess.nsessions; i++) {
-    Pointer cfg(conf_new());
-    const char *config_name = savedSess.sessions[i];
+    const char *configName = savedSess.sessions[i];
+    PuttyConfig cfg = PuttyConfig::make(configName);
 
-    settings_r *sesskey = open_settings_r(config_name);
+    settings_r *sesskey = open_settings_r(configName);
     load_open_settings(sesskey, cfg.get());
     close_settings_r(sesskey);
-
-    conf_set_str(cfg.get(), CONF_config_name, config_name);
 
     qDebug() << "putty session " << i << " name " << savedSess.sessions[i] << " host "
              << conf_get_str(cfg.get(), CONF_host) << " port "
              << conf_get_int(cfg.get(), CONF_port);
-    this->config_list[QString(config_name)] = std::move(cfg);
+    this->config_list[cfg.name()] = std::move(cfg);
   }
 
   // load ssh hostkey list from registry

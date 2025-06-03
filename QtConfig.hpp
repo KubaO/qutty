@@ -6,16 +6,17 @@ extern "C" {
 }
 #undef debug  // clashes with debug in qlogging.h
 
+#include <QFile>
 #include <QIODevice>
 #include <QKeySequence>
-#include <QString>
 #include <QPoint>
 #include <QSize>
+#include <QString>
+#include <QStringView>
+#include <cstddef>
 #include <map>
-#include <vector>
 #include <string>
-#include <stddef.h>
-#include <QFile>
+#include <vector>
 
 class QtMenuActionConfig {
  public:
@@ -39,21 +40,39 @@ typedef struct qutty_mainwindow_settings_t__ {
   bool titlebar_tabs;
 } qutty_mainwindow_settings_t;
 
-class QtConfig : public QObject {
-  Q_OBJECT
-
+class PuttyConfig {
   class ConfFreeDeleter {
    public:
     void operator()(Conf *ptr) { conf_free(ptr); }
   };
 
+  QString _name;
+  std::unique_ptr<Conf, ConfFreeDeleter> _ptr;
+
+  PuttyConfig(Conf *ptr, QStringView name) : _name(name), _ptr(ptr) {}
+  PuttyConfig(Conf *ptr, const char *name) : _name(name), _ptr(ptr) {}
+
  public:
-  using Pointer = std::unique_ptr<Conf, ConfFreeDeleter>;
+  PuttyConfig() = default;
+  PuttyConfig(PuttyConfig &&o) = default;
+  PuttyConfig &operator=(PuttyConfig &&o) = default;
+  // operator Conf *() const { return _ptr; }
+  Conf *get() const { return _ptr.get(); }
+  const QString &name() const { return _name; }
+  PuttyConfig copy() const { return {conf_copy(_ptr.get()), _name}; }
+  PuttyConfig copyWithNewName(QStringView name) const { return {conf_copy(_ptr.get()), name}; }
+  void changeName(QStringView name) { _name = QString(name); }
+  static PuttyConfig make(const char *name) { return {conf_new(), name}; }
+  static PuttyConfig make(QStringView name) { return {conf_new(), name}; }
+};
 
-  static Pointer copy(Conf *cfg) { return Pointer(conf_copy(cfg)); }
+class QtConfig : public QObject {
+  Q_OBJECT
 
+ public:
+  std::map<QString, PuttyConfig> config_list;
   std::map<std::string, std::string> ssh_host_keys;
-  std::map<QString, Pointer> config_list;
+
   std::map<uint32_t, QtMenuActionConfig> menu_action_list;
   qutty_mainwindow_settings_t mainwindow;
 
@@ -74,8 +93,6 @@ signals:
 
 // all global config is here
 extern QtConfig qutty_config;
-
-extern std::vector<std::string> qutty_string_split(const std::string &str, char delim);
 
 #define QUTTY_DEFAULT_CONFIG_SETTINGS "Default Settings"
 #define QUTTY_SESSION_NAME_SPLIT '/'

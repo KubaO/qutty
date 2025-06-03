@@ -44,14 +44,14 @@ void GuiImportExportFile::setSessions(void) {
   for (auto it = config.config_list.begin(); it != config.config_list.end(); it++) {
     QListWidgetItem *item = new QListWidgetItem(content);
     Conf *cfg = it->second.get();
-    QString config_name = conf_get_str(cfg, CONF_config_name);
-    if (qutty_config.config_list.find(config_name) != qutty_config.config_list.end()) {
-      item->setData(Qt::UserRole + 1, config_name);
-      item->setText(config_name + tr(" (will be replaced)"));
+    const QString &configName = it->first;
+    if (qutty_config.config_list.find(configName) != qutty_config.config_list.end()) {
+      item->setData(Qt::UserRole + 1, configName);
+      item->setText(configName + tr(" (will be replaced)"));
       item->setCheckState(Qt::Unchecked);
     } else {
-      item->setData(Qt::UserRole + 1, config_name);
-      item->setText(config_name);
+      item->setData(Qt::UserRole + 1, configName);
+      item->setText(configName);
       item->setCheckState(Qt::Checked);
     }
   }
@@ -60,10 +60,9 @@ void GuiImportExportFile::setSessions(void) {
 void GuiImportExportFile::getSessionsFromQutty(void) {
   for (auto it = qutty_config.config_list.begin(); it != qutty_config.config_list.end(); it++) {
     QListWidgetItem *item = new QListWidgetItem(content);
-    Conf *cfg = it->second.get();
-    QString config_name = conf_get_str(cfg, CONF_config_name);
-    item->setData(Qt::UserRole + 1, config_name);
-    item->setText(config_name);
+    const QString &configName = it->first;
+    item->setData(Qt::UserRole + 1, configName);
+    item->setText(configName);
     item->setCheckState(Qt::Checked);
   }
 }
@@ -79,9 +78,9 @@ void GuiImportExportFile::on_import_clicked() {
       QString str = content->item(i)->data(Qt::UserRole + 1).toString();
       auto it = config.config_list.find(str);
       if (it != config.config_list.end()) {
-        Conf *cfg = it->second.get();
-        QString config_name = conf_get_str(cfg, CONF_config_name);
-        qutty_config.config_list[config_name] = QtConfig::copy(cfg);
+        const QString &configName = it->first;
+        PuttyConfig cfg = it->second.copy();
+        qutty_config.config_list[configName] = std::move(cfg);
       }
     }
   }
@@ -96,9 +95,11 @@ void GuiImportExportFile::on_export_clicked() {
     if (content->item(i)->checkState() == Qt::Checked) {
       QString str = content->item(i)->data(Qt::UserRole + 1).toString();
       auto it = qutty_config.config_list.find(str);
-      Conf *cfg = it->second.get();
-      QString config_name = conf_get_str(cfg, CONF_config_name);
-      config.config_list[config_name] = QtConfig::copy(cfg);
+      if (it != config.config_list.end()) {
+        const QString &configName = it->first;
+        PuttyConfig cfg = it->second.copy();
+        config.config_list[configName] = std::move(cfg);
+      }
     }
   }
   QString fileName =

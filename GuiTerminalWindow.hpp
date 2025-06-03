@@ -70,7 +70,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   QString custom_title;   // given by user
   QString temp_title;
 
-  QtConfig::Pointer cfgOwner;
+  PuttyConfig cfgOwner;
   Conf *cfg;
 
  public:
@@ -86,9 +86,10 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   // order-of-usage
   uint32_t mru_count = 0;
 
+  const PuttyConfig &config() const { return cfgOwner; }
   Conf *getCfg() const { return cfgOwner.get(); }
 
-  GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, Conf *cfg);
+  GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, PuttyConfig &&cfg);
   ~GuiTerminalWindow() override;
 
   GuiMainWindow *getMainWindow() { return mainWindow; }
@@ -100,7 +101,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
    */
   int initTerminal();
   int restartTerminal();
-  int reconfigureTerminal(Conf *new_cfg);
+  int reconfigureTerminal(const PuttyConfig &new_cfg);
 
   void createSplitLayout(GuiBase::SplitType split, GuiTerminalWindow *newTerm);
 

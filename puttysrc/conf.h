@@ -27,16 +27,6 @@
  *    session data at all.
  */
 
-#ifdef IS_QUTTY
-CONF_OPTION(config_name,
-	VALUE_TYPE(STR),
-	DEFAULT_STR(""),
-	LOAD_CUSTOM, SAVE_CUSTOM,
-	/*
-	 * Used internally by QuTTY. Not stored.
-	 */
-)
-#endif
 CONF_OPTION(host,
     VALUE_TYPE(STR),
     DEFAULT_STR(""),

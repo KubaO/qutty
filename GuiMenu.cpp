@@ -295,7 +295,7 @@ void GuiMainWindow::contextMenuSavedSessionTriggered() {
   QString sessname = action->text();
 
   auto it = qutty_config.config_list.find(sessname);
-  if (it != qutty_config.config_list.end()) this->createNewTab(it->second.get());
+  if (it != qutty_config.config_list.end()) this->createNewTab(&it->second);
 }
 
 void GuiMainWindow::contextMenuPaste() {
@@ -310,7 +310,7 @@ void GuiMainWindow::contextMenuDuplicateSessionTriggered() {
   if (!term) term = this->getCurrentTerminal();
   if (terminalList.indexOf(term) == -1) return;
   if (!term->tmuxGateway())
-    this->createNewTab(term->getCfg());
+    this->createNewTab(&term->config());
   else
     term->tmuxGateway()->sendCommandNewWindowInSession();
 }
@@ -319,14 +319,14 @@ void GuiMainWindow::contextMenuOpenDuplicateHSplit() {
   GuiTerminalWindow *term = menuCookieTermWnd;
   if (!term) term = this->getCurrentTerminal();
   if (terminalList.indexOf(term) == -1) return;
-  this->on_createNewSession(term->getCfg(), GuiBase::TYPE_HORIZONTAL);
+  this->on_createNewSession(&term->config(), GuiBase::TYPE_HORIZONTAL);
 }
 
 void GuiMainWindow::contextMenuOpenDuplicateVSplit() {
   GuiTerminalWindow *term = menuCookieTermWnd;
   if (!term) term = this->getCurrentTerminal();
   if (terminalList.indexOf(term) == -1) return;
-  this->on_createNewSession(term->getCfg(), GuiBase::TYPE_VERTICAL);
+  this->on_createNewSession(&term->config(), GuiBase::TYPE_VERTICAL);
 }
 
 void GuiMainWindow::contextMenuRestartSessionTriggered() {
@@ -502,8 +502,9 @@ void GuiMainWindow::contextMenuCustomSavedSession(int ind) {
   if (it == qutty_config.menu_action_list.end()) return;
   QString sessname;
   auto it_cfg = qutty_config.config_list.find(sessname);
-  if (it_cfg == qutty_config.config_list.end()) return;
-  this->on_createNewSession(it_cfg->second.get(), GuiBase::SplitType(it->second.int_data));
+  if (it_cfg != qutty_config.config_list.end()) {
+    this->on_createNewSession(&it_cfg->second, GuiBase::SplitType(it->second.int_data));
+  }
 }
 
 void GuiMainWindow::contextMenuImportFromFile() {
