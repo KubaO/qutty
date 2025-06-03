@@ -48,7 +48,7 @@ Here is the plan to get rid of these changes:
 
 - [ ]  `conf.h` - the `config_name` option is used internally in QuTTY and does not need to be exposed in the header.
 - [ ] `network.h` - a bug will be reported upstream, it's essentially a leftover of prior changes in PuTTY.
-- [ ] `putty.h` - the TMUX backend doesn't need to be listed in the enum within `putty.h` proper.
+- [x] `putty.h` - the TMUX backend doesn't need to be listed in the enum within `putty.h` proper.
 - [ ] `puttymem.h` - a change will be suggested upstream to make that header usable from C++.
 - [ ] `ssh.c` and `telnet.c` - PuTTY's architecture is such that neither the front-end nor the networking layer need direct access to platform sockets kept in the backends. It's a leftover from QuTTY.
 - [ ] `terminal.c` and `terminal.h` 

@@ -349,6 +349,7 @@ set(PROJECT_SOURCES
     QtComboBoxWithTreeView.hpp
     QtCompleterWithAdvancedCompletion.hpp
     QtSsh.hpp
+    QuTTY.hpp
 
     tmux/tmux.h
     tmux/TmuxGateway.hpp

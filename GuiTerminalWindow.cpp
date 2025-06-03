@@ -18,6 +18,7 @@
 #include "GuiMenu.hpp"
 #include "GuiSplitter.hpp"
 #include "GuiTabWidget.hpp"
+#include "QuTTY.hpp"
 #include "serialize/QtWebPluginMap.hpp"
 extern "C" {
 #include "terminal/terminal.h"

@@ -1,6 +1,7 @@
 #include <QDebug>
 
 #include "GuiTerminalWindow.hpp"
+#include "QuTTY.hpp"
 #include "tmux/TmuxGateway.hpp"
 #include "tmux/tmux.h"
 
