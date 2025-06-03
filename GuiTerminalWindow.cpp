@@ -480,7 +480,7 @@ void GuiTerminalWindow::drawText(int x, int y, const QString &text, unsigned lon
 }
 
 void GuiTerminalWindow::drawText(int x, int y, const QString &str, QPen pen, QBrush brush) {
-  qDebug() << __FUNCTION__ << x << y << str;
+  // qDebug() << __FUNCTION__ << x << y << str;
   painter->fillRect(QRect(x * fontWidth, y * fontHeight, fontWidth * str.length(), fontHeight),
                     brush);
   painter->setPen(pen);
