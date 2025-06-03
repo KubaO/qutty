@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-# Using putty 0.75 source code in puttysrc
+# Using putty 0.83 source code in puttysrc
 #
 # settings.c:
 # In QuTTY this file is only used for loading saved sessions in
@@ -437,10 +437,8 @@ if (WIN32)
     endif()
     set_property(SOURCE
         puttysrc/windows/storage.c PROPERTY COMPILE_DEFINITIONS
-        verify_host_key=verify_host_key_disabled
         store_host_key=store_host_key_disabled
     )
-    link_libraries(user32 advapi32)
 endif()
 
 if (LINUX)
