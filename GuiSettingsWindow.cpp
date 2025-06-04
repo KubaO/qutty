@@ -428,9 +428,9 @@ QString formatTTYMode(const QString &value);
   X("chb_translation_copy_paste", rawcnp)                                      \
   X("chb_utf8linedraw", utf8linedraw)                                          \
   /* Selection */                                                              \
-  X("rb_cpmouseaction_windows", mouse_is_xterm, 0)                             \
-  X("rb_cpmouseaction_compromise", mouse_is_xterm, 2) /* TODO chk */           \
-  X("rb_cpmouseaction_xterm", mouse_is_xterm, 1)                               \
+  X("rb_cpmouseaction_windows", mouse_is_xterm, MOUSE_WINDOWS)                 \
+  X("rb_cpmouseaction_compromise", mouse_is_xterm, MOUSE_COMPROMISE)           \
+  X("rb_cpmouseaction_xterm", mouse_is_xterm, MOUSE_XTERM)                     \
   X("chb_cpmouseaction_shift", mouse_override)                                 \
   X("rb_cpmouseaction_defaultnormal", rect_select, 0)                          \
   X("rb_cpmouseaction_defaultrect", rect_select, 1)                            \
