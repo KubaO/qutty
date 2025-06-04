@@ -959,7 +959,10 @@ static void qtwin_refresh(TermWin *win) {
   gw->repaint();
 }
 
-static void qtwin_request_resize(TermWin *, int w, int h) {}
+static void qtwin_request_resize(TermWin *win, int w, int h) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  term_resize_request_completed(gw->term);
+}
 
 static void qtwin_set_title(TermWin *win, const char *title, int codepage) {
   GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
