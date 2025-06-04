@@ -21,6 +21,8 @@
 #include "QuTTY.hpp"
 #include "serialize/QtWebPluginMap.hpp"
 
+using namespace Qt::Literals::StringLiterals;
+
 GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, PuttyConfig &&cfg)
     : QAbstractScrollArea(parent), cfgOwner(std::move(cfg)), cfg(cfgOwner.get()) {
   this->mainWindow = mainWindow;
@@ -513,7 +515,15 @@ void GuiTerminalWindow::drawCursor(int x, int y, const wchar_t *text, int len, u
   }
 }
 
-void GuiTerminalWindow::drawTrustSigil(int x, int y) {}
+void GuiTerminalWindow::drawTrustSigil(int x, int y) {
+  if (trustSigil.isNull()) {
+    QIcon ic = QIcon(u":/icons/qutty.ico"_s);
+    QSize s = QSize(2 * fontWidth, fontHeight);
+    trustSigil = ic.pixmap(s, devicePixelRatioF());
+  }
+  assert(painter.isActive());
+  painter.drawPixmap(x * fontWidth, y * fontHeight, trustSigil);
+}
 
 int GuiTerminalWindow::charWidth(int uc) { return 1; }
 

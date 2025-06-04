@@ -43,6 +43,8 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase, public Ter
   QImage frameBuffer;
   QPainter painter;
 
+  QPixmap trustSigil;
+
   QFont _font;
   int fontWidth, fontHeight, fontAscent;
   struct unicode_data ucsdata = {};
