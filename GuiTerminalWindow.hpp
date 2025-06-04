@@ -13,7 +13,7 @@
 #include <QFont>
 #include <QFontInfo>
 #include <QFontMetrics>
-#include <QPointer>
+#include <QPainter>
 
 #include "GuiBase.hpp"
 #include "GuiDrag.hpp"
@@ -40,15 +40,15 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase, public Ter
 
   void showContextMenu(QMouseEvent *e);
 
+  QImage frameBuffer;
+  QPainter painter;
+
   QFont _font;
   int fontWidth, fontHeight, fontAscent;
   struct unicode_data ucsdata = {};
   bool _any_update = false;
   QRegion termrgn;
   std::array<QColor, OSC4_NCOLOURS> colours;
-
-  /* Painter that's active during window repaint */
-  QPainter *painter = nullptr;
 
   // to detect mouse double/triple clicks
   Mouse_Action mouseButtonAction;
@@ -70,6 +70,9 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase, public Ter
 
   PuttyConfig cfgOwner;
   Conf *cfg;
+
+  int termWidth() const { return viewport()->width() / fontWidth; }
+  int termHeight() const { return viewport()->height() / fontHeight; }
 
  public:
   Terminal *term = nullptr;

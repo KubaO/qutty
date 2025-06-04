@@ -40,7 +40,7 @@ GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow,
   mouseButtonAction = MA_NOTHING;
   setMouseTracking(true);
   viewport()->setCursor(Qt::IBeamCursor);
-  Q_ASSERT(true);
+  viewport()->setAttribute(Qt::WA_OpaquePaintEvent);
 
   // enable drag-drop
   setAcceptDrops(true);
@@ -103,8 +103,7 @@ int GuiTerminalWindow::initTerminal() {
   logctx = log_init(default_logpolicy, cfg);
   term_provide_logctx(term, logctx);
 
-  term_size(term, this->viewport()->height() / fontHeight, this->viewport()->width() / fontWidth,
-            conf_get_int(cfg, CONF_savelines));
+  term_size(term, termHeight(), termWidth(), conf_get_int(cfg, CONF_savelines));
 
   /*
    * Connect the terminal to the backend for resize purposes.
@@ -358,23 +357,18 @@ void GuiTerminalWindow::highlightSearchedText() {
 }
 
 void GuiTerminalWindow::paintEvent(QPaintEvent *e) {
-  if (!term) return;
-  qDebug() << __FUNCTION__;
-  QPainter painter(viewport());
-  this->painter = &painter;
-  painter.fillRect(viewport()->rect(), colours[OSC4_COLOUR_bg]);
-  term_paint(term, 0, 0, term->cols, term->rows, true);
-  this->painter = nullptr;
+  assert(!painter.isActive());
+  if (term->window_update_pending) term_update(term);
+  painter.begin(viewport());
+  painter.drawImage(QPoint(0, 0), frameBuffer);
+  painter.end();
 }
 
 bool GuiTerminalWindow::setupContext() {
-  if (painter) {
-    qDebug() << "painting";
-    return true;
-  }
-  viewport()->update();
-  qDebug() << "scheduled painting";
-  return false;
+  assert(!painter.isActive());
+  painter.begin(&frameBuffer);
+  painter.setFont(_font);
+  return true;
 }
 
 QString decode(Terminal *term, const wchar_t *text, int len) {
@@ -414,7 +408,6 @@ QString decode(Terminal *term, const wchar_t *text, int len) {
 
 void GuiTerminalWindow::drawText(int x, int y, const wchar_t *text, int len, unsigned long attrs,
                                  int lineAttrs, truecolour tc) {
-  assert(painter);
   assert(!tc.fg.enabled && !tc.bg.enabled);
   drawText(x, y, decode(term, text, len), attrs, lineAttrs, tc);
 }
@@ -453,15 +446,17 @@ void GuiTerminalWindow::drawText(int x, int y, const QString &text, unsigned lon
 }
 
 void GuiTerminalWindow::drawText(int x, int y, const QString &str, QPen pen, QBrush brush) {
-  // qDebug() << __FUNCTION__ << x << y << str;
-  painter->fillRect(QRect(x * fontWidth, y * fontHeight, fontWidth * str.length(), fontHeight),
-                    brush);
-  painter->setPen(pen);
-  painter->drawText(x * fontWidth, y * fontHeight + fontAscent, str);
+  if (0) qDebug() << __FUNCTION__ << x << y << str;
+  assert(painter.isActive());
+  painter.fillRect(QRect(x * fontWidth, y * fontHeight, fontWidth * str.length(), fontHeight),
+                   brush);
+  painter.setPen(pen);
+  painter.drawText(x * fontWidth, y * fontHeight + fontAscent, str);
 }
 
 void GuiTerminalWindow::drawCursor(int x, int y, const wchar_t *text, int len, unsigned long attrs,
                                    int lineAttrs, truecolour tc) {
+  assert(painter.isActive());
   int fnt_width;
   int char_width;
   int ctype = conf_get_int(cfg, CONF_cursor_type);
@@ -481,8 +476,8 @@ void GuiTerminalWindow::drawCursor(int x, int y, const wchar_t *text, int len, u
     QPoint points[] = {QPoint(x, y), QPoint(x, y + fontHeight - 1),
                        QPoint(x + char_width - 1, y + fontHeight - 1),
                        QPoint(x + char_width - 1, y)};
-    painter->setPen(colours[OSC4_COLOUR_cursor_fg]);
-    painter->drawPolygon(points, 4);
+    painter.setPen(colours[OSC4_COLOUR_cursor_fg]);
+    painter.drawPolygon(points, 4);
   } else if ((attrs & (TATTR_ACTCURS | TATTR_PASCURS)) && ctype != 0) {
     int startx, starty, dx, dy, length, i;
     if (ctype == 1) {
@@ -502,14 +497,14 @@ void GuiTerminalWindow::drawCursor(int x, int y, const wchar_t *text, int len, u
     }
     if (attrs & TATTR_ACTCURS) {
       // To draw the vertical and underline active cursors
-      painter->setPen(colours[OSC4_COLOUR_cursor_fg]);
-      painter->drawLine(startx, starty + length * dx, startx + length * dx, starty + length);
+      painter.setPen(colours[OSC4_COLOUR_cursor_fg]);
+      painter.drawLine(startx, starty + length * dx, startx + length * dx, starty + length);
     } else {
       // To draw the vertical and underline passive cursors
-      painter->setPen(colours[OSC4_COLOUR_cursor_fg]);
+      painter.setPen(colours[OSC4_COLOUR_cursor_fg]);
       for (i = 0; i < length; i++) {
         if (i % 2 == 0) {
-          painter->drawPoint(startx, starty + length * dx);
+          painter.drawPoint(startx, starty + length * dx);
         }
         startx += dx;
         starty += dy;
@@ -522,7 +517,11 @@ void GuiTerminalWindow::drawTrustSigil(int x, int y) {}
 
 int GuiTerminalWindow::charWidth(int uc) { return 1; }
 
-void GuiTerminalWindow::freeContext() { assert(painter); }
+void GuiTerminalWindow::freeContext() {
+  assert(painter.isActive());
+  painter.end();
+  viewport()->update();
+}
 
 int GuiTerminalWindow::from_backend(SeatOutputType type, const char *data, size_t len) {
   if (_tmuxMode == TMUX_MODE_GATEWAY && _tmuxGateway) {
@@ -744,9 +743,21 @@ void GuiTerminalWindow::resizeEvent(QResizeEvent *) {
     return;
   }
 
+  if (viewport()->size() != frameBuffer.size()) {
+    using std::swap;
+    QImage newFB = QImage(viewport()->size() * devicePixelRatioF(), QImage::Format_RGB32);
+    newFB.fill(colours[OSC4_COLOUR_bg]);
+    painter.begin(&newFB);
+    painter.drawImage(QPoint(), frameBuffer);
+    painter.end();
+    newFB.setDevicePixelRatio(devicePixelRatioF());
+    swap(newFB, frameBuffer);
+  }
+
+  int width = termWidth();
+  int height = termHeight();
+
   if (_tmuxMode == TMUX_MODE_CLIENT) {
-    int width = viewport()->size().width() / fontWidth;
-    int height = viewport()->size().height() / fontHeight;
     if (parentSplit) {
       width = parentSplit->width() / fontWidth;
       height = parentSplit->height() / fontHeight;
@@ -757,9 +768,10 @@ void GuiTerminalWindow::resizeEvent(QResizeEvent *) {
     // %layout-change tmux command does the actual resize
     return;
   }
-  if (term)
-    term_size(term, viewport()->size().height() / fontHeight,
-              viewport()->size().width() / fontWidth, conf_get_int(cfg, CONF_savelines));
+  if (term) {
+    term_size(term, height, width, conf_get_int(cfg, CONF_savelines));
+    term_paint(term, 0, 0, width - 1, height - 1, false);
+  }
 }
 
 bool GuiTerminalWindow::event(QEvent *event) {
