@@ -245,6 +245,8 @@ static const DataItem kexes[] = {{"Diffie-Hellman group 1 (1024-bit)", KEX_DHGRO
                                  {"RSA-based key exchange", KEX_RSA},
                                  {"ECDH key exchange", KEX_ECDH},
                                  {"NTRU Prime / Curve25519 hybrid kex", KEX_NTRU_HYBRID},
+                                 {"ML-KEM / Curve25519 hybrid kex", KEX_MLKEM_25519_HYBRID},
+                                 {"ML-KEM / NIST ECDH hybrid kex", KEX_MLKEM_NIST_HYBRID},
                                  {"-- warn below here --", KEX_WARN}};
 
 // From putty-0.75/config.c
