@@ -61,14 +61,9 @@ GuiTerminalWindow::~GuiTerminalWindow() {
     backend = NULL;
     term_provide_backend(term, NULL);
     term_free(term);
-    if (qtsock) qtsock->close();
     term = NULL;
-    qtsock = NULL;
   }
 }
-
-extern "C" Socket *get_ssh_socket(void *handle);
-extern "C" Socket *get_telnet_socket(void *handle);
 
 int GuiTerminalWindow::initTerminal() {
   char *realhost = NULL;
@@ -110,18 +105,6 @@ int GuiTerminalWindow::initTerminal() {
 
   term_size(term, this->viewport()->height() / fontHeight, this->viewport()->width() / fontWidth,
             conf_get_int(cfg, CONF_savelines));
-
-  switch (conf_get_int(cfg, CONF_protocol)) {
-    case PROT_TELNET:
-      as = get_telnet_socket(backend);
-      break;
-    case PROT_SSH:
-      as = get_ssh_socket(backend);
-      break;
-    default:
-      assert(0);
-  }
-  qtsock = sk_getqtsock(as);
 
   /*
    * Connect the terminal to the backend for resize purposes.
@@ -197,9 +180,7 @@ int GuiTerminalWindow::restartTerminal() {
     backend = NULL;
     term_provide_backend(term, NULL);
     term_free(term);
-    qtsock->close();
     term = NULL;
-    qtsock = NULL;
   }
   isSockDisconnected = false;
   return initTerminal();
@@ -278,9 +259,6 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   tmuxPane->id = id;
   tmuxPane->width = width;
   tmuxPane->height = height;
-
-  as = NULL;
-  qtsock = NULL;
 
   /*
    * Connect the terminal to the backend for resize purposes.

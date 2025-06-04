@@ -1104,11 +1104,3 @@ const BackendVtable telnet_backend = {
     .protocol = PROT_TELNET,
     .default_port = 23,
 };
-
-#ifdef IS_QUTTY
-Socket *get_telnet_socket(Backend *be)
-{
-    Telnet *telnet = container_of(be, Telnet, backend);
-    return telnet->s;
-}
-#endif

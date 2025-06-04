@@ -1333,11 +1333,3 @@ const BackendVtable sshconn_backend = {
     .protocol = PROT_SSHCONN,
     .flags = BACKEND_SUPPORTS_NC_HOST | BACKEND_NOTIFIES_SESSION_START,
 };
-
-#ifdef IS_QUTTY
-Socket *get_ssh_socket(Backend *be)
-{
-    Ssh *ssh = container_of(be, Ssh, backend);
-    return ssh->s;
-}
-#endif

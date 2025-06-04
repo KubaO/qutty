@@ -43,8 +43,6 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase, public Ter
   QFont _font;
   int fontWidth, fontHeight, fontAscent;
   struct unicode_data ucsdata = {};
-  Socket *as = nullptr;
-  QPointer<QAbstractSocket> qtsock;
   bool _any_update = false;
   QRegion termrgn;
   std::array<QColor, OSC4_NCOLOURS> colours;
