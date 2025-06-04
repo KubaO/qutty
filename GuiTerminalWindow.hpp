@@ -110,12 +110,12 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase, public Ter
   void keyReleaseEvent(QKeyEvent *e) override;
   int from_backend(SeatOutputType type, const char *data, size_t len);
 
+  void setPenBrushFromAttrs(unsigned long attrs);
   bool setupContext();
   void drawText(int x, int y, const wchar_t *text, int len, unsigned long attrs, int lineAttrs,
                 truecolour tc);
   void drawText(int x, int y, const QString &str, unsigned long attrs, int lineAttrs,
                 truecolour tc);
-  void drawText(int x, int y, const QString &str, QPen pen, QBrush brush);
   void drawCursor(int x, int y, const wchar_t *text, int len, unsigned long attrs, int lineAttrs,
                   truecolour tc);
   void drawTrustSigil(int x, int y);

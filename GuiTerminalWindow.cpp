@@ -408,20 +408,13 @@ QString decode(Terminal *term, const wchar_t *text, int len) {
   return str;
 }
 
-void GuiTerminalWindow::drawText(int x, int y, const wchar_t *text, int len, unsigned long attrs,
-                                 int lineAttrs, truecolour tc) {
-  assert(!tc.fg.enabled && !tc.bg.enabled);
-  drawText(x, y, decode(term, text, len), attrs, lineAttrs, tc);
-}
-
-void GuiTerminalWindow::drawText(int x, int y, const QString &text, unsigned long attrs,
-                                 int lineAttrs, truecolour tc) {
-  if ((attrs & TATTR_ACTCURS) && (conf_get_int(cfg, CONF_cursor_type) == 0 || term->big_cursor)) {
+void GuiTerminalWindow::setPenBrushFromAttrs(unsigned long attrs) {
+  if (attrs & (TATTR_ACTCURS | TATTR_PASCURS)) {
     attrs &= ~(ATTR_REVERSE | ATTR_BLINK | ATTR_COLOURS);
     if (bold_mode == BOLD_COLOURS) attrs &= ~ATTR_BOLD;
-
-    /* cursor fg and bg */
-    attrs |= (260 << ATTR_FGSHIFT) | (261 << ATTR_BGSHIFT);
+    /* cursor fg and bg. Note that cursor_bg is the color of the bulk of the cursor, while fg is the
+     color of the I guess text drawn over the cursor? */
+    attrs |= (OSC4_COLOUR_cursor_bg << ATTR_FGSHIFT) | (OSC4_COLOUR_cursor_fg << ATTR_BGSHIFT);
   }
 
   int nfg = ((attrs & ATTR_FGMASK) >> ATTR_FGSHIFT);
@@ -442,75 +435,78 @@ void GuiTerminalWindow::drawText(int x, int y, const QString &text, unsigned lon
       nbg |= 1;
   }
 
-  QPen pen = QPen(colours[nfg]);
-  QBrush brush = QBrush(colours[nbg]);
-  drawText(x, y, text, pen, brush);
+  painter.setPen(QPen(colours[nfg], 0));
+  painter.setBrush(colours[nbg]);
 }
 
-void GuiTerminalWindow::drawText(int x, int y, const QString &str, QPen pen, QBrush brush) {
-  if (0) qDebug() << __FUNCTION__ << x << y << str;
+void GuiTerminalWindow::drawText(int x, int y, const wchar_t *text, int len, unsigned long attrs,
+                                 int lineAttrs, truecolour tc) {
+  drawText(x, y, decode(term, text, len), attrs, lineAttrs, tc);
+}
+void GuiTerminalWindow::drawText(int x, int y, const QString &str, unsigned long attrs,
+                                 int lineAttrs, truecolour tc) {
+  if (0) qDebug() << __FUNCTION__ << x << y << str << Qt::hex << attrs;
   assert(painter.isActive());
-  painter.fillRect(QRect(x * fontWidth, y * fontHeight, fontWidth * str.length(), fontHeight),
-                   brush);
-  painter.setPen(pen);
+  assert(!tc.fg.enabled && !tc.bg.enabled);
+
+  setPenBrushFromAttrs(attrs);
+  painter.fillRect(x * fontWidth, y * fontHeight, fontWidth * str.length(), fontHeight,
+                   painter.brush());
   painter.drawText(x * fontWidth, y * fontHeight + fontAscent, str);
 }
 
 void GuiTerminalWindow::drawCursor(int x, int y, const wchar_t *text, int len, unsigned long attrs,
                                    int lineAttrs, truecolour tc) {
+  if (0) qDebug() << __FUNCTION__ << x << y << len << Qt::hex << attrs;
   assert(painter.isActive());
-  int fnt_width;
-  int char_width;
+  assert(attrs & (TATTR_ACTCURS | TATTR_PASCURS));
+
+  setPenBrushFromAttrs(attrs);
+
   int ctype = conf_get_int(cfg, CONF_cursor_type);
+  int char_width = fontWidth;
+  if (attrs & ATTR_WIDE) char_width *= 2;
+  x = x * fontWidth;
+  y = y * fontHeight;
 
-  QString str = decode(term, text, len);
-
-  if ((attrs & TATTR_ACTCURS) && (ctype == 0 || term->big_cursor)) {
-    return drawText(x, y, str, attrs, lineAttrs, tc);
+  if (ctype == CURSOR_BLOCK || term->big_cursor) {
+    if (attrs & TATTR_ACTCURS) {
+      painter.fillRect(x, y, char_width, fontHeight, painter.pen().color());
+    } else if (attrs & TATTR_PASCURS) {
+      painter.drawRect(x + 1, y + 1, char_width - 2, fontHeight - 2);
+    }
+    return;
   }
 
-  fnt_width = char_width = fontWidth;
-  if (attrs & ATTR_WIDE) char_width *= 2;
-  x = x * fnt_width;
-  y = x * fontHeight;
-
-  if ((attrs & TATTR_PASCURS) && (ctype == 0 || term->big_cursor)) {
-    QPoint points[] = {QPoint(x, y), QPoint(x, y + fontHeight - 1),
-                       QPoint(x + char_width - 1, y + fontHeight - 1),
-                       QPoint(x + char_width - 1, y)};
-    painter.setPen(colours[OSC4_COLOUR_cursor_fg]);
-    painter.drawPolygon(points, 4);
-  } else if ((attrs & (TATTR_ACTCURS | TATTR_PASCURS)) && ctype != 0) {
-    int startx, starty, dx, dy, length, i;
-    if (ctype == 1) {
-      startx = x;
-      starty = y + fontMetrics().descent();
-      dx = 1;
-      dy = 0;
-      length = char_width;
-    } else {
-      int xadjust = 0;
-      if (attrs & TATTR_RIGHTCURS) xadjust = char_width - 1;
-      startx = x + xadjust;
-      starty = y;
-      dx = 0;
-      dy = 1;
-      length = fontHeight;
-    }
-    if (attrs & TATTR_ACTCURS) {
-      // To draw the vertical and underline active cursors
-      painter.setPen(colours[OSC4_COLOUR_cursor_fg]);
-      painter.drawLine(startx, starty + length * dx, startx + length * dx, starty + length);
-    } else {
-      // To draw the vertical and underline passive cursors
-      painter.setPen(colours[OSC4_COLOUR_cursor_fg]);
-      for (i = 0; i < length; i++) {
-        if (i % 2 == 0) {
-          painter.drawPoint(startx, starty + length * dx);
-        }
-        startx += dx;
-        starty += dy;
-      }
+  assert(ctype != CURSOR_BLOCK);
+  int startx, starty, dx, dy, length, i;
+  if (ctype == CURSOR_UNDERLINE) {
+    startx = x;
+    starty = y + fontMetrics().descent();
+    dx = 1;
+    dy = 0;
+    length = char_width;
+  } else {
+    int xadjust = 0;
+    if (attrs & TATTR_RIGHTCURS) xadjust = char_width - 1;
+    startx = x + xadjust;
+    starty = y + 1;
+    dx = 0;
+    dy = 1;
+    length = fontHeight - 2;
+  }
+  if (attrs & TATTR_ACTCURS) {
+    // To draw the vertical and underline active cursors
+    painter.drawLine(startx, starty + length * dx, startx + length * dx, starty + length);
+  } else {
+    // To draw the vertical and underline passive cursors
+    QPen fg = painter.pen();
+    QPen bg = QPen(painter.brush().color(), 0);
+    for (i = 0; i < length; i++) {
+      painter.setPen((i % 2 == 0) ? fg : bg);
+      painter.drawPoint(startx, starty + length * dx);
+      startx += dx;
+      starty += dy;
     }
   }
 }
@@ -805,15 +801,15 @@ bool GuiTerminalWindow::event(QEvent *event) {
 void GuiTerminalWindow::focusInEvent(QFocusEvent *) {
   this->mru_count = ++mainWindow->mru_count_last;
   if (!term) return;
-  term_set_focus(term, TRUE);
-  viewport()->update();
+  term_set_focus(term, true);
+  term_update(term);
   if (parentSplit) mainWindow->tabArea->setTabText(mainWindow->tabArea->currentIndex(), temp_title);
 }
 
 void GuiTerminalWindow::focusOutEvent(QFocusEvent *) {
   if (!term) return;
-  term_set_focus(term, FALSE);
-  viewport()->update();
+  term_set_focus(term, false);
+  term_update(term);
 }
 
 void GuiTerminalWindow::setScrollBar(int total, int start, int page) {
@@ -951,7 +947,9 @@ static void qtwin_free_draw_ctx(TermWin *win) {
 
 static void qtwin_set_cursor_pos(TermWin *win, int x, int y) {
   GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
-  // ??
+  if (0) qDebug() << __FUNCTION__ << x << y;
+  // We don't need to do anything here, since draw_text and draw_cursor
+  // are called before this one is.
 }
 
 static void qtwin_set_raw_mouse_mode(TermWin *, bool enable) {}
