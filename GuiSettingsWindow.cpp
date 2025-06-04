@@ -394,9 +394,9 @@ QString formatTTYMode(const QString &value);
   X("chb_wndscroll_pusherasedtext", erase_to_scrollback)                       \
   X("chb_scrollbar_on_left", scrollbar_on_left)                                \
   /* Window Appearance */                                                      \
-  X("rb_curappear_block", cursor_type, 0)                                      \
-  X("rb_curappear_underline", cursor_type, 1)                                  \
-  X("rb_curappear_vertline", cursor_type, 2)                                   \
+  X("rb_curappear_block", cursor_type, CURSOR_BLOCK)                           \
+  X("rb_curappear_underline", cursor_type, CURSOR_UNDERLINE)                   \
+  X("rb_curappear_vertline", cursor_type, CURSOR_VERTICAL_LINE)                \
   X("chb_curblink", blink_cur)                                                 \
   /* X("chb_fontsel_varpitch", 0) */                                           \
   X("rb_fontappear_antialiase", font_quality, FQ_ANTIALIASED)                  \
@@ -446,9 +446,9 @@ QString formatTTYMode(const QString &value);
   X("chb_coloursoption_ansi", ansi_colour)                                     \
   X("chb_coloursoption_xterm", xterm_256_colour)                               \
   X("chb_true_colour", true_colour)                                            \
-  X("rb_bold_font", bold_style, 1)                                             \
-  X("rb_bold_colour", bold_style, 2)                                           \
-  X("rb_bold_both", bold_style, 3)                                             \
+  X("rb_bold_font", bold_style, BOLD_STYLE_FONT)                               \
+  X("rb_bold_colour", bold_style, BOLD_STYLE_COLOUR)                           \
+  X("rb_bold_both", bold_style, BOLD_STYLE_COLOUR | BOLD_STYLE_FONT)           \
   X("chb_colouroption_palette", try_palette)                                   \
   X("chb_colouroption_usesystem", system_colour)                               \
   X("l_colour", colours, &coloursDataList)                                     \
