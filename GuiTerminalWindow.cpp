@@ -555,9 +555,9 @@ void GuiTerminalWindow::setTermFont(Conf *cfg) {
 }
 
 void GuiTerminalWindow::setPalette(unsigned start, unsigned ncolours, const rgb *colours) {
-  for (int i = start; i < start + ncolours; ++i) {
+  for (int i = 0; i < ncolours; ++i) {
     const rgb &c = colours[i];
-    this->colours[i] = QColor::fromRgb(c.r, c.g, c.b);
+    this->colours[i + start] = QColor::fromRgb(c.r, c.g, c.b);
   }
 
   /* Override with system colours if appropriate * /
