@@ -478,6 +478,11 @@ size_t qt_output(Seat *seat, SeatOutputType type, const void *data, size_t len) 
   return f->from_backend(type, (const char *)data, len);
 }
 
+void qt_set_trust_status(Seat *seat, bool trusted) {
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(seat);
+  term_set_trust_status(f->term, trusted);
+}
+
 static const LogPolicyVtable default_logpolicy_vt = {qt_eventlog, qt_askappend, qt_logging_error};
 LogPolicy default_logpolicy[1] = {&default_logpolicy_vt};
 
@@ -505,8 +510,8 @@ static const SeatVtable qtseat_vt = {
     nullseat_get_windowid,
     nullseat_get_window_pixel_size,
     nullseat_stripctrl_new,
-    nullseat_set_trust_status,
-    nullseat_can_set_trust_status_no,
+    qt_set_trust_status,
+    nullseat_can_set_trust_status_yes,
     nullseat_has_mixed_input_stream_yes,
     nullseat_verbose_yes,
     nullseat_interactive_yes,
