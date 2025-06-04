@@ -373,7 +373,7 @@ bool GuiTerminalWindow::setupContext() {
   return true;
 }
 
-QString decode(Terminal *term, const wchar_t *text, int len) {
+static QString decode(Terminal *term, const wchar_t *text, int len) {
   static QStringDecoder sd = QStringDecoder(QStringDecoder::System);
   QString str = QString(QStringView(text, len));
   QByteArray bytes;
