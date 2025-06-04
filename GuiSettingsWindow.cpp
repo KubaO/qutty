@@ -42,16 +42,6 @@ static Qt::ItemFlags const CONST_FLAGS =
 
 void adjust_sessname_hierarchy(QTreeWidgetItem *item);
 
-vector<string> qutty_string_split(const string &str, char delim) {
-  stringstream ss(str);
-  string tmp;
-  vector<string> ret;
-  while (std::getline(ss, tmp, delim)) {
-    ret.push_back(tmp);
-  }
-  return ret;
-}
-
 GuiSettingsWindow::GuiSettingsWindow(QWidget *parent, GuiBase::SplitType openmode)
     : QDialog(parent), openMode(openmode), ui(new Ui::GuiSettingsWindow) {
   ui->setupUi(this);
@@ -155,7 +145,7 @@ void GuiSettingsWindow::on_rb_contype_serial_clicked() { ui->sw_target->setCurre
 
 void GuiSettingsWindow::on_buttonBox_accepted() {
   if (isChangeSettingsMode) {
-    emit signal_session_change(getConfig(), termWnd);
+    emit signal_session_change(&getConfig(), termWnd);
     goto cu0;
   }
 
@@ -165,14 +155,14 @@ void GuiSettingsWindow::on_buttonBox_accepted() {
       ui->l_saved_sess->currentItem()->text(0) == QUTTY_DEFAULT_CONFIG_SETTINGS) {
     return;
   } else if (ui->le_hostname->text() == "") {
-    QString config_name = ui->l_saved_sess->currentItem()->text(0);
-    auto it = qutty_config.config_list.find(config_name);
-    if (it != qutty_config.config_list.end()) setConfig(QtConfig::copy(it->second.get()));
+    QString configName = ui->l_saved_sess->currentItem()->text(0);
+    auto it = qutty_config.config_list.find(configName);
+    if (it != qutty_config.config_list.end()) setConfig(it->second.copy());
   }
-  // check for NOT_YET_SUPPORTED configs
-  chkUnsupportedConfigs(getConfig());
 
-  emit signal_session_open(getConfig(), openMode);
+  getConfig();
+  chkUnsupportedConfigs(cfg.get());
+  emit signal_session_open(&cfg, openMode);
 
 cu0:
   this->close();
@@ -255,6 +245,8 @@ static const DataItem kexes[] = {{"Diffie-Hellman group 1 (1024-bit)", KEX_DHGRO
                                  {"RSA-based key exchange", KEX_RSA},
                                  {"ECDH key exchange", KEX_ECDH},
                                  {"NTRU Prime / Curve25519 hybrid kex", KEX_NTRU_HYBRID},
+                                 {"ML-KEM / Curve25519 hybrid kex", KEX_MLKEM_25519_HYBRID},
+                                 {"ML-KEM / NIST ECDH hybrid kex", KEX_MLKEM_NIST_HYBRID},
                                  {"-- warn below here --", KEX_WARN}};
 
 // From putty-0.75/config.c
@@ -293,7 +285,6 @@ QString formatTTYMode(const QString &value);
 #define UI_MAPPING(X)                                                          \
   /* control name, keyword, value (opt) */                                     \
                                                                                \
-  X("l_saved_sess", config_name, UI::CurrentUserRole3)                         \
   /* Session */                                                                \
   X("le_hostname", host)                                                       \
   X("le_port", port)                                                           \
@@ -403,9 +394,9 @@ QString formatTTYMode(const QString &value);
   X("chb_wndscroll_pusherasedtext", erase_to_scrollback)                       \
   X("chb_scrollbar_on_left", scrollbar_on_left)                                \
   /* Window Appearance */                                                      \
-  X("rb_curappear_block", cursor_type, 0)                                      \
-  X("rb_curappear_underline", cursor_type, 1)                                  \
-  X("rb_curappear_vertline", cursor_type, 2)                                   \
+  X("rb_curappear_block", cursor_type, CURSOR_BLOCK)                           \
+  X("rb_curappear_underline", cursor_type, CURSOR_UNDERLINE)                   \
+  X("rb_curappear_vertline", cursor_type, CURSOR_VERTICAL_LINE)                \
   X("chb_curblink", blink_cur)                                                 \
   /* X("chb_fontsel_varpitch", 0) */                                           \
   X("rb_fontappear_antialiase", font_quality, FQ_ANTIALIASED)                  \
@@ -437,9 +428,9 @@ QString formatTTYMode(const QString &value);
   X("chb_translation_copy_paste", rawcnp)                                      \
   X("chb_utf8linedraw", utf8linedraw)                                          \
   /* Selection */                                                              \
-  X("rb_cpmouseaction_windows", mouse_is_xterm, 0)                             \
-  X("rb_cpmouseaction_compromise", mouse_is_xterm, 2) /* TODO chk */           \
-  X("rb_cpmouseaction_xterm", mouse_is_xterm, 1)                               \
+  X("rb_cpmouseaction_windows", mouse_is_xterm, MOUSE_WINDOWS)                 \
+  X("rb_cpmouseaction_compromise", mouse_is_xterm, MOUSE_COMPROMISE)           \
+  X("rb_cpmouseaction_xterm", mouse_is_xterm, MOUSE_XTERM)                     \
   X("chb_cpmouseaction_shift", mouse_override)                                 \
   X("rb_cpmouseaction_defaultnormal", rect_select, 0)                          \
   X("rb_cpmouseaction_defaultrect", rect_select, 1)                            \
@@ -455,9 +446,9 @@ QString formatTTYMode(const QString &value);
   X("chb_coloursoption_ansi", ansi_colour)                                     \
   X("chb_coloursoption_xterm", xterm_256_colour)                               \
   X("chb_true_colour", true_colour)                                            \
-  X("rb_bold_font", bold_style, 1)                                             \
-  X("rb_bold_colour", bold_style, 2)                                           \
-  X("rb_bold_both", bold_style, 3)                                             \
+  X("rb_bold_font", bold_style, BOLD_STYLE_FONT)                               \
+  X("rb_bold_colour", bold_style, BOLD_STYLE_COLOUR)                           \
+  X("rb_bold_both", bold_style, BOLD_STYLE_COLOUR | BOLD_STYLE_FONT)           \
   X("chb_colouroption_palette", try_palette)                                   \
   X("chb_colouroption_usesystem", system_colour)                               \
   X("l_colour", colours, &coloursDataList)                                     \
@@ -888,7 +879,7 @@ static const std::unordered_map<config_primary_key, Type> KEY_TO_TYPE = {
 #include "conf.h"
 };
 
-void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
+void GuiSettingsWindow::setConfig(PuttyConfig &&_cfg) {
   this->cfg = std::move(_cfg);
 
   for (QWidget *widget : findChildren<QWidget *>()) {
@@ -907,12 +898,12 @@ void GuiSettingsWindow::setConfig(QtConfig::Pointer &&_cfg) {
 
   setWordness();
 
-  char *config_name = conf_get_str(cfg.get(), CONF_config_name);
-  auto cfg_name_split = qutty_string_split(string(config_name), QUTTY_SESSION_NAME_SPLIT);
-  ui->le_saved_sess->setText(QString::fromStdString(cfg_name_split.back()));
+  QStringList configNameParts = cfg.name().split(QUTTY_SESSION_NAME_SPLIT);
+  const QString &configName = configNameParts.back();
+  ui->le_saved_sess->setText(configName);
 
   QList<QTreeWidgetItem *> sel_saved_sess =
-      ui->l_saved_sess->findItems(config_name, Qt::MatchExactly);
+      ui->l_saved_sess->findItems(configName, Qt::MatchExactly);
   if (sel_saved_sess.size() > 0) ui->l_saved_sess->setCurrentItem(sel_saved_sess[0]);
 
   /* Options controlling session logging */
@@ -1053,7 +1044,7 @@ static bool getW(QButtonGroup *bg, Conf *conf, const KeyValue &kv) {
   return false;
 }
 
-Conf *GuiSettingsWindow::getConfig() {
+const PuttyConfig &GuiSettingsWindow::getConfig() {
   for (QWidget *const widget : findChildren<QWidget *>()) {
     const KeyValue *kv = kvForWidget(widget);
     if (!kv) continue;
@@ -1067,7 +1058,7 @@ Conf *GuiSettingsWindow::getConfig() {
     if (get<QButtonGroup>(widget, cfg.get(), *kv)) continue;
     unhandledEntry(widget, *kv, true);
   }
-  return cfg.get();
+  return cfg;
 }
 
 void GuiSettingsWindow::loadSessionNames() {
@@ -1113,10 +1104,9 @@ void GuiSettingsWindow::on_l_saved_sess_currentItemChanged(QTreeWidgetItem *curr
                                                            QTreeWidgetItem * /*previous*/) {
   if (isChangeSettingsMode) return;
   if (!current) return;
-  QString config_name;
-  config_name = current->data(0, QUTTY_ROLE_FULL_SESSNAME).toString();
-  auto it = qutty_config.config_list.find(config_name);
-  if (it != qutty_config.config_list.end()) setConfig(QtConfig::copy(it->second.get()));
+  QString configName = current->data(0, QUTTY_ROLE_FULL_SESSNAME).toString();
+  auto it = qutty_config.config_list.find(configName);
+  if (it != qutty_config.config_list.end()) setConfig(it->second.copy());
   ui->le_saved_sess->setText(current->text(0));
 }
 
@@ -1136,8 +1126,7 @@ void GuiSettingsWindow::on_b_save_sess_clicked() {
   }
   oldfullname = item->data(0, QUTTY_ROLE_FULL_SESSNAME).toString();
   qutty_config.config_list.erase(oldfullname);
-  QtConfig::Pointer cfg = QtConfig::copy(this->getConfig());
-  conf_set_str(cfg.get(), CONF_config_name, fullname.toUtf8());
+  PuttyConfig cfg = this->getConfig().copyWithNewName(fullname);
   qutty_config.config_list[fullname] = std::move(cfg);
 
   item->setText(0, name);
@@ -1148,18 +1137,17 @@ void GuiSettingsWindow::on_b_save_sess_clicked() {
   pending_session_changes = true;
 }
 
-void GuiSettingsWindow::loadInitialSettings(Conf *cfg) {
-  char *config_name = conf_get_str(cfg, CONF_config_name);
-  if (qutty_config.config_list.find(config_name) != qutty_config.config_list.end()) {
-    setConfig(QtConfig::copy(qutty_config.config_list[config_name].get()));
-    vector<string> split = qutty_string_split(config_name, QUTTY_SESSION_NAME_SPLIT);
-    string sessname = split.back();
-    ui->le_saved_sess->setText(QString::fromStdString(sessname));
+void GuiSettingsWindow::loadInitialSettings(const PuttyConfig &cfg) {
+  const QString &configName = cfg.name();
+  if (qutty_config.config_list.find(configName) != qutty_config.config_list.end()) {
+    setConfig(qutty_config.config_list[configName].copy());
+    QStringList configNameParts = configName.split(QUTTY_SESSION_NAME_SPLIT);
+    const QString &sessname = configNameParts.back();
+    ui->le_saved_sess->setText(sessname);
   }
 }
 
-void GuiSettingsWindow::enableModeChangeSettings(QtConfig::Pointer &&cfg,
-                                                 GuiTerminalWindow *termWnd) {
+void GuiSettingsWindow::enableModeChangeSettings(PuttyConfig &&cfg, GuiTerminalWindow *termWnd) {
   isChangeSettingsMode = true;
   this->termWnd = termWnd;
   setConfig(std::move(cfg));
@@ -1173,16 +1161,15 @@ void GuiSettingsWindow::enableModeChangeSettings(QtConfig::Pointer &&cfg,
 
 void GuiSettingsWindow::on_b_delete_sess_clicked() {
   QTreeWidgetItem *delitem = ui->l_saved_sess->currentItem();
-  QString config_name;
   if (!delitem || delitem->text(0) == QUTTY_DEFAULT_CONFIG_SETTINGS) return;
   if (delitem->childCount()) {
     QMessageBox::information(this, tr("Cannot delete session"),
                              tr("First delete the child sessions"));
     return;
   }
-  config_name = delitem->data(0, QUTTY_ROLE_FULL_SESSNAME).toString();
-  qutty_mru_sesslist.deleteSession(config_name);
-  qutty_config.config_list.erase(config_name);
+  QString configName = delitem->data(0, QUTTY_ROLE_FULL_SESSNAME).toString();
+  qutty_mru_sesslist.deleteSession(configName);
+  qutty_config.config_list.erase(configName);
   delete delitem;
 
   pending_session_changes = true;
@@ -1208,9 +1195,8 @@ void adjust_sessname_hierarchy(QTreeWidgetItem *item) {
   oldfullname = item->data(0, QUTTY_ROLE_FULL_SESSNAME).toString();
   if (fullname == oldfullname) return;  // no change
   item->setData(0, QUTTY_ROLE_FULL_SESSNAME, fullname);
-  QtConfig::Pointer cfg = std::move(qutty_config.config_list[oldfullname]);
-  QByteArray _fullname = fullname.toUtf8();
-  conf_set_str(cfg.get(), CONF_config_name, _fullname.data());
+  PuttyConfig cfg = std::move(qutty_config.config_list[oldfullname]);
+  cfg.changeName(fullname);
   qutty_config.config_list.erase(oldfullname);
   qutty_config.config_list[fullname] = std::move(cfg);
   for (int i = 0; i < item->childCount(); i++) adjust_sessname_hierarchy(item->child(i));
@@ -1255,8 +1241,7 @@ void GuiSettingsWindow::on_b_sess_copy_clicked() {
   newitem->setText(0, foldername);
   newitem->setData(0, QUTTY_ROLE_FULL_SESSNAME, fullname);
   parent->insertChild(parent->indexOfChild(item) + 1, newitem);
-  QtConfig::Pointer cfg = QtConfig::copy(qutty_config.config_list[fullPathName].get());
-  conf_set_str(cfg.get(), CONF_config_name, fullname.toUtf8());
+  PuttyConfig cfg = qutty_config.config_list[fullPathName].copyWithNewName(fullname);
   qutty_config.config_list[fullname] = std::move(cfg);
 
   pending_session_changes = true;

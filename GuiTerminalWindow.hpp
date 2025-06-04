@@ -13,7 +13,7 @@
 #include <QFont>
 #include <QFontInfo>
 #include <QFontMetrics>
-#include <QPointer>
+#include <QPainter>
 
 #include "GuiBase.hpp"
 #include "GuiDrag.hpp"
@@ -29,7 +29,7 @@ extern "C" {
 
 class GuiMainWindow;
 
-class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
+class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase, public TermWin, public Seat {
   Q_OBJECT
   Q_INTERFACES(GuiBase)
 
@@ -40,17 +40,17 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
 
   void showContextMenu(QMouseEvent *e);
 
+  QImage frameBuffer;
+  QPainter painter;
+
+  QPixmap trustSigil;
+
   QFont _font;
   int fontWidth, fontHeight, fontAscent;
   struct unicode_data ucsdata = {};
-  QtSocket *as = nullptr;
-  QPointer<QAbstractSocket> qtsock;
   bool _any_update = false;
   QRegion termrgn;
   std::array<QColor, OSC4_NCOLOURS> colours;
-
-  /* Painter that's active during window repaint */
-  QPainter *painter = nullptr;
 
   // to detect mouse double/triple clicks
   Mouse_Action mouseButtonAction;
@@ -70,15 +70,16 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   QString custom_title;   // given by user
   QString temp_title;
 
-  QtConfig::Pointer cfgOwner;
+  PuttyConfig cfgOwner;
   Conf *cfg;
+
+  int termWidth() const { return viewport()->width() / fontWidth; }
+  int termHeight() const { return viewport()->height() / fontHeight; }
 
  public:
   Terminal *term = nullptr;
   Backend *backend = nullptr;
   Ldisc *ldisc = nullptr;
-  TermWin termwin = {};
-  Seat seat = {};
 
   bool userClosingTab = false;
   bool isSockDisconnected = false;
@@ -86,9 +87,10 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   // order-of-usage
   uint32_t mru_count = 0;
 
+  const PuttyConfig &config() const { return cfgOwner; }
   Conf *getCfg() const { return cfgOwner.get(); }
 
-  GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, Conf *cfg);
+  GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, PuttyConfig &&cfg);
   ~GuiTerminalWindow() override;
 
   GuiMainWindow *getMainWindow() { return mainWindow; }
@@ -100,7 +102,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
    */
   int initTerminal();
   int restartTerminal();
-  int reconfigureTerminal(Conf *new_cfg);
+  int reconfigureTerminal(const PuttyConfig &new_cfg);
 
   void createSplitLayout(GuiBase::SplitType split, GuiTerminalWindow *newTerm);
 
@@ -108,12 +110,12 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   void keyReleaseEvent(QKeyEvent *e) override;
   int from_backend(SeatOutputType type, const char *data, size_t len);
 
+  void setPenBrushFromAttrs(unsigned long attrs);
   bool setupContext();
   void drawText(int x, int y, const wchar_t *text, int len, unsigned long attrs, int lineAttrs,
                 truecolour tc);
   void drawText(int x, int y, const QString &str, unsigned long attrs, int lineAttrs,
                 truecolour tc);
-  void drawText(int x, int y, const QString &str, QPen pen, QBrush brush);
   void drawCursor(int x, int y, const wchar_t *text, int len, unsigned long attrs, int lineAttrs,
                   truecolour tc);
   void drawTrustSigil(int x, int y);

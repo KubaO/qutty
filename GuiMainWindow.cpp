@@ -73,15 +73,15 @@ GuiMainWindow::~GuiMainWindow() {
   }
 }
 
-void GuiMainWindow::on_createNewSession(Conf *cfg, GuiBase::SplitType splittype) {
+void GuiMainWindow::on_createNewSession(const PuttyConfig *cfg, GuiBase::SplitType splittype) {
   // User has selected a session
   this->createNewTab(cfg, splittype);
 }
 
-void GuiMainWindow::createNewTab(Conf *cfg, GuiBase::SplitType splittype) {
-  GuiTerminalWindow *newWnd = new GuiTerminalWindow(tabArea, this, cfg);
-  QString config_name = conf_get_str(cfg, CONF_config_name);
-  QString hostname = conf_get_str(cfg, CONF_host);
+void GuiMainWindow::createNewTab(const PuttyConfig *cfg, GuiBase::SplitType splittype) {
+  GuiTerminalWindow *newWnd = new GuiTerminalWindow(tabArea, this, cfg->copy());
+  const QString &configName = cfg->name();
+  QString hostname = conf_get_str(cfg->get(), CONF_host);
 
   int rc = newWnd->initTerminal();
   if (rc) goto err_exit;
@@ -89,7 +89,7 @@ void GuiMainWindow::createNewTab(Conf *cfg, GuiBase::SplitType splittype) {
   if (this->setupLayout(newWnd, splittype)) goto err_exit;
 
   // To set the current session to MRU list
-  qutty_mru_sesslist.insertSession(config_name, hostname);
+  qutty_mru_sesslist.insertSession(configName, hostname);
 
   return;
 
@@ -154,7 +154,7 @@ void GuiMainWindow::tabCloseRequested(int index) {
   }
 }
 
-void GuiMainWindow::on_openNewSession(Conf *cfg, GuiBase::SplitType splittype) {
+void GuiMainWindow::on_openNewSession(const PuttyConfig *cfg, GuiBase::SplitType splittype) {
   /*
    * 1. Context menu -> New Tab
    * 2. Main Menu -> New tab
@@ -166,12 +166,11 @@ void GuiMainWindow::on_openNewSession(Conf *cfg, GuiBase::SplitType splittype) {
     return;
   }
   settingsWindow = new GuiSettingsWindow(this, splittype);
-  // clang-format off
-  connect(settingsWindow, SIGNAL(signal_session_open(Conf*,GuiBase::SplitType)),
-          SLOT(on_createNewSession(Conf*,GuiBase::SplitType)));
-  connect(settingsWindow, SIGNAL(signal_session_close()), SLOT(on_settingsWindowClose()));
-  // clang-format on
-  settingsWindow->loadInitialSettings(cfg);
+  connect(settingsWindow, &GuiSettingsWindow::signal_session_open, this,
+          &GuiMainWindow::on_createNewSession);
+  connect(settingsWindow, &GuiSettingsWindow::signal_session_change, this,
+          &GuiMainWindow::on_settingsWindowClose);
+  settingsWindow->loadInitialSettings(*cfg);
   settingsWindow->show();
 }
 
@@ -187,13 +186,13 @@ void GuiMainWindow::on_openNewCompactSession(GuiBase::SplitType splittype) {
     return;
   }
   compactSettingsWindow = new GuiCompactSettingsWindow(this, splittype);
-  // clang-format off
-  connect(compactSettingsWindow, SIGNAL(signal_on_open(Conf*,GuiBase::SplitType)),
-          SLOT(on_createNewSession(Conf*,GuiBase::SplitType)));
-  connect(compactSettingsWindow, SIGNAL(signal_on_close()), SLOT(on_settingsWindowClose()));
-  connect(compactSettingsWindow, SIGNAL(signal_on_detail(Conf*,GuiBase::SplitType)),
-          SLOT(on_openNewSession(Conf*,GuiBase::SplitType)));
-  // clang-format on
+  connect(compactSettingsWindow, &GuiCompactSettingsWindow::signal_on_open, this,
+          &GuiMainWindow::on_createNewSession);
+  connect(compactSettingsWindow, &GuiCompactSettingsWindow::signal_on_close, this,
+          &GuiMainWindow::on_settingsWindowClose);
+  connect(compactSettingsWindow, &GuiCompactSettingsWindow::signal_on_detail, this,
+          &GuiMainWindow::on_openNewSession);
+
   compactSettingsWindow->show();
 }
 
@@ -215,19 +214,20 @@ void GuiMainWindow::on_changeSettingsTab(GuiTerminalWindow *termWnd) {
   }
   assert(terminalList.indexOf(termWnd) != -1);
   settingsWindow = new GuiSettingsWindow(this);
-  settingsWindow->enableModeChangeSettings(QtConfig::copy(termWnd->getCfg()), termWnd);
-  // clang-format off
-  connect(settingsWindow, SIGNAL(signal_session_change(Conf*,GuiTerminalWindow*)),
-          SLOT(on_changeSettingsTabComplete(Conf*,GuiTerminalWindow*)));
-  connect(settingsWindow, SIGNAL(signal_session_close()), SLOT(on_settingsWindowClose()));
-  // clang-format on
+  settingsWindow->enableModeChangeSettings(termWnd->config().copy(), termWnd);
+  connect(settingsWindow, &GuiSettingsWindow::signal_session_change, this,
+          &GuiMainWindow::on_changeSettingsTabComplete);
+  connect(settingsWindow, &GuiSettingsWindow::signal_session_close, this,
+          &GuiMainWindow::on_settingsWindowClose);
+
   settingsWindow->show();
 }
 
-void GuiMainWindow::on_changeSettingsTabComplete(Conf *cfg, GuiTerminalWindow *termWnd) {
+void GuiMainWindow::on_changeSettingsTabComplete(const PuttyConfig *cfg,
+                                                 GuiTerminalWindow *termWnd) {
   settingsWindow = NULL;
   assert(terminalList.indexOf(termWnd) != -1);
-  termWnd->reconfigureTerminal(cfg);
+  termWnd->reconfigureTerminal(*cfg);
 }
 
 void GuiMainWindow::currentChanged(int index) {

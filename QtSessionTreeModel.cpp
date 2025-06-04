@@ -4,7 +4,7 @@
 using std::map;
 
 QtSessionTreeModel::QtSessionTreeModel(QObject *parent,
-                                       const std::map<QString, QtConfig::Pointer> &config_list)
+                                       const std::map<QString, PuttyConfig> &config_list)
     : QAbstractItemModel(parent) {
   map<QString, QtSessionTreeItem *> folders;
   folders[""] = &rootItem;

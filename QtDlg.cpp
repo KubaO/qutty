@@ -61,7 +61,7 @@ SeatPromptResult qt_confirm_weak_crypto_primitive(Seat *seat, SeatDialogText *te
                                                   void (*callback)(void *ctx,
                                                                    SeatPromptResult result),
                                                   void *ctx) {
-  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(seat);
   strbuf *dlg_text = strbuf_new();
   const char *dlg_title = process_seatdialogtext(dlg_text, NULL, text);
   QString msg = dlg_text->s;
@@ -119,7 +119,7 @@ int qt_askappend(LogPolicy * /*lp*/, Filename *filename,
  * session.)
  */
 static SeatPromptResult qt_get_userpass_input(Seat *seat, prompts_t *p) {
-  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(seat);
   return term_get_userpass_input(f->term, p);
 }
 
@@ -196,7 +196,7 @@ void modalfatalbox(const char *fmt, ...) {
 }
 
 static void qt_connection_fatal(Seat *seat, const char *msg) {
-  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(seat);
   if (f->userClosingTab || f->isSockDisconnected) return;
 
   // prevent recursive calling
@@ -244,7 +244,7 @@ SeatPromptResult qt_confirm_ssh_host_key(Seat *seat, const char *host, int port,
                                          void *ctx) {
   // TODO: c.f. HostKeyDialogProc in puttysrc/windows/dialog.c
   assert(seat);
-  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(seat);
   int ret;
 
   static auto absentmsg =
@@ -334,7 +334,7 @@ SeatPromptResult qt_confirm_weak_cached_hostkey(Seat *seat, SeatDialogText *text
   QString msg = dlg_text->s;
   strbuf_free(dlg_text);
 
-  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(seat);
   static auto const mbtitle = "%s Security Alert"_L1;
   int mbret;
 
@@ -382,7 +382,7 @@ static void qt_sent(Seat *seat, size_t new_sendbuffer) {}
  */
 static size_t qt_banner(Seat *seat, const void *data, size_t len) {
   qDebug() << __FUNCTION__ << len;
-  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(seat);
   return f->from_backend(SEAT_OUTPUT_STDOUT, (const char *)data, len);
 }
 
@@ -401,7 +401,7 @@ static void qt_notify_session_started(Seat *seat) { qDebug() << __FUNCTION__; }
  * the connection has finished.
  */
 static void qt_notify_remote_exit(Seat *seat) {
-  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(seat);
   int exitcode = backend_exitcode(f->backend);
 
   if (f->userClosingTab || f->isSockDisconnected) return;
@@ -456,12 +456,12 @@ const SeatDialogPromptDescriptions *qt_prompt_descriptions(Seat *seat) {
 }
 
 char *qt_get_ttymode(Seat *seat, const char *mode) {
-  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(seat);
   return term_get_ttymode(f->term, mode);
 }
 
 bool qt_is_utf8(Seat *seat) {
-  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(seat);
   return f->term->ucsdata->line_codepage == CP_UTF8;
 }
 
@@ -474,8 +474,13 @@ bool qt_is_utf8(Seat *seat) {
  *  * The return value is the current size of the output backlog.
  */
 size_t qt_output(Seat *seat, SeatOutputType type, const void *data, size_t len) {
-  GuiTerminalWindow *f = container_of(seat, GuiTerminalWindow, seat);
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(seat);
   return f->from_backend(type, (const char *)data, len);
+}
+
+void qt_set_trust_status(Seat *seat, bool trusted) {
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(seat);
+  term_set_trust_status(f->term, trusted);
 }
 
 static const LogPolicyVtable default_logpolicy_vt = {qt_eventlog, qt_askappend, qt_logging_error};
@@ -505,8 +510,8 @@ static const SeatVtable qtseat_vt = {
     nullseat_get_windowid,
     nullseat_get_window_pixel_size,
     nullseat_stripctrl_new,
-    nullseat_set_trust_status,
-    nullseat_can_set_trust_status_no,
+    qt_set_trust_status,
+    nullseat_can_set_trust_status_yes,
     nullseat_has_mixed_input_stream_yes,
     nullseat_verbose_yes,
     nullseat_interactive_yes,

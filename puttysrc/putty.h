@@ -486,9 +486,6 @@ enum {
     PROT_SERIAL,
     /* PROT_SUPDUP is the historical RFC 734 protocol. */
     PROT_SUPDUP,
-#ifdef IS_QUTTY
-    PROT_TMUX_CLIENT,
-#endif
     PROTOCOL_LIMIT, /* upper bound on number of protocols */
 };
 

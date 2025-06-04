@@ -1,17 +1,14 @@
 #include <QDebug>
 
 #include "GuiTerminalWindow.hpp"
+#include "QuTTY.hpp"
 #include "tmux/TmuxGateway.hpp"
 #include "tmux/tmux.h"
 
-struct TmuxBackend {
+struct TmuxBackend : Plug, Backend {
   TmuxGateway *gateway;
-  int paneid;
-
-  Plug plug;
-  Backend backend;
   LogContext *logctx;
-
+  int paneid;
   size_t sendbufferLength = 0;
 };
 
@@ -41,21 +38,21 @@ char *tmux_client_init(const BackendVtable *vt, Seat *seat, Backend **backend_ou
                        char ** /*realhost*/, bool /*nodelay*/, bool /*keepalive*/) {
   static const struct PlugVtable vtable = {tmux_log, tmux_closing, tmux_receive, tmux_sent, NULL};
 
-  GuiTerminalWindow *termWnd = container_of(seat, GuiTerminalWindow, seat);
+  GuiTerminalWindow *termWnd = static_cast<GuiTerminalWindow *>(seat);
   assert(termWnd->tmuxGateway());
 
   TmuxBackend *tb = new TmuxBackend();
-  *backend_out = &tb->backend;
+  *backend_out = tb;
   tb->gateway = termWnd->tmuxGateway();
   tb->paneid = port;  // HACK - port is actually paneid
-  tb->plug.vt = &vtable;
+  static_cast<Plug *>(tb)->vt = &vtable;
   tb->logctx = logctx;
 
   return NULL;
 }
 
 void tmux_free(Backend *be) {
-  TmuxBackend *tb = container_of(be, TmuxBackend, backend);
+  TmuxBackend *tb = static_cast<TmuxBackend *>(be);
   delete tb;
 }
 
@@ -65,7 +62,7 @@ void tmux_reconfig(Backend * /*be*/, Conf * /*cfg*/) {}
  * Called to send data down the backend connection.
  */
 void tmux_send(Backend *be, const char *buf, size_t len) {
-  TmuxBackend *tmuxpane = container_of(be, TmuxBackend, backend);
+  TmuxBackend *tmuxpane = static_cast<TmuxBackend *>(be);
   const size_t wbuf_len = 20480;
   wchar_t wbuf[wbuf_len];  // for plenty of speed
   const char *rem_buf = buf;
@@ -89,7 +86,7 @@ void tmux_send(Backend *be, const char *buf, size_t len) {
  * Returns the current amount of buffered data.
  */
 size_t tmux_sendbuffer(Backend *be) {
-  TmuxBackend *tmuxpane = container_of(be, TmuxBackend, backend);
+  TmuxBackend *tmuxpane = static_cast<TmuxBackend *>(be);
   return tmuxpane->sendbufferLength;
 }
 

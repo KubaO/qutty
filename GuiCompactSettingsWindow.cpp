@@ -108,14 +108,12 @@ void GuiCompactSettingsWindow::on_open_clicked() {
 
   QString configName = cb_session_list.currentText();
   if (qutty_config.config_list.find(configName) == qutty_config.config_list.end()) return;
-  Conf *cfg = qutty_config.config_list[configName].get();
-  conf_set_str(cfg, CONF_host, cb_hostname.currentText().toUtf8());
+  const PuttyConfig &cfg = qutty_config.config_list[configName];
+  conf_set_str(cfg.get(), CONF_host, cb_hostname.currentText().toUtf8());
+  conf_set_int(cfg.get(), CONF_protocol, getConnectionType());
 
-  conf_set_int(cfg, CONF_protocol, getConnectionType());
-
-  chkUnsupportedConfigs(cfg);
-
-  emit signal_on_open(cfg, openMode);
+  chkUnsupportedConfigs(cfg.get());
+  emit signal_on_open(&cfg, openMode);
   this->close();
   this->deleteLater();
 }
@@ -123,8 +121,8 @@ void GuiCompactSettingsWindow::on_open_clicked() {
 void GuiCompactSettingsWindow::on_details_clicked() {
   QString configName = cb_session_list.currentText();
   if (qutty_config.config_list.find(configName) == qutty_config.config_list.end()) return;
-  Conf *cfg = qutty_config.config_list[configName].get();
-  emit signal_on_detail(cfg, openMode);
+  const PuttyConfig &cfg = qutty_config.config_list[configName];
+  emit signal_on_detail(&cfg, openMode);
   this->close();
   this->deleteLater();
 }

@@ -18,13 +18,13 @@
 #include "GuiMenu.hpp"
 #include "GuiSplitter.hpp"
 #include "GuiTabWidget.hpp"
+#include "QuTTY.hpp"
 #include "serialize/QtWebPluginMap.hpp"
-extern "C" {
-#include "terminal/terminal.h"
-}
 
-GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, Conf *cfg)
-    : QAbstractScrollArea(parent), cfgOwner(QtConfig::copy(cfg)), cfg(cfgOwner.get()) {
+using namespace Qt::Literals::StringLiterals;
+
+GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, PuttyConfig &&cfg)
+    : QAbstractScrollArea(parent), cfgOwner(std::move(cfg)), cfg(cfgOwner.get()) {
   this->mainWindow = mainWindow;
 
   setFrameShape(QFrame::NoFrame);
@@ -42,7 +42,7 @@ GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow,
   mouseButtonAction = MA_NOTHING;
   setMouseTracking(true);
   viewport()->setCursor(Qt::IBeamCursor);
-  Q_ASSERT(true);
+  viewport()->setAttribute(Qt::WA_OpaquePaintEvent);
 
   // enable drag-drop
   setAcceptDrops(true);
@@ -63,24 +63,18 @@ GuiTerminalWindow::~GuiTerminalWindow() {
     backend = NULL;
     term_provide_backend(term, NULL);
     term_free(term);
-    if (qtsock) qtsock->close();
     term = NULL;
-    qtsock = NULL;
   }
 }
 
-extern "C" Socket *get_ssh_socket(void *handle);
-extern "C" Socket *get_telnet_socket(void *handle);
-
 int GuiTerminalWindow::initTerminal() {
-  Socket *sock = nullptr;
   char *realhost = NULL;
   char *ip_addr = conf_get_str(cfg, CONF_host);
 
-  termwin.vt = &qttermwin_vt;
-  seat.vt = &qtseat_vt;
+  static_cast<TermWin *>(this)->vt = &qttermwin_vt;
+  static_cast<Seat *>(this)->vt = &qtseat_vt;
 
-  win_set_title(&termwin, ip_addr, CP_ACP);
+  win_set_title(this, ip_addr, CP_ACP);
 
   memset(&ucsdata, 0, sizeof(struct unicode_data));
   init_ucs(cfg, &ucsdata);
@@ -92,7 +86,7 @@ int GuiTerminalWindow::initTerminal() {
   int port = conf_get_int(cfg, CONF_port);
 
   const char *error =
-      backend_init(vt, &seat, &backend, logctx, cfg, (char *)ip_addr, port, &realhost, 1, 0);
+      backend_init(vt, this, &backend, logctx, cfg, (char *)ip_addr, port, &realhost, 1, 0);
   if (realhost) sfree(realhost);
 
   if (error) {
@@ -107,26 +101,11 @@ int GuiTerminalWindow::initTerminal() {
     goto cu0;
   }
 
-  term = term_init(cfg, &ucsdata, &termwin);
+  term = term_init(cfg, &ucsdata, this);
   logctx = log_init(default_logpolicy, cfg);
   term_provide_logctx(term, logctx);
 
-  term_size(term, this->viewport()->height() / fontHeight, this->viewport()->width() / fontWidth,
-            conf_get_int(cfg, CONF_savelines));
-
-  switch (conf_get_int(cfg, CONF_protocol)) {
-    case PROT_TELNET:
-      sock = get_telnet_socket(backend);
-      as = container_of(sock, QtSocket, sock);
-      break;
-    case PROT_SSH:
-      sock = get_ssh_socket(backend);
-      as = container_of(sock, QtSocket, sock);
-      break;
-    default:
-      assert(0);
-  }
-  qtsock = as->qtsock;
+  term_size(term, termHeight(), termWidth(), conf_get_int(cfg, CONF_savelines));
 
   /*
    * Connect the terminal to the backend for resize purposes.
@@ -136,7 +115,7 @@ int GuiTerminalWindow::initTerminal() {
   /*
    * Set up a line discipline.
    */
-  ldisc = ldisc_create(cfg, term, backend, &seat);
+  ldisc = ldisc_create(cfg, term, backend, this);
 
   return 0;
 
@@ -202,17 +181,15 @@ int GuiTerminalWindow::restartTerminal() {
     backend = NULL;
     term_provide_backend(term, NULL);
     term_free(term);
-    qtsock->close();
     term = NULL;
-    qtsock = NULL;
   }
   isSockDisconnected = false;
   return initTerminal();
 }
 
-int GuiTerminalWindow::reconfigureTerminal(Conf *new_cfg) {
-  QtConfig::Pointer prev_cfg = std::move(this->cfgOwner);
-  this->cfgOwner = QtConfig::copy(new_cfg);
+int GuiTerminalWindow::reconfigureTerminal(const PuttyConfig &new_cfg) {
+  PuttyConfig prev_cfg = std::move(this->cfgOwner);
+  this->cfgOwner = new_cfg.copy();
   this->cfg = cfgOwner.get();
 
   /* Pass new config data to the logging module */
@@ -256,7 +233,7 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   init_ucs(cfg, &ucsdata);
   setTermFont(cfg);
 
-  term = term_init(cfg, &ucsdata, &termwin);
+  term = term_init(cfg, &ucsdata, this);
   LogContext *logctx = log_init(default_logpolicy, cfg);
   term_provide_logctx(term, logctx);
   int cfg_width = conf_get_int(cfg, CONF_width);
@@ -278,14 +255,11 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
 
   const BackendVtable *vt = backend_vt_from_proto(conf_get_int(cfg, CONF_protocol));
   // HACK - pass paneid in port
-  backend_init(vt, &seat, &backend, logctx, cfg, NULL, id, NULL, 0, 0);
+  backend_init(vt, this, &backend, logctx, cfg, NULL, id, NULL, 0, 0);
   tmuxPane = new TmuxWindowPane(gateway, this);
   tmuxPane->id = id;
   tmuxPane->width = width;
   tmuxPane->height = height;
-
-  as = NULL;
-  qtsock = NULL;
 
   /*
    * Connect the terminal to the backend for resize purposes.
@@ -295,7 +269,7 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   /*
    * Set up a line discipline.
    */
-  ldisc = ldisc_create(cfg, term, backend, &seat);
+  ldisc = ldisc_create(cfg, term, backend, this);
   return tmuxPane;
 }
 
@@ -385,26 +359,21 @@ void GuiTerminalWindow::highlightSearchedText() {
 }
 
 void GuiTerminalWindow::paintEvent(QPaintEvent *e) {
-  if (!term) return;
-  qDebug() << __FUNCTION__;
-  QPainter painter(viewport());
-  this->painter = &painter;
-  painter.fillRect(viewport()->rect(), colours[OSC4_COLOUR_bg]);
-  term_paint(term, 0, 0, term->cols, term->rows, true);
-  this->painter = nullptr;
+  assert(!painter.isActive());
+  if (term->window_update_pending) term_update(term);
+  painter.begin(viewport());
+  painter.drawImage(QPoint(0, 0), frameBuffer);
+  painter.end();
 }
 
 bool GuiTerminalWindow::setupContext() {
-  if (painter) {
-    qDebug() << "painting";
-    return true;
-  }
-  viewport()->update();
-  qDebug() << "scheduled painting";
-  return false;
+  assert(!painter.isActive());
+  painter.begin(&frameBuffer);
+  painter.setFont(_font);
+  return true;
 }
 
-QString decode(Terminal *term, const wchar_t *text, int len) {
+static QString decode(Terminal *term, const wchar_t *text, int len) {
   static QStringDecoder sd = QStringDecoder(QStringDecoder::System);
   QString str = QString(QStringView(text, len));
   QByteArray bytes;
@@ -439,21 +408,13 @@ QString decode(Terminal *term, const wchar_t *text, int len) {
   return str;
 }
 
-void GuiTerminalWindow::drawText(int x, int y, const wchar_t *text, int len, unsigned long attrs,
-                                 int lineAttrs, truecolour tc) {
-  assert(painter);
-  assert(!tc.fg.enabled && !tc.bg.enabled);
-  drawText(x, y, decode(term, text, len), attrs, lineAttrs, tc);
-}
-
-void GuiTerminalWindow::drawText(int x, int y, const QString &text, unsigned long attrs,
-                                 int lineAttrs, truecolour tc) {
-  if ((attrs & TATTR_ACTCURS) && (conf_get_int(cfg, CONF_cursor_type) == 0 || term->big_cursor)) {
+void GuiTerminalWindow::setPenBrushFromAttrs(unsigned long attrs) {
+  if (attrs & (TATTR_ACTCURS | TATTR_PASCURS)) {
     attrs &= ~(ATTR_REVERSE | ATTR_BLINK | ATTR_COLOURS);
     if (bold_mode == BOLD_COLOURS) attrs &= ~ATTR_BOLD;
-
-    /* cursor fg and bg */
-    attrs |= (260 << ATTR_FGSHIFT) | (261 << ATTR_BGSHIFT);
+    /* cursor fg and bg. Note that cursor_bg is the color of the bulk of the cursor, while fg is the
+     color of the I guess text drawn over the cursor? */
+    attrs |= (OSC4_COLOUR_cursor_bg << ATTR_FGSHIFT) | (OSC4_COLOUR_cursor_fg << ATTR_BGSHIFT);
   }
 
   int nfg = ((attrs & ATTR_FGMASK) >> ATTR_FGSHIFT);
@@ -474,82 +435,99 @@ void GuiTerminalWindow::drawText(int x, int y, const QString &text, unsigned lon
       nbg |= 1;
   }
 
-  QPen pen = QPen(colours[nfg]);
-  QBrush brush = QBrush(colours[nbg]);
-  drawText(x, y, text, pen, brush);
+  painter.setPen(QPen(colours[nfg], 0));
+  painter.setBrush(colours[nbg]);
 }
 
-void GuiTerminalWindow::drawText(int x, int y, const QString &str, QPen pen, QBrush brush) {
-  // qDebug() << __FUNCTION__ << x << y << str;
-  painter->fillRect(QRect(x * fontWidth, y * fontHeight, fontWidth * str.length(), fontHeight),
-                    brush);
-  painter->setPen(pen);
-  painter->drawText(x * fontWidth, y * fontHeight + fontAscent, str);
+void GuiTerminalWindow::drawText(int x, int y, const wchar_t *text, int len, unsigned long attrs,
+                                 int lineAttrs, truecolour tc) {
+  drawText(x, y, decode(term, text, len), attrs, lineAttrs, tc);
+}
+void GuiTerminalWindow::drawText(int x, int y, const QString &str, unsigned long attrs,
+                                 int lineAttrs, truecolour tc) {
+  if (0) qDebug() << __FUNCTION__ << x << y << str << Qt::hex << attrs;
+  assert(painter.isActive());
+  assert(!tc.fg.enabled && !tc.bg.enabled);
+
+  setPenBrushFromAttrs(attrs);
+  painter.fillRect(x * fontWidth, y * fontHeight, fontWidth * str.length(), fontHeight,
+                   painter.brush());
+  painter.drawText(x * fontWidth, y * fontHeight + fontAscent, str);
 }
 
 void GuiTerminalWindow::drawCursor(int x, int y, const wchar_t *text, int len, unsigned long attrs,
                                    int lineAttrs, truecolour tc) {
-  int fnt_width;
-  int char_width;
+  if (0) qDebug() << __FUNCTION__ << x << y << len << Qt::hex << attrs;
+  assert(painter.isActive());
+  assert(attrs & (TATTR_ACTCURS | TATTR_PASCURS));
+
+  setPenBrushFromAttrs(attrs);
+
   int ctype = conf_get_int(cfg, CONF_cursor_type);
+  int char_width = fontWidth;
+  if (attrs & ATTR_WIDE) char_width *= 2;
+  x = x * fontWidth;
+  y = y * fontHeight;
 
-  QString str = decode(term, text, len);
-
-  if ((attrs & TATTR_ACTCURS) && (ctype == 0 || term->big_cursor)) {
-    return drawText(x, y, str, attrs, lineAttrs, tc);
+  if (ctype == CURSOR_BLOCK || term->big_cursor) {
+    if (attrs & TATTR_ACTCURS) {
+      painter.fillRect(x, y, char_width, fontHeight, painter.pen().color());
+    } else if (attrs & TATTR_PASCURS) {
+      painter.drawRect(x + 1, y + 1, char_width - 2, fontHeight - 2);
+    }
+    return;
   }
 
-  fnt_width = char_width = fontWidth;
-  if (attrs & ATTR_WIDE) char_width *= 2;
-  x = x * fnt_width;
-  y = x * fontHeight;
-
-  if ((attrs & TATTR_PASCURS) && (ctype == 0 || term->big_cursor)) {
-    QPoint points[] = {QPoint(x, y), QPoint(x, y + fontHeight - 1),
-                       QPoint(x + char_width - 1, y + fontHeight - 1),
-                       QPoint(x + char_width - 1, y)};
-    painter->setPen(colours[OSC4_COLOUR_cursor_fg]);
-    painter->drawPolygon(points, 4);
-  } else if ((attrs & (TATTR_ACTCURS | TATTR_PASCURS)) && ctype != 0) {
-    int startx, starty, dx, dy, length, i;
-    if (ctype == 1) {
-      startx = x;
-      starty = y + fontMetrics().descent();
-      dx = 1;
-      dy = 0;
-      length = char_width;
-    } else {
-      int xadjust = 0;
-      if (attrs & TATTR_RIGHTCURS) xadjust = char_width - 1;
-      startx = x + xadjust;
-      starty = y;
-      dx = 0;
-      dy = 1;
-      length = fontHeight;
-    }
-    if (attrs & TATTR_ACTCURS) {
-      // To draw the vertical and underline active cursors
-      painter->setPen(colours[OSC4_COLOUR_cursor_fg]);
-      painter->drawLine(startx, starty + length * dx, startx + length * dx, starty + length);
-    } else {
-      // To draw the vertical and underline passive cursors
-      painter->setPen(colours[OSC4_COLOUR_cursor_fg]);
-      for (i = 0; i < length; i++) {
-        if (i % 2 == 0) {
-          painter->drawPoint(startx, starty + length * dx);
-        }
-        startx += dx;
-        starty += dy;
-      }
+  assert(ctype != CURSOR_BLOCK);
+  int startx, starty, dx, dy, length, i;
+  if (ctype == CURSOR_UNDERLINE) {
+    startx = x;
+    starty = y + fontMetrics().descent();
+    dx = 1;
+    dy = 0;
+    length = char_width;
+  } else {
+    int xadjust = 0;
+    if (attrs & TATTR_RIGHTCURS) xadjust = char_width - 1;
+    startx = x + xadjust;
+    starty = y + 1;
+    dx = 0;
+    dy = 1;
+    length = fontHeight - 2;
+  }
+  if (attrs & TATTR_ACTCURS) {
+    // To draw the vertical and underline active cursors
+    painter.drawLine(startx, starty + length * dx, startx + length * dx, starty + length);
+  } else {
+    // To draw the vertical and underline passive cursors
+    QPen fg = painter.pen();
+    QPen bg = QPen(painter.brush().color(), 0);
+    for (i = 0; i < length; i++) {
+      painter.setPen((i % 2 == 0) ? fg : bg);
+      painter.drawPoint(startx, starty + length * dx);
+      startx += dx;
+      starty += dy;
     }
   }
 }
 
-void GuiTerminalWindow::drawTrustSigil(int x, int y) {}
+void GuiTerminalWindow::drawTrustSigil(int x, int y) {
+  if (trustSigil.isNull()) {
+    QIcon ic = QIcon(u":/icons/qutty.ico"_s);
+    QSize s = QSize(2 * fontWidth, fontHeight);
+    trustSigil = ic.pixmap(s, devicePixelRatioF());
+  }
+  assert(painter.isActive());
+  painter.drawPixmap(x * fontWidth, y * fontHeight, trustSigil);
+}
 
 int GuiTerminalWindow::charWidth(int uc) { return 1; }
 
-void GuiTerminalWindow::freeContext() { assert(painter); }
+void GuiTerminalWindow::freeContext() {
+  assert(painter.isActive());
+  painter.end();
+  viewport()->update();
+}
 
 int GuiTerminalWindow::from_backend(SeatOutputType type, const char *data, size_t len) {
   if (_tmuxMode == TMUX_MODE_GATEWAY && _tmuxGateway) {
@@ -582,9 +560,9 @@ void GuiTerminalWindow::setTermFont(Conf *cfg) {
 }
 
 void GuiTerminalWindow::setPalette(unsigned start, unsigned ncolours, const rgb *colours) {
-  for (int i = start; i < start + ncolours; ++i) {
+  for (int i = 0; i < ncolours; ++i) {
     const rgb &c = colours[i];
-    this->colours[i] = QColor::fromRgb(c.r, c.g, c.b);
+    this->colours[i + start] = QColor::fromRgb(c.r, c.g, c.b);
   }
 
   /* Override with system colours if appropriate * /
@@ -771,9 +749,21 @@ void GuiTerminalWindow::resizeEvent(QResizeEvent *) {
     return;
   }
 
+  if (viewport()->size() != frameBuffer.size()) {
+    using std::swap;
+    QImage newFB = QImage(viewport()->size() * devicePixelRatioF(), QImage::Format_RGB32);
+    newFB.fill(colours[OSC4_COLOUR_bg]);
+    painter.begin(&newFB);
+    painter.drawImage(QPoint(), frameBuffer);
+    painter.end();
+    newFB.setDevicePixelRatio(devicePixelRatioF());
+    swap(newFB, frameBuffer);
+  }
+
+  int width = termWidth();
+  int height = termHeight();
+
   if (_tmuxMode == TMUX_MODE_CLIENT) {
-    int width = viewport()->size().width() / fontWidth;
-    int height = viewport()->size().height() / fontHeight;
     if (parentSplit) {
       width = parentSplit->width() / fontWidth;
       height = parentSplit->height() / fontHeight;
@@ -784,9 +774,10 @@ void GuiTerminalWindow::resizeEvent(QResizeEvent *) {
     // %layout-change tmux command does the actual resize
     return;
   }
-  if (term)
-    term_size(term, viewport()->size().height() / fontHeight,
-              viewport()->size().width() / fontWidth, conf_get_int(cfg, CONF_savelines));
+  if (term) {
+    term_size(term, height, width, conf_get_int(cfg, CONF_savelines));
+    term_paint(term, 0, 0, width - 1, height - 1, false);
+  }
 }
 
 bool GuiTerminalWindow::event(QEvent *event) {
@@ -810,15 +801,15 @@ bool GuiTerminalWindow::event(QEvent *event) {
 void GuiTerminalWindow::focusInEvent(QFocusEvent *) {
   this->mru_count = ++mainWindow->mru_count_last;
   if (!term) return;
-  term_set_focus(term, TRUE);
-  viewport()->update();
+  term_set_focus(term, true);
+  term_update(term);
   if (parentSplit) mainWindow->tabArea->setTabText(mainWindow->tabArea->currentIndex(), temp_title);
 }
 
 void GuiTerminalWindow::focusOutEvent(QFocusEvent *) {
   if (!term) return;
-  term_set_focus(term, FALSE);
-  viewport()->update();
+  term_set_focus(term, false);
+  term_update(term);
 }
 
 void GuiTerminalWindow::setScrollBar(int total, int start, int page) {
@@ -911,3 +902,148 @@ void GuiTerminalWindow::on_sessionTitleChange(bool force) {
   if (!parentSplit || mainWindow->tabArea->widget(tabind)->focusWidget() == this)
     mainWindow->tabArea->setTabText(tabind, temp_title);
 }
+
+#if 0
+void get_clip(void *frontend, wchar_t **p, int *len) {
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
+  f->getClip(p, len);
+}
+#endif
+
+static bool qtwin_setup_draw_ctx(TermWin *win) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  return gw->setupContext();
+}
+
+static void qtwin_draw_text(TermWin *win, int x, int y, wchar_t *text, int len, unsigned long attrs,
+                            int line_attrs, truecolour tc) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->drawText(x, y, text, len, attrs, line_attrs, tc);
+}
+
+static void qtwin_draw_cursor(TermWin *win, int x, int y, wchar_t *text, int len,
+                              unsigned long attrs, int line_attrs, truecolour tc) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->drawCursor(x, y, text, len, attrs, line_attrs, tc);
+}
+
+/* Draw the sigil indicating that a line of text has come from
+ * PuTTY itself rather than the far end (defence against end-of-
+ * authentication spoofing) */
+static void qtwin_draw_trust_sigil(TermWin *win, int x, int y) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->drawTrustSigil(x, y);
+}
+
+static int qtwin_char_width(TermWin *win, int uc) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  return gw->charWidth(uc);
+}
+
+static void qtwin_free_draw_ctx(TermWin *win) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->freeContext();
+}
+
+static void qtwin_set_cursor_pos(TermWin *win, int x, int y) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  if (0) qDebug() << __FUNCTION__ << x << y;
+  // We don't need to do anything here, since draw_text and draw_cursor
+  // are called before this one is.
+}
+
+static void qtwin_set_raw_mouse_mode(TermWin *, bool enable) {}
+
+static void qtwin_set_raw_mouse_mode_pointer(TermWin *, bool enable) {}
+
+static void qtwin_set_scrollbar(TermWin *win, int total, int start, int page) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->setScrollBar(total, start, page);
+}
+
+static void qtwin_bell(TermWin *, int mode) {}
+
+static void qtwin_clip_write(TermWin *win, int clipboard, wchar_t *text, int *attrs,
+                             truecolour *colours, int len, bool must_deselect) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->writeClip(clipboard, text, attrs, colours, len, must_deselect);
+}
+
+static void qtwin_clip_request_paste(TermWin *win, int clipboard) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->requestPaste(clipboard);
+}
+
+static void qtwin_refresh(TermWin *win) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->repaint();
+}
+
+static void qtwin_request_resize(TermWin *win, int w, int h) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  term_resize_request_completed(gw->term);
+}
+
+static void qtwin_set_title(TermWin *win, const char *title, int codepage) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->setSessionTitle(QString::fromLatin1(title));  // FIXME TODO wrong encoding
+}
+
+void qtwin_set_icon_title(TermWin *, const char *icontitle, int codepage) {}
+
+/* set_minimised and set_maximised are assumed to set two
+ * independent settings, rather than a single three-way
+ * {min,normal,max} switch. The idea is that when you un-minimise
+ * the window it remembers whether to go back to normal or
+ * maximised. */
+
+void qtwin_set_minimised(TermWin *, bool minimised) {}
+
+void qtwin_set_maximised(TermWin *, bool maximised) {}
+
+//
+
+void qtwin_move(TermWin *, int x, int y) {}
+void qtwin_set_zorder(TermWin *, bool top) {}
+
+void qtwin_palette_set(TermWin *win, unsigned start, unsigned ncolours, const rgb *colours) {
+  qDebug() << __FUNCTION__ << start << ncolours;
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->setPalette(start, ncolours, colours);
+}
+
+void qtwin_palette_get_overrides(TermWin *, Terminal *) { qDebug() << __FUNCTION__; }
+
+void qtwin_unthrottle(TermWin *win, size_t bufsize) {
+  qDebug() << __FUNCTION__ << bufsize;
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  backend_unthrottle(gw->backend, bufsize);
+}
+
+const TermWinVtable qttermwin_vt = {
+    qtwin_setup_draw_ctx,
+    qtwin_draw_text,
+    qtwin_draw_cursor,
+    qtwin_draw_trust_sigil,
+    qtwin_char_width,
+    qtwin_free_draw_ctx,
+    qtwin_set_cursor_pos,
+    qtwin_set_raw_mouse_mode,
+    qtwin_set_raw_mouse_mode_pointer,
+    qtwin_set_scrollbar,
+    qtwin_bell,
+    qtwin_clip_write,
+    qtwin_clip_request_paste,
+    qtwin_refresh,
+    qtwin_request_resize,
+    qtwin_set_title,
+    qtwin_set_icon_title,
+    //
+    qtwin_set_minimised,
+    qtwin_set_maximised,
+    qtwin_move,
+    qtwin_set_zorder,
+    qtwin_palette_set,
+    qtwin_palette_get_overrides,
+    qtwin_unthrottle,
+};
