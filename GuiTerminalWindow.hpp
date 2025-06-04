@@ -29,7 +29,7 @@ extern "C" {
 
 class GuiMainWindow;
 
-class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
+class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase, public TermWin, public Seat {
   Q_OBJECT
   Q_INTERFACES(GuiBase)
 
@@ -77,8 +77,6 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase {
   Terminal *term = nullptr;
   Backend *backend = nullptr;
   Ldisc *ldisc = nullptr;
-  TermWin termwin = {};
-  Seat seat = {};
 
   bool userClosingTab = false;
   bool isSockDisconnected = false;

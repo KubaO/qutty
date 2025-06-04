@@ -45,7 +45,6 @@ set(PROJECT_SOURCES
     GuiTerminalWindow.cpp
     GuiSettingsWindow.cpp
     GuiPreferencesWindow.cpp
-    terminalmisc.cpp
     QtCommon.cpp
     QtNet.cpp
     #QtUnicode.cpp

@@ -20,9 +20,6 @@
 #include "GuiTabWidget.hpp"
 #include "QuTTY.hpp"
 #include "serialize/QtWebPluginMap.hpp"
-extern "C" {
-#include "terminal/terminal.h"
-}
 
 GuiTerminalWindow::GuiTerminalWindow(QWidget *parent, GuiMainWindow *mainWindow, PuttyConfig &&cfg)
     : QAbstractScrollArea(parent), cfgOwner(std::move(cfg)), cfg(cfgOwner.get()) {
@@ -77,10 +74,10 @@ int GuiTerminalWindow::initTerminal() {
   char *realhost = NULL;
   char *ip_addr = conf_get_str(cfg, CONF_host);
 
-  termwin.vt = &qttermwin_vt;
-  seat.vt = &qtseat_vt;
+  static_cast<TermWin *>(this)->vt = &qttermwin_vt;
+  static_cast<Seat *>(this)->vt = &qtseat_vt;
 
-  win_set_title(&termwin, ip_addr, CP_ACP);
+  win_set_title(this, ip_addr, CP_ACP);
 
   memset(&ucsdata, 0, sizeof(struct unicode_data));
   init_ucs(cfg, &ucsdata);
@@ -92,7 +89,7 @@ int GuiTerminalWindow::initTerminal() {
   int port = conf_get_int(cfg, CONF_port);
 
   const char *error =
-      backend_init(vt, &seat, &backend, logctx, cfg, (char *)ip_addr, port, &realhost, 1, 0);
+      backend_init(vt, this, &backend, logctx, cfg, (char *)ip_addr, port, &realhost, 1, 0);
   if (realhost) sfree(realhost);
 
   if (error) {
@@ -107,7 +104,7 @@ int GuiTerminalWindow::initTerminal() {
     goto cu0;
   }
 
-  term = term_init(cfg, &ucsdata, &termwin);
+  term = term_init(cfg, &ucsdata, this);
   logctx = log_init(default_logpolicy, cfg);
   term_provide_logctx(term, logctx);
 
@@ -134,7 +131,7 @@ int GuiTerminalWindow::initTerminal() {
   /*
    * Set up a line discipline.
    */
-  ldisc = ldisc_create(cfg, term, backend, &seat);
+  ldisc = ldisc_create(cfg, term, backend, this);
 
   return 0;
 
@@ -254,7 +251,7 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   init_ucs(cfg, &ucsdata);
   setTermFont(cfg);
 
-  term = term_init(cfg, &ucsdata, &termwin);
+  term = term_init(cfg, &ucsdata, this);
   LogContext *logctx = log_init(default_logpolicy, cfg);
   term_provide_logctx(term, logctx);
   int cfg_width = conf_get_int(cfg, CONF_width);
@@ -276,7 +273,7 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
 
   const BackendVtable *vt = backend_vt_from_proto(conf_get_int(cfg, CONF_protocol));
   // HACK - pass paneid in port
-  backend_init(vt, &seat, &backend, logctx, cfg, NULL, id, NULL, 0, 0);
+  backend_init(vt, this, &backend, logctx, cfg, NULL, id, NULL, 0, 0);
   tmuxPane = new TmuxWindowPane(gateway, this);
   tmuxPane->id = id;
   tmuxPane->width = width;
@@ -293,7 +290,7 @@ TmuxWindowPane *GuiTerminalWindow::initTmuxClientTerminal(TmuxGateway *gateway, 
   /*
    * Set up a line discipline.
    */
-  ldisc = ldisc_create(cfg, term, backend, &seat);
+  ldisc = ldisc_create(cfg, term, backend, this);
   return tmuxPane;
 }
 
@@ -909,3 +906,143 @@ void GuiTerminalWindow::on_sessionTitleChange(bool force) {
   if (!parentSplit || mainWindow->tabArea->widget(tabind)->focusWidget() == this)
     mainWindow->tabArea->setTabText(tabind, temp_title);
 }
+
+#if 0
+void get_clip(void *frontend, wchar_t **p, int *len) {
+  GuiTerminalWindow *f = static_cast<GuiTerminalWindow *>(frontend);
+  f->getClip(p, len);
+}
+#endif
+
+static bool qtwin_setup_draw_ctx(TermWin *win) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  return gw->setupContext();
+}
+
+static void qtwin_draw_text(TermWin *win, int x, int y, wchar_t *text, int len, unsigned long attrs,
+                            int line_attrs, truecolour tc) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->drawText(x, y, text, len, attrs, line_attrs, tc);
+}
+
+static void qtwin_draw_cursor(TermWin *win, int x, int y, wchar_t *text, int len,
+                              unsigned long attrs, int line_attrs, truecolour tc) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->drawCursor(x, y, text, len, attrs, line_attrs, tc);
+}
+
+/* Draw the sigil indicating that a line of text has come from
+ * PuTTY itself rather than the far end (defence against end-of-
+ * authentication spoofing) */
+static void qtwin_draw_trust_sigil(TermWin *win, int x, int y) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->drawTrustSigil(x, y);
+}
+
+static int qtwin_char_width(TermWin *win, int uc) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  return gw->charWidth(uc);
+}
+
+static void qtwin_free_draw_ctx(TermWin *win) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->freeContext();
+}
+
+static void qtwin_set_cursor_pos(TermWin *win, int x, int y) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  // ??
+}
+
+static void qtwin_set_raw_mouse_mode(TermWin *, bool enable) {}
+
+static void qtwin_set_raw_mouse_mode_pointer(TermWin *, bool enable) {}
+
+static void qtwin_set_scrollbar(TermWin *win, int total, int start, int page) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->setScrollBar(total, start, page);
+}
+
+static void qtwin_bell(TermWin *, int mode) {}
+
+static void qtwin_clip_write(TermWin *win, int clipboard, wchar_t *text, int *attrs,
+                             truecolour *colours, int len, bool must_deselect) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->writeClip(clipboard, text, attrs, colours, len, must_deselect);
+}
+
+static void qtwin_clip_request_paste(TermWin *win, int clipboard) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->requestPaste(clipboard);
+}
+
+static void qtwin_refresh(TermWin *win) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->repaint();
+}
+
+static void qtwin_request_resize(TermWin *, int w, int h) {}
+
+static void qtwin_set_title(TermWin *win, const char *title, int codepage) {
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->setSessionTitle(QString::fromLatin1(title));  // FIXME TODO wrong encoding
+}
+
+void qtwin_set_icon_title(TermWin *, const char *icontitle, int codepage) {}
+
+/* set_minimised and set_maximised are assumed to set two
+ * independent settings, rather than a single three-way
+ * {min,normal,max} switch. The idea is that when you un-minimise
+ * the window it remembers whether to go back to normal or
+ * maximised. */
+
+void qtwin_set_minimised(TermWin *, bool minimised) {}
+
+void qtwin_set_maximised(TermWin *, bool maximised) {}
+
+//
+
+void qtwin_move(TermWin *, int x, int y) {}
+void qtwin_set_zorder(TermWin *, bool top) {}
+
+void qtwin_palette_set(TermWin *win, unsigned start, unsigned ncolours, const rgb *colours) {
+  qDebug() << __FUNCTION__ << start << ncolours;
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  gw->setPalette(start, ncolours, colours);
+}
+
+void qtwin_palette_get_overrides(TermWin *, Terminal *) { qDebug() << __FUNCTION__; }
+
+void qtwin_unthrottle(TermWin *win, size_t bufsize) {
+  qDebug() << __FUNCTION__ << bufsize;
+  GuiTerminalWindow *gw = static_cast<GuiTerminalWindow *>(win);
+  backend_unthrottle(gw->backend, bufsize);
+}
+
+const TermWinVtable qttermwin_vt = {
+    qtwin_setup_draw_ctx,
+    qtwin_draw_text,
+    qtwin_draw_cursor,
+    qtwin_draw_trust_sigil,
+    qtwin_char_width,
+    qtwin_free_draw_ctx,
+    qtwin_set_cursor_pos,
+    qtwin_set_raw_mouse_mode,
+    qtwin_set_raw_mouse_mode_pointer,
+    qtwin_set_scrollbar,
+    qtwin_bell,
+    qtwin_clip_write,
+    qtwin_clip_request_paste,
+    qtwin_refresh,
+    qtwin_request_resize,
+    qtwin_set_title,
+    qtwin_set_icon_title,
+    //
+    qtwin_set_minimised,
+    qtwin_set_maximised,
+    qtwin_move,
+    qtwin_set_zorder,
+    qtwin_palette_set,
+    qtwin_palette_get_overrides,
+    qtwin_unthrottle,
+};
