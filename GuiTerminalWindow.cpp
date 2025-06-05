@@ -373,41 +373,6 @@ bool GuiTerminalWindow::setupContext() {
   return true;
 }
 
-static QString decode(Terminal *term, const wchar_t *text, int len) {
-  static QStringDecoder sd = QStringDecoder(QStringDecoder::System);
-  QString str = QString(QStringView(text, len));
-  QByteArray bytes;
-  if (str.isEmpty()) return str;
-
-  char16_t *start = nullptr;
-  char16_t *end = nullptr;
-  char16_t encoding = text[0] & CSET_MASK;
-
-  switch (encoding) {
-    case CSET_ASCII:
-      for (int i = 0; i < len; i++) str[i] = QChar(text[i] & 0xFF);
-      break;
-    case CSET_OEMCP:
-      for (int i = 0; i < len; i++) str[i] = QChar(term->ucsdata->unitab_oemcp[text[i] & 0xFF]);
-      break;
-    case CSET_LINEDRW:
-      for (int i = 0; i < len; i++) str[i] = QChar(term->ucsdata->unitab_line[text[i] & 0xFF]);
-      break;
-    case CSET_SCOACS:
-      for (int i = 0; i < len; i++) str[i] = QChar(term->ucsdata->unitab_scoacs[text[i] & 0xFF]);
-      break;
-    case CSET_ACP:
-      bytes.resize(len);
-      for (int i = 0; i < len; i++) bytes[i] = text[i] & 0xFF;
-      str.resize(sd.requiredSpace(len));
-      start = str.data_ptr().data();
-      end = sd.appendToBuffer(start, bytes);
-      str.resize(end - start);
-      break;
-  }
-  return str;
-}
-
 void GuiTerminalWindow::setPenBrushFromAttrs(unsigned long attrs) {
   if (attrs & (TATTR_ACTCURS | TATTR_PASCURS)) {
     attrs &= ~(ATTR_REVERSE | ATTR_BLINK | ATTR_COLOURS);
@@ -441,7 +406,7 @@ void GuiTerminalWindow::setPenBrushFromAttrs(unsigned long attrs) {
 
 void GuiTerminalWindow::drawText(int x, int y, const wchar_t *text, int len, unsigned long attrs,
                                  int lineAttrs, truecolour tc) {
-  drawText(x, y, decode(term, text, len), attrs, lineAttrs, tc);
+  drawText(x, y, decodeRunFromTerminal(term, text, len), attrs, lineAttrs, tc);
 }
 void GuiTerminalWindow::drawText(int x, int y, const QString &str, unsigned long attrs,
                                  int lineAttrs, truecolour tc) {

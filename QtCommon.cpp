@@ -816,6 +816,39 @@ Socket *platform_start_subprocess(const char *cmd, Plug *plug, const char *prefi
   return nullptr;
 }
 
+/* the entire run must have the same encoding */
+QString decodeRunFromTerminal(Terminal *term, const wchar_t *text, int len) {
+  QString str = QString(QStringView(text, len));
+  if (str.isEmpty()) return str;
+
+  const char16_t encoding = text[0] & CSET_MASK;
+
+  for (int i = 1; i < len; i++) assert((text[i] & CSET_MASK) == encoding);
+
+  switch (encoding) {
+    case CSET_LINEDRW:
+      if (!term->rawcnp)
+        for (int i = 0; i < len; i++) str[i] = QChar(term->ucsdata->unitab_xterm[text[i] & 0xFF]);
+      break;
+    case CSET_ASCII:
+      for (int i = 0; i < len; i++) str[i] = QChar(term->ucsdata->unitab_line[text[i] & 0xFF]);
+      break;
+    case CSET_SCOACS:
+      for (int i = 0; i < len; i++) str[i] = QChar(term->ucsdata->unitab_scoacs[text[i] & 0xFF]);
+      break;
+  }
+  // Yes, the above transformations may return ACP or OEMCP direct-to-font encodings
+  switch (encoding) {
+    case CSET_ACP:
+      for (int i = 0; i < len; i++) str[i] = QChar(term->ucsdata->unitab_font[text[i] & 0xFF]);
+      break;
+    case CSET_OEMCP:
+      for (int i = 0; i < len; i++) str[i] = QChar(term->ucsdata->unitab_oemcp[text[i] & 0xFF]);
+      break;
+  }
+  return str;
+}
+
 #if 0
 bool is_dbcs_leadbyte(int /*codepage*/, char /*byte*/) {
   qDebug() << "NOT_IMPL" << __FUNCTION__;

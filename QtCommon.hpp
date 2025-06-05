@@ -42,6 +42,8 @@ Filename *filename_from_qstring(const QString &str);
 
 void qt_message_box(GuiTerminalWindow *frontend, const char *title, const char *fmt, ...);
 
+QString decodeRunFromTerminal(Terminal *term, const wchar_t *text, int len);
+
 extern LogPolicy default_logpolicy[1];
 
 #endif  // QTCOMMON_H
