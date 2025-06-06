@@ -695,11 +695,7 @@ typedef struct compressed_scrollback_line {
     /* compressed data follows after this */
 } compressed_scrollback_line;
 
-#ifdef IS_QUTTY
-termline *decompressline_no_free(compressed_scrollback_line *line);
-#else
 static termline *decompressline_no_free(compressed_scrollback_line *line);
-#endif
 
 static compressed_scrollback_line *compressline_no_free(termline *ldata)
 {
@@ -937,11 +933,7 @@ static void readliteral_cc(BinarySource *bs, termchar *c, termline *ldata,
     }
 }
 
-#ifdef IS_QUTTY
-termline *decompressline_no_free(compressed_scrollback_line *line)
-#else
 static termline *decompressline_no_free(compressed_scrollback_line *line)
-#endif
 {
     int ncols, byte, shift;
     BinarySource bs[1];
@@ -2169,11 +2161,6 @@ void term_free(Terminal *term)
     if (term->userpass_state)
         term_userpass_state_free(term->userpass_state);
 
-#ifdef IS_QUTTY
-    sfree(term->dispstr);
-    sfree(term->dispstr_attr);
-#endif
-
     sfree(term);
 }
 
@@ -2219,19 +2206,7 @@ void term_size(Terminal *term, int newrows, int newcols, int newsavelines)
         term->screen = newtree234(NULL);
         term->tempsblines = 0;
         term->rows = 0;
-#ifdef IS_QUTTY
-        term->dispstr_attr = NULL;
-        term->dispstr = NULL;
-#endif
     }
-
-#ifdef IS_QUTTY
-    sfree(term->dispstr);
-    sfree(term->dispstr_attr);
-    // temporary precaution to not crash for combining chars
-    term->dispstr = snewn((newrows+2) * newcols, wchar_t);
-    term->dispstr_attr = snewn((newrows+2) * newcols, unsigned long);
-#endif
 
     /*
      * Resize the screen and scrollback. We only need to shift
@@ -6445,10 +6420,6 @@ static void do_paint(Terminal *term)
             } else
 #endif /* PLATFORM_IS_UTF16 */
             ch[ccount++] = (wchar_t) tchar;
-#ifdef IS_QUTTY
-            term->dispstr[i*term->cols + j] = (tchar);
-            term->dispstr_attr[i*term->cols + j] = tattr;
-#endif
 
             if (d->cc_next) {
                 termchar *dd = d;
@@ -8192,24 +8163,3 @@ void term_notify_window_size_pixels(Terminal *term, int x, int y)
     term->winpixsize_x = x;
     term->winpixsize_y = y;
 }
-
-#ifdef IS_QUTTY
-termline *get_next_termline (Terminal *term, termline *tline, int cur_line)
-{
-  int i;
-  if (tline) {
-    tline = (termline*) delpos234(term->screen, 0);
-    if (cur_line >= term->rows) {
-      addpos234(term->scrollback, compressline_no_free(tline),
-                count234(term->scrollback));
-      term->tempsblines += 1;
-    }
-    resizeline(term, tline, term->cols);
-    for (i = 0; i < term->cols; i++)
-      copy_termchar(tline, i, &term->erase_char);
-    tline->lattr = LATTR_NORM;
-    addpos234(term->screen, tline, term->rows-1);
-  }
-  return index234(term->screen, term->rows-1);
-}
-#endif
