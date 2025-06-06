@@ -816,6 +816,74 @@ Socket *platform_start_subprocess(const char *cmd, Plug *plug, const char *prefi
   return nullptr;
 }
 
+unsigned int decodeFromTerminal(Terminal *term, unsigned int uc) {
+  switch (uc & CSET_MASK) {
+    case CSET_LINEDRW:
+      if (!term->rawcnp) {
+        uc = term->ucsdata->unitab_xterm[uc & 0xFF];
+        break;
+      }
+    case CSET_ASCII:
+      uc = term->ucsdata->unitab_line[uc & 0xFF];
+      break;
+    case CSET_SCOACS:
+      uc = term->ucsdata->unitab_scoacs[uc & 0xFF];
+      break;
+    case CSET_GBCHR:
+      assert(false);  // term_translate should have gotten rid of those
+  }
+  // Yes, the above transformations may return ACP or OEMCP direct-to-font encodings
+  switch (uc & CSET_MASK) {
+    case CSET_ACP:
+      uc = term->ucsdata->unitab_font[uc & 0xFF];
+      break;
+    case CSET_OEMCP:
+      uc = term->ucsdata->unitab_oemcp[uc & 0xFF];
+      break;
+  }
+  return uc;
+}
+
+int decodeFromTerminal(Terminal *term, const termline *line, QString &str, QList<bool> *advances) {
+  const int prevStrLen = str.size();
+  str.reserve(prevStrLen + line->size);
+  if (advances) {
+    advances->clear();
+    advances->reserve(line->size);
+  }
+
+  for (int i = 0; i < line->cols; i++) {
+    int j = i;
+    do {
+      const termchar &tc = line->chars[j];
+      unsigned int ch = decodeFromTerminal(term, tc.chr);
+      if (!QChar::requiresSurrogates(ch)) {
+        str.append(QChar(ch));
+        if (advances) advances->append(false);
+      } else {
+        str.append(QChar::highSurrogate(ch));
+        str.append(QChar::lowSurrogate(ch));
+        if (advances) {
+          advances->append(false);
+          advances->append(false);
+        }
+      }
+      // follow runs of combining characters
+      j = tc.cc_next;
+      assert(j == 0 || j >= line->cols);
+    } while (j);
+    // advance only on the last character in a run of combining characters
+    if (advances) advances->back() = true;
+  }
+  return str.size() - prevStrLen;
+}
+
+QString decodeFromTerminal(Terminal *term, const termline *line) {
+  QString str;
+  decodeFromTerminal(term, line, str);
+  return str;
+}
+
 /* the entire run must have the same encoding */
 QString decodeRunFromTerminal(Terminal *term, const wchar_t *text, int len) {
   QString str = QString(QStringView(text, len));

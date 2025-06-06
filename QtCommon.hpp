@@ -27,6 +27,8 @@ class QAbstractSocket;
 class QTextCodec;
 class QTimer;
 
+typedef struct termline termline;
+
 extern QTimer *qtimer;
 extern long timing_next_time;
 
@@ -41,6 +43,11 @@ QString filename_to_qstring(const Filename *fn);
 Filename *filename_from_qstring(const QString &str);
 
 void qt_message_box(GuiTerminalWindow *frontend, const char *title, const char *fmt, ...);
+
+unsigned int decodeFromTerminal(Terminal *term, unsigned int uc);
+int decodeFromTerminal(Terminal *term, const termline *line, QString &str,
+                       QList<bool> *advances = nullptr);
+QString decodeFromTerminal(Terminal *term, const termline *line);
 
 QString decodeRunFromTerminal(Terminal *term, const wchar_t *text, int len);
 

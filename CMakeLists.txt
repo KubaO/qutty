@@ -65,6 +65,7 @@ set(PROJECT_SOURCES
     GuiTextFilterWindow.cpp
     QtSessionTreeModel.cpp
     QtCompleterWithAdvancedCompletion.cpp
+    TerminalSearch.cpp
 
     puttysrc/crypto/aesgcm-clmul.c
     puttysrc/crypto/aesgcm-common.c
@@ -349,6 +350,7 @@ set(PROJECT_SOURCES
     QtCompleterWithAdvancedCompletion.hpp
     QtSsh.hpp
     QuTTY.hpp
+    TerminalSearch.hpp
 
     tmux/tmux.h
     tmux/TmuxGateway.hpp
