@@ -408,16 +408,61 @@ void GuiTerminalWindow::drawText(int x, int y, const wchar_t *text, int len, uns
                                  int lineAttrs, truecolour tc) {
   drawText(x, y, decodeRunFromTerminal(term, text, len), attrs, lineAttrs, tc);
 }
+
 void GuiTerminalWindow::drawText(int x, int y, const QString &str, unsigned long attrs,
                                  int lineAttrs, truecolour tc) {
   if (0) qDebug() << __FUNCTION__ << x << y << str << Qt::hex << attrs;
   assert(painter.isActive());
   assert(!tc.fg.enabled && !tc.bg.enabled);
+  if (str.isEmpty()) return;
 
   setPenBrushFromAttrs(attrs);
-  painter.fillRect(x * fontWidth, y * fontHeight, fontWidth * str.length(), fontHeight,
+
+  int widthInCells = 1;
+  bool const oneCell = str.size() == 1 || (attrs & TATTR_COMBINING);
+  if (!oneCell) {
+    widthInCells = 0;
+    for (QChar ch : str) {
+      if (!ch.isSurrogate() || ch.isHighSurrogate()) widthInCells++;
+    }
+  }
+
+  painter.fillRect(x * fontWidth, y * fontHeight, widthInCells * fontWidth, fontHeight,
                    painter.brush());
-  painter.drawText(x * fontWidth, y * fontHeight + fontAscent, str);
+
+  if (widthInCells == 1) {
+    // Just one character cell to draw, but it may consist of multiple combining characters
+    painter.drawText(x * fontWidth, y * fontHeight + fontAscent, str);
+  } else if (widthInCells > 1) {
+    // Multiple character cells to draw
+    QString s;  // holds one code point, in either one or two code units
+    s.reserve(2);
+    auto it = str.begin();
+    for (int xx = x; it != str.end(); xx++) {
+      s.clear();
+      QChar ch = *it++;
+      s.append(ch);
+      if (ch.isSurrogate() && it != str.end()) {
+        ch = *it;
+        if (ch.isSurrogate()) {
+          s.append(ch);
+          it++;
+        }
+      }
+      // draw each cell separately, to ensure consistent spacing
+      painter.drawText(xx * fontWidth, y * fontHeight + fontAscent, s);
+    }
+  }
+
+  /* The drawing of individual character cells by repeatedly calling drawText,
+   * assembling code units representing one code point into a temporary string, etc.,
+   * are simple to do, but not most performant.
+   * Compositing pre-rendered glyphs onto the windows backing store can work very well.
+   * See:
+   * - code:
+   * https://github.com/KubaO/stackoverflown/blob/master/questions/hex-widget-40458515/main.cpp
+   * - narrative: https://stackoverflow.com/a/40476430/1329652
+   */
 }
 
 void GuiTerminalWindow::drawCursor(int x, int y, const wchar_t *text, int len, unsigned long attrs,
