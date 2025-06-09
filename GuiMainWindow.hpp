@@ -9,6 +9,7 @@
 
 #include <QMainWindow>
 #include <QMenu>
+#include <QPointer>
 #include <QShortcut>
 #include <QSignalMapper>
 #include <QToolButton>
@@ -47,7 +48,7 @@ class GuiMainWindow : public QMainWindow {
   GuiDragDropSite dragDropSite;
 
   // find window
-  GuiFindToolBar *findToolBar = nullptr;
+  QPointer<GuiFindToolBar> findToolBar;
 
   // tab order-of-usage navigation window
   uint32_t mru_count_last = 0;
@@ -109,6 +110,9 @@ class GuiMainWindow : public QMainWindow {
 
   void readWindowSettings();
   void writeWindowSettings();
+
+ private slots:
+  void on__findToolBar_destroyed();
 
  public slots:
   void on_openNewWindow();

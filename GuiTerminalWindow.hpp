@@ -19,6 +19,7 @@
 #include "GuiDrag.hpp"
 #include "QtCommon.hpp"
 #include "QtConfig.hpp"
+#include "TerminalSearch.hpp"
 #include "tmux/TmuxGateway.hpp"
 #include "tmux/TmuxWindowPane.hpp"
 #include "tmux/tmux.h"
@@ -48,9 +49,10 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase, public Ter
   QFont _font;
   int fontWidth, fontHeight, fontAscent;
   struct unicode_data ucsdata = {};
-  bool _any_update = false;
-  QRegion termrgn;
   std::array<QColor, OSC4_NCOLOURS> colours;
+
+  TerminalSearch::Matches matches;
+  std::unordered_map<int, const TerminalSearch::Match *> matchMap;
 
   // to detect mouse double/triple clicks
   Mouse_Action mouseButtonAction;
@@ -116,6 +118,7 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase, public Ter
                 truecolour tc);
   void drawText(int x, int y, const QString &str, unsigned long attrs, int lineAttrs,
                 truecolour tc);
+  void drawHighlight(int row);
   void drawCursor(int x, int y, const wchar_t *text, int len, unsigned long attrs, int lineAttrs,
                   truecolour tc);
   void drawTrustSigil(int x, int y);
@@ -140,7 +143,6 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase, public Ter
 
   void closeTerminal();
   void reqCloseTerminal(bool userConfirm) override;
-  void highlightSearchedText();
   int getFontWidth() { return fontWidth; };
   int getFontHeight() { return fontHeight; };
 
@@ -186,6 +188,9 @@ class GuiTerminalWindow : public QAbstractScrollArea, public GuiBase, public Ter
   void vertScrollBarMoved(int value);
   void detachTmuxControllerMode();
   void on_sessionTitleChange(bool force = false);
+
+  void on_matchesChanged(const TerminalSearch::Matches &);
+  void on_currentMatchChanged(int);
 };
 
 extern const TermWinVtable qttermwin_vt;

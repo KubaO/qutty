@@ -853,7 +853,7 @@ int decodeFromTerminal(Terminal *term, const termline *line, QString &str, QList
   }
 
   for (int i = 0; i < line->cols; i++) {
-    int j = i;
+    int j = i, step = 0;
     do {
       const termchar &tc = line->chars[j];
       unsigned int ch = decodeFromTerminal(term, tc.chr);
@@ -869,9 +869,10 @@ int decodeFromTerminal(Terminal *term, const termline *line, QString &str, QList
         }
       }
       // follow runs of combining characters
-      j = tc.cc_next;
-      assert(j == 0 || j >= line->cols);
-    } while (j);
+      step = tc.cc_next;
+      j += step;
+      assert(step == 0 || j >= line->cols);
+    } while (step);
     // advance only on the last character in a run of combining characters
     if (advances) advances->back() = true;
   }

@@ -6,311 +6,148 @@
 
 #include "GuiFindToolBar.hpp"
 
+#include <QKeyEvent>
 #include <QScrollBar>
 
-#include "GuiMainWindow.hpp"
-#include "GuiTerminalWindow.hpp"
-extern "C" {
-#include "terminal/terminal.h"
-}
+GuiFindToolBar::GuiFindToolBar(QWidget *parent, QMenu *findOptionsMenu) : QToolBar(parent) {
+  qRegisterMetaType<TerminalSearch::Matches>();
 
-GuiFindToolBar::GuiFindToolBar(GuiMainWindow *p) : QToolBar(p), mainWnd(p) {
-  searchedText = new QLineEdit();
-  QToolButton *b = nullptr;
-  addWidget(searchedText);
+  addWidget(&m_pattern);
+  connect(&m_pattern, &QLineEdit::textChanged, this, &GuiFindToolBar::reset);
+  m_pattern.installEventFilter(this);
 
-  searchedText->installEventFilter(this);
+  m_up.setText("Up");
+  connect(&m_up, &QToolButton::clicked, this, &GuiFindToolBar::findPrevious);
+  addWidget(&m_up);
 
-  b = new QToolButton(this);
-  b->setText("Up");
-  connect(b, SIGNAL(clicked()), this, SLOT(on_findUp()));
-  addWidget(b);
+  m_down.setText("Down");
+  connect(&m_down, &QToolButton::clicked, this, &GuiFindToolBar::findNext);
+  addWidget(&m_down);
 
-  b = new QToolButton(this);
-  b->setText("Down");
-  connect(b, SIGNAL(clicked()), this, SLOT(on_findDown()));
-  addWidget(b);
+  m_options.setIcon(QIcon(":/images/cog_alt_16x16.png"));
+  m_options.setMenu(findOptionsMenu);
+  m_options.setPopupMode(QToolButton::InstantPopup);
+  addWidget(&m_options);
 
-  b = new QToolButton(this);
-  b->setIcon(QIcon(":/images/cog_alt_16x16.png"));
-  b->setMenu(p->menuGetMenuById(MENU_FIND_OPTIONS));
-  b->setPopupMode(QToolButton::InstantPopup);
-  addWidget(b);
-
-  b = new QToolButton(this);
-  b->setIcon(QIcon(":/images/x_14x14.png"));
-  connect(b, SIGNAL(clicked()), this, SLOT(on_findClose()));
-  addWidget(b);
+  m_close.setIcon(QIcon(":/images/x_14x14.png"));
+  connect(&m_close, &QToolButton::clicked, this, &GuiFindToolBar::close);
+  addWidget(&m_close);
 
   setIconSize(QSize(16, 16));
   setMovable(false);
   setAutoFillBackground(true);
   adjustSize();
 
-  searchedText->setFocus();
+  m_pattern.setFocus();
+}
+
+constexpr auto set = TerminalSearch::set;
+using Option = TerminalSearch::Option;
+
+void GuiFindToolBar::setRegex(bool regex) {
+  if (set(m_searchOptions, Option::RegularExpression, regex)) reset();
+}
+
+void GuiFindToolBar::setMultiLine(bool ml) {
+  if (set(m_searchOptions, Option::MultiLine, ml)) reset();
+}
+void GuiFindToolBar::setCaseInsensitive(bool ci) {
+  if (set(m_searchOptions, Option::CaseInsensitive, ci)) reset();
 }
 
 bool GuiFindToolBar::eventFilter(QObject *obj, QEvent *event) {
-  if (obj == searchedText) {
+  if (obj == &m_pattern) {
     if (event->type() == QEvent::KeyPress) {
       QKeyEvent *ke = (QKeyEvent *)event;
       if (ke->key() == Qt::Key_Escape) {
-        this->on_findClose();
+        close();
         return true;
       } else if (ke->key() == Qt::Key_Return) {
         if (ke->modifiers() & Qt::ShiftModifier)
-          this->on_findUp();
+          findPrevious();
         else
-          this->on_findDown();
+          findNext();
         return true;
       }
     }
   }
-
   return false;
 }
 
-void GuiMainWindow::contextMenuFind() {
-  if (!this->getCurrentTerminal()) return;
-
-  if (!findToolBar) {
-    findToolBar = new GuiFindToolBar(this);
-    findToolBar->show();
-
-    GuiTerminalWindow *t = getCurrentTerminal();
-    findToolBar->move(t->viewport()->width() - findToolBar->width(),
-                      t->mapTo(this, QPoint(0, 0)).y());
-
-    menuGetActionById(MENU_FIND_NEXT)->setEnabled(true);
-    menuGetActionById(MENU_FIND_PREVIOUS)->setEnabled(true);
-  } else {
-    findToolBar->on_findClose();
+void GuiFindToolBar::setCurMatch(int curMatch) {
+  if (m_curMatch != curMatch) {
+    m_curMatch = curMatch;
+    emit currentMatchChanged(m_curMatch);
   }
 }
 
-void GuiMainWindow::contextMenuFindNext() {
-  QAction *action = qobject_cast<QAction *>(sender());
-  if (!action) return;
-  if (!findToolBar) return;
-  findToolBar->on_findUp();
+void GuiFindToolBar::clearMatches() {
+  if (!m_matches.isEmpty()) {
+    m_matches.clear();
+    emit matchesChanged(m_matches);
+  }
 }
 
-void GuiMainWindow::contextMenuFindPrevious() {
-  QAction *action = qobject_cast<QAction *>(sender());
-  if (!action) return;
-  if (!findToolBar) return;
-  findToolBar->on_findDown();
+void GuiFindToolBar::reset() {
+  m_search.clearCapture();
+  clearMatches();
+  setCurMatch(-1);
 }
 
-QString GuiFindToolBar::getSearchedText() { return searchedText->text(); }
-
-typedef struct compressed_scrollback_line {
-  size_t len;
-} compressed_scrollback_line;
-
-extern "C" termline *decompressline_no_free(compressed_scrollback_line *line);
-
-void GuiFindToolBar::on_findUp() {
-  termline *line;
-  tree234 *whichtree;
-  unsigned long tchar;
-  findTextFlag = true;
-  GuiTerminalWindow *gterm = mainWnd->getCurrentTerminal();
-  Terminal *term;
-  QScrollBar *scrollbar;
-  QString str = "";
-  int tempCol, tempRow;
-  int tempStartPosition = 0;
-
-  if (!gterm) return;
-
-  term = gterm->term;
-  scrollbar = gterm->verticalScrollBar();
-
-  if (getSearchedText() == "") {
-    findTextFlag = false;
-    gterm->viewport()->repaint();
-    return;
-  }
-  tempCol = currentCol;
-  tempRow = currentRow;
-
-  currentCol -= currentSearchedText.length();
-
-  if (getSearchedText().compare(currentSearchedText, Qt::CaseInsensitive)) {
-    pageStartPosition = scrollbar->value();
-    currentSearchedText = getSearchedText();
-    if (currentCol < 0) currentCol = term->cols - 1;
-    whichtree = NULL;
-    qDebug() << "Total : " << scrollbar->maximum() + term->rows;
-    qDebug() << "Value : " << scrollbar->value();
-  }
-
-  if (currentRow < 0) currentRow = scrollbar->value() + term->rows - 1;
-
-  while (1) {
-    str = "";
-    if (currentRow < 0) {
-      currentRow = scrollbar->maximum() + term->rows - 1;
-    }
-    if (count234(term->scrollback) > currentRow) {
-      whichtree = term->scrollback;
-      // TODO FIXME this may be a wee bit optimistic
-      compressed_scrollback_line *cline =
-          (compressed_scrollback_line *)index234(whichtree, currentRow);
-      line = decompressline_no_free(cline);
+// Returns true if the matches have changed
+bool GuiFindToolBar::searchIn(Terminal *term) {
+  if (m_matches.isEmpty()) {
+    if (m_searchOptions & Option::MultiLine) {
+      if (!m_search.hasCapture()) m_search.captureFrom(term);
+      m_matches = m_search.searchInCapture(m_pattern.text(), m_searchOptions);
     } else {
-      whichtree = term->screen;
-      line = (termline *)index234(whichtree, currentRow - count234(term->scrollback));
+      m_matches = TerminalSearch::searchInLines(term, m_pattern.text(), m_searchOptions);
     }
-    for (int i = 0; line && i < line->size; i++) {
-      tchar = line->chars[i].chr;
-      switch (tchar & CSET_MASK) {
-        case CSET_ASCII:
-          tchar = term->ucsdata->unitab_line[tchar & 0xFF];
-          break;
-        case CSET_LINEDRW:
-          tchar = term->ucsdata->unitab_xterm[tchar & 0xFF];
-          break;
-        case CSET_SCOACS:
-          tchar = term->ucsdata->unitab_scoacs[tchar & 0xFF];
-          break;
-      }
-      str.append((char)tchar);
-    }
-    if (currentCol >= 0 &&
-        (currentCol = str.lastIndexOf(currentSearchedText, currentCol, Qt::CaseInsensitive)) >= 0) {
-      if (pageStartPosition != scrollbar->value())
-        gterm->setScrollBar(scrollbar->maximum() + term->rows, pageStartPosition, term->rows);
-      else if (currentRow < scrollbar->value() || currentRow > (scrollbar->value() + term->rows)) {
-        gterm->setScrollBar(scrollbar->maximum() + term->rows, currentRow, term->rows);
-        pageStartPosition = scrollbar->value();
-      }
-      currentSearchedText = str.mid(currentCol, currentSearchedText.length());
-      tempStartPosition = pageStartPosition;
-      break;
-    }
-    tempStartPosition++;
-    if (tempStartPosition > (scrollbar->maximum() + term->rows)) {
-      findTextFlag = false;
-      currentCol = tempCol;
-      currentRow = tempRow;
-      gterm->viewport()->repaint();
-      return;
-    }
-    currentRow--;
-    currentCol = gterm->term->cols - 1;
+    emit matchesChanged(m_matches);
+    return true;
   }
-
-  gterm->viewport()->repaint();
+  return false;
 }
 
-void GuiFindToolBar::on_findDown() {
-  termline *line;
-  tree234 *whichtree;
-  unsigned long tchar;
-  GuiTerminalWindow *gterm = mainWnd->getCurrentTerminal();
-  Terminal *term;
-  QScrollBar *scrollbar;
-  QString str = "";
-  int tempStartPosition = 0;
-  int tempCol, tempRow;
+Terminal *GuiFindToolBar::terminal() {
+  Terminal *term = emit getTerminal();
+  if (term != m_prevTerminal) {
+    m_prevTerminal = term;
+    reset();
+  }
+  return term;
+}
 
-  if (!gterm) return;
+void GuiFindToolBar::findPrevious() {
+  Terminal *term = terminal();
+  if (!term) return;
+  int curMatch = m_curMatch;
 
-  term = gterm->term;
-  scrollbar = gterm->verticalScrollBar();
-
-  findTextFlag = true;
-  if (getSearchedText() == "") {
-    findTextFlag = false;
-    gterm->viewport()->repaint();
+  if (searchIn(term))
+    curMatch = m_matches.size() - 1;
+  else if (m_curMatch > 0)
+    curMatch--;
+  else
     return;
-  }
-  tempCol = currentCol;
-  tempRow = currentRow;
-  currentCol = currentCol + currentSearchedText.length();
 
-  if (getSearchedText().compare(currentSearchedText, Qt::CaseInsensitive)) {
-    pageStartPosition = scrollbar->value();
-    currentSearchedText = getSearchedText();
-    if (currentCol < 0) currentCol = 0;
-    whichtree = NULL;
-  }
-
-  if (currentRow < 0) currentRow = scrollbar->value();
-
-  while (1) {
-    str = "";
-
-    if (currentRow >= scrollbar->maximum() + term->rows) {
-      currentRow = 0;
-    }
-    if (count234(term->scrollback) > currentRow) {
-      whichtree = term->scrollback;
-      // TODO FIXME this may be a wee bit optimistic
-      compressed_scrollback_line *cline =
-          (compressed_scrollback_line *)index234(whichtree, currentRow);
-      line = decompressline_no_free(cline);
-    } else {
-      whichtree = term->screen;
-      line = (termline *)index234(whichtree, abs(currentRow - count234(term->scrollback)));
-    }
-    for (int i = 0; line && i < line->size; i++) {
-      // qDebug() << line->chars[i].chr;
-      tchar = line->chars[i].chr;
-      switch (tchar & CSET_MASK) {
-        case CSET_ASCII:
-          tchar = term->ucsdata->unitab_line[tchar & 0xFF];
-          break;
-        case CSET_LINEDRW:
-          tchar = term->ucsdata->unitab_xterm[tchar & 0xFF];
-          break;
-        case CSET_SCOACS:
-          tchar = term->ucsdata->unitab_scoacs[tchar & 0xFF];
-          break;
-      }
-      str.append((char)tchar);
-    }
-    if (currentCol < term->cols &&
-        (currentCol = str.indexOf(currentSearchedText, currentCol, Qt::CaseInsensitive)) >= 0) {
-      if (pageStartPosition != scrollbar->value())
-        gterm->setScrollBar(scrollbar->maximum() + term->rows, pageStartPosition, term->rows);
-      else {
-        if (currentRow < scrollbar->value() || currentRow >= (scrollbar->value() + term->rows)) {
-          gterm->setScrollBar(scrollbar->maximum() + term->rows, currentRow, term->rows);
-          pageStartPosition = scrollbar->value();
-        }
-      }
-      currentSearchedText = str.mid(currentCol, currentSearchedText.length());
-      tempStartPosition = pageStartPosition;
-      break;
-    }
-    tempStartPosition++;
-    if (tempStartPosition > (scrollbar->maximum() + term->rows)) {
-      findTextFlag = false;
-      currentCol = tempCol;
-      currentRow = tempRow;
-      gterm->viewport()->repaint();
-      return;
-    }
-    currentRow++;
-    currentCol = 0;
-  }
-  gterm->viewport()->repaint();
+  if (m_matches.empty()) curMatch = -1;
+  setCurMatch(curMatch);
 }
 
-void GuiFindToolBar::on_findClose() {
-  GuiTerminalWindow *t;
+void GuiFindToolBar::findNext() {
+  Terminal *term = terminal();
+  if (!term) return;
+  int curMatch = m_curMatch;
 
-  findTextFlag = false;
-  mainWnd->menuGetActionById(MENU_FIND_NEXT)->setEnabled(false);
-  mainWnd->menuGetActionById(MENU_FIND_PREVIOUS)->setEnabled(false);
-  mainWnd->findToolBar = NULL;
-  this->deleteLater();
+  if (searchIn(term))
+    curMatch = 0;
+  else if (m_curMatch < (m_matches.size() - 1))
+    curMatch++;
+  else
+    return;
 
-  if ((t = mainWnd->getCurrentTerminal())) {
-    t->viewport()->repaint();
-    t->setFocus();
-  }
+  if (m_matches.empty()) curMatch = -1;
+  setCurMatch(curMatch);
 }
+
+void GuiFindToolBar::close() { this->deleteLater(); }

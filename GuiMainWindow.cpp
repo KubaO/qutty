@@ -17,6 +17,7 @@
 #include <QTabBar>
 #include <QTabWidget>
 
+#include "GuiFindToolBar.hpp"
 #include "GuiSettingsWindow.hpp"
 #include "GuiSplitter.hpp"
 #include "GuiTabBar.hpp"
@@ -378,6 +379,54 @@ void GuiMainWindow::setupTerminalSize(GuiTerminalWindow *newTerm) {
     term_size(newTerm->term, newTerm_height, newTerm_width,
               conf_get_int(newTerm->getCfg(), CONF_savelines));
   }
+}
+
+void GuiMainWindow::contextMenuFind() {
+  GuiTerminalWindow *t = getCurrentTerminal();
+  if (!t) return;
+
+  if (findToolBar) {
+    findToolBar->close();
+    return;
+  }
+
+  findToolBar = new GuiFindToolBar(this, menuGetMenuById(MENU_FIND_OPTIONS));
+  connect(findToolBar, &QObject::destroyed, this, &GuiMainWindow::on__findToolBar_destroyed);
+  connect(findToolBar, &GuiFindToolBar::getTerminal, this, [this] {
+    auto *termWin = getCurrentTerminal();
+    return termWin ? termWin->term : nullptr;
+  });
+  connect(findToolBar, &GuiFindToolBar::matchesChanged, t, &GuiTerminalWindow::on_matchesChanged);
+  connect(findToolBar, &GuiFindToolBar::currentMatchChanged, t,
+          &GuiTerminalWindow::on_currentMatchChanged);
+
+  findToolBar->show();
+  findToolBar->move(t->viewport()->width() - findToolBar->width(),
+                    t->mapTo(this, QPoint(0, 0)).y());
+
+  menuGetActionById(MENU_FIND_NEXT)->setEnabled(true);
+  menuGetActionById(MENU_FIND_PREVIOUS)->setEnabled(true);
+}
+
+void GuiMainWindow::contextMenuFindNext() {
+  QAction *action = qobject_cast<QAction *>(sender());
+  if (!action) return;
+  if (!findToolBar) return;
+  findToolBar->findNext();
+}
+
+void GuiMainWindow::contextMenuFindPrevious() {
+  QAction *action = qobject_cast<QAction *>(sender());
+  if (!action) return;
+  if (!findToolBar) return;
+  findToolBar->findPrevious();
+}
+
+void GuiMainWindow::on__findToolBar_destroyed() {
+  menuGetActionById(MENU_FIND_NEXT)->setEnabled(false);
+  menuGetActionById(MENU_FIND_PREVIOUS)->setEnabled(false);
+  auto *t = getCurrentTerminal();
+  if (t) t->setFocus();
 }
 
 int GuiMainWindow::getTerminalTabInd(const QWidget *term) {

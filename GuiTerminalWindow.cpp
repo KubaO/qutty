@@ -291,8 +291,7 @@ void GuiTerminalWindow::keyPressEvent(QKeyEvent *e) {
   assert(len < 16);
   if (len > 0 || len == -2) {
     if (mainWindow->findToolBar) {
-      mainWindow->findToolBar->findTextFlag = false;
-      viewport()->repaint();
+      mainWindow->findToolBar->reset();
     }
     term_nopaste(term);
     term_seen_key_event(term);
@@ -314,8 +313,7 @@ void GuiTerminalWindow::keyPressEvent(QKeyEvent *e) {
     len += e->text().toWCharArray(bufwchar + len);
     if (len > 0 && len < 16) {
       if (mainWindow->findToolBar) {
-        mainWindow->findToolBar->findTextFlag = false;
-        viewport()->repaint();
+        mainWindow->findToolBar->reset();
       }
       term_nopaste(term);
       term_seen_key_event(term);
@@ -328,33 +326,22 @@ void GuiTerminalWindow::keyReleaseEvent(QKeyEvent *e) {
   noise_ultralight(NOISE_SOURCE_KEY, e->key());
 }
 
-void GuiTerminalWindow::highlightSearchedText() {
-  /* The highlighting should trigger a repaint, and should be handled then and there.
-   */
-  if (mainWindow->getCurrentTerminal() != this) return;
-  GuiFindToolBar *findToolBar = mainWindow->findToolBar;
-  assert(findToolBar);
+void GuiTerminalWindow::on_matchesChanged(const TerminalSearch::Matches &matches) {
+  this->matchMap.clear();
+  this->matches = matches;
 
-  const QString &text = findToolBar->currentSearchedText;
-  unsigned long attr = 0;
-  QString str = "";
-  for (int y = 0; y < term->rows; y++) {
-    str = QString::fromWCharArray(&term->dispstr[y * term->cols], term->cols);
-    int index = 0;
-    while ((index = str.indexOf(text, index, Qt::CaseInsensitive)) >= 0) {
-      attr |= (8 << ATTR_FGSHIFT | (3 << ATTR_BGSHIFT));
-      drawText(index, y, str.mid(index, text.length()), attr, 0, {});
-      index = index + (text.length());
-    }
+  for (const auto &match : matches) {
+    for (int i = match.start.row; i <= match.end.row; i++) matchMap.emplace(i, &match);
   }
-  str = QString::fromWCharArray(
-      &term->dispstr[(findToolBar->currentRow - verticalScrollBar()->value()) * term->cols],
-      term->cols);
-  if (str.indexOf(text, findToolBar->currentCol, Qt::CaseInsensitive) >= 0) {
-    int x = findToolBar->currentCol;
-    int y = findToolBar->currentRow - verticalScrollBar()->value();
-    drawText(x, y, findToolBar->currentSearchedText, ((5 << ATTR_FGSHIFT) | (7 << ATTR_BGSHIFT)), 0,
-             {});
+
+  term_paint(term, 0, 0, term->cols - 1, term->rows - 1, false);
+}
+
+void GuiTerminalWindow::on_currentMatchChanged(int i) {
+  return;
+  if (i >= 0 && i < matches.size()) {
+    const TerminalSearch::Match &match = matches.at(i);
+    term_scroll(term, +1, (match.start.row + match.end.row + 1) / 2);
   }
 }
 
@@ -454,6 +441,8 @@ void GuiTerminalWindow::drawText(int x, int y, const QString &str, unsigned long
     }
   }
 
+  drawHighlight(y);
+
   /* The drawing of individual character cells by repeatedly calling drawText,
    * assembling code units representing one code point into a temporary string, etc.,
    * are simple to do, but not most performant.
@@ -463,6 +452,23 @@ void GuiTerminalWindow::drawText(int x, int y, const QString &str, unsigned long
    * https://github.com/KubaO/stackoverflown/blob/master/questions/hex-widget-40458515/main.cpp
    * - narrative: https://stackoverflow.com/a/40476430/1329652
    */
+}
+
+void GuiTerminalWindow::drawHighlight(int y) {
+  int row = y + term->disptop;
+  auto it = matchMap.find(row);
+  if (it != matchMap.end()) {
+    const TerminalSearch::Match *match = it->second;
+    int x0 = 0, x1 = term->cols;
+    if (match->start.row == row) x0 = match->start.col;
+    if (match->end.row == row) x1 = match->end.col;
+
+    QColor outline = Qt::yellow;
+    outline.setAlpha(128);
+    painter.setPen({outline, 0});
+    painter.setBrush(QBrush());
+    painter.drawRect(x0 * fontWidth + 1, y * fontHeight + 1, x1 * fontWidth - 1, fontHeight - 2);
+  }
 }
 
 void GuiTerminalWindow::drawCursor(int x, int y, const wchar_t *text, int len, unsigned long attrs,
